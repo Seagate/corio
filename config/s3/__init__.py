@@ -16,4 +16,4 @@
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
-"""s3 config Package."""
+""" io module."""
