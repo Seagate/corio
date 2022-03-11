@@ -37,7 +37,7 @@ LOGGER = logging.getLogger(__name__)
 
 # pylint: disable=too-few-public-methods, too-many-statements
 class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
-    """S3 multipart class for executing given io stability workload"""
+    """S3 multipart class for executing given io stability workload."""
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, use_ssl: bool,
@@ -82,14 +82,13 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 LOGGER.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = "s3mpart-obj-{}-{}".format(self.test_id, perf_counter_ns())
                 LOGGER.info("Object name: %s", s3mpart_object)
-                file_size = random.randrange(
-                    self.object_size["start"], self.object_size["end"]) if isinstance(
-                    self.object_size, dict) else self.object_size
+                file_size = random.randrange(self.object_size["start"], self.object_size["end"]) \
+                    if isinstance(self.object_size, dict) else self.object_size
                 LOGGER.info("File size: %s GB", (file_size ** 3))
                 number_of_parts = random.randrange(self.part_range["start"], self.part_range["end"])
                 LOGGER.info("Number of parts: %s", number_of_parts)
                 assert number_of_parts <= 10000, "Number of parts should be equal/less than 10k"
-                single_part_size = file_size // number_of_parts
+                single_part_size = round(file_size / number_of_parts)
                 LOGGER.info("single part size: %s MB", single_part_size / (1024 ** 2))
                 response = await self.create_multipart_upload(mpart_bucket, s3mpart_object)
                 assert response["UploadId"], f"Failed to initiate multipart upload: {response}"
@@ -133,9 +132,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                     f"Failed to match checksum: {upload_obj_checksum}, {download_obj_checksum}"
                 if self.range_read:
                     self.range_read = self.range_read = {
-                        "start": random.randrange(
-                            1, self.range_read), "end": self.range_read} if isinstance(
-                        self.range_read, int) else self.range_read
+                        "start": random.randrange(1, self.range_read), "end": self.range_read} \
+                        if isinstance(self.range_read, int) else self.range_read
                     LOGGER.info("Get object using suggested range read '%s'.", self.range_read)
                     resp = await self.get_object(bucket=mpart_bucket,
                                                  key=s3mpart_object,

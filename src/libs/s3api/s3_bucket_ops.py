@@ -19,7 +19,7 @@
 #
 #
 
-"""Python Library to perform bucket operations using boto3 module."""
+"""Python Library to perform bucket operations using aiobotocore module."""
 
 import logging
 from src.libs.s3api.s3_restapi import S3RestApi
