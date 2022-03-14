@@ -27,13 +27,13 @@ import yaml
 logger = logging.getLogger()
 
 
-def yaml_parser(yaml_file):
+def yaml_parser(yaml_file) -> dict:
     """
     YAML file to python dictionary
 
     :param yaml_file: yaml file to parse
-    :return python dict containing file contents
 
+    :return python dict containing file contents
     """
     logger.debug("YAML file selected for parse: %s", yaml_file)
     yaml_dict = dict()
