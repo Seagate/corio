@@ -19,7 +19,7 @@
 #
 #
 
-"""Python Library to perform multipart operations using boto3 module."""
+"""Python Library to perform multipart operations using aiobotocore module."""
 
 import logging
 import os
