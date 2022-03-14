@@ -18,7 +18,6 @@
 
 """Configs are initialized here."""
 
-import os.path
 import sys
 import ast
 import munch
