@@ -22,12 +22,23 @@
 """Perform parallel S3 operations as per the given test input YAML using Asyncio."""
 
 import argparse
+import asyncio
+import glob
 import logging
+import math
+import multiprocessing
 import os
 import random
+import sys
+import time
 from datetime import datetime
 from distutils.util import strtobool
+from pprint import pformat
 
+import pandas as pd
+import schedule
+
+from config import S3_CFG
 from src.commons.logger import StreamToLogger
 
 LOGGER = logging.getLogger()
@@ -106,11 +117,11 @@ async def create_session(funct: list, session: str, start_time: float,
     :param start_time: Start time for session
     """
     await asyncio.sleep(start_time)
-    logger.info("Starting Session %s, PID - %s", session, os.getpid())
-    logger.info("kwargs : %s", kwargs)
+    LOGGER.info("Starting Session %s, PID - %s", session, os.getpid())
+    LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
     await func()
-    logger.info("Ended Session %s, PID - %s", session, os.getpid())
+    LOGGER.info("Ended Session %s, PID - %s", session, os.getpid())
 
 
 async def schedule_sessions(test_plan: str, test_plan_value: dict,
@@ -142,12 +153,12 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict,
 
     done, pending = await asyncio.wait(tasks,
                                        return_when=asyncio.FIRST_COMPLETED)
-    logger.info("Completed task %s", done)
+    LOGGER.info("Completed task %s", done)
     for task in pending:
         task.cancel()
     for task in done:
         task.result()
-    logger.info("%s terminating", process_name)
+    LOGGER.info("%s terminating", process_name)
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict,
@@ -159,7 +170,7 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict,
     :param common_params: Common arguments to be passed to function.
     """
     process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
-    logger.info("%s Started ", process_name)
+    LOGGER.info("%s Started ", process_name)
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(
@@ -222,15 +233,15 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time,
                             test_start_time + v1['result_duration']):
                         input_dict[
                             "RESULT_UPDATE"] = f"Passed at " \
-                                               f"{(test_start_time + v1['result_duration']).strftime(date_format)}"
+                                f"{(test_start_time + v1['result_duration']).strftime(date_format)}"
                     else:
-                        input_dict["RESULT_UPDATE"] = f"In Progress"
+                        input_dict["RESULT_UPDATE"] = "In Progress"
                     input_dict[
                         "TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
                 else:
                     input_dict[
                         "START_TIME"] = f"Scheduled at {test_start_time.strftime(date_format)}"
-                    input_dict["RESULT_UPDATE"] = f"Not Triggered"
+                    input_dict["RESULT_UPDATE"] = "Not Triggered"
                     input_dict["TOTAL_TEST_EXECUTION"] = "NA"
 
                 df = df.append(input_dict, ignore_index=True)

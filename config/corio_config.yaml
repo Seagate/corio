@@ -1,1 +1,6 @@
 log_size: 524288000
+capture_support_bundle: True
+sb_interval_mins: 60
+max_no_of_sb: 5
+perform_health_check: True
+hc_interval_mins: 60
