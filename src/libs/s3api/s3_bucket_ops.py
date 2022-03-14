@@ -19,9 +19,12 @@
 #
 #
 
-"""Python Library to perform bucket operations using aiobotocore module."""
+"""Python Library to perform bucket operations using boto3 module."""
 
+import logging
 from src.libs.s3api.s3_restapi import S3RestApi
+
+LOGGER = logging.getLogger(__name__)
 
 
 class S3Bucket(S3RestApi):
@@ -36,7 +39,7 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             response = await client.create_bucket(Bucket=bucket_name)
-            self.log.info("create_bucket:%s, Response: %s", bucket_name, response)
+            LOGGER.info("create_bucket:%s, Response: %s", bucket_name, response)
 
         return response
 
@@ -48,9 +51,9 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             buckets = await client.list_buckets()
-            self.log.info(buckets)
+            LOGGER.info(buckets)
             response = [bucket["Name"] for bucket in buckets["Buckets"]]
-            self.log.info("list_buckets: Response: %s", response)
+            LOGGER.info("list_buckets: Response: %s", response)
 
         return response
 
@@ -63,7 +66,7 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             response = await client.head_bucket(Bucket=bucket_name)
-            self.log.info("head_bucket: %s, Response: %s", bucket_name, response)
+            LOGGER.info("head_bucket: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -75,9 +78,9 @@ class S3Bucket(S3RestApi):
         :return: Response of bucket location.
         """
         async with self.get_client() as client:
-            self.log.debug("BucketName: %s", bucket_name)
+            LOGGER.info("BucketName: %s", bucket_name)
             response = await client.get_bucket_location(Bucket=bucket_name)
-            self.log.info("get_bucket_location: %s, Response: %s", bucket_name, response)
+            LOGGER.info("get_bucket_location: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -91,16 +94,15 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             if force:
-                self.log.info("This might cause data loss as you have opted for bucket deletion"
-                              " with objects in it")
+                LOGGER.info("This might cause data loss as you have opted for bucket deletion"
+                            " with objects in it")
                 # list s3 objects using paginator
                 paginator = client.get_paginator('list_objects')
                 async for result in paginator.paginate(Bucket=bucket_name):
                     for content in result.get('Contents', []):
-                        resp = await client.delete_object(Bucket=bucket_name, Key=content['Key'])
-                        self.log.debug(resp)
-                self.log.info("All objects deleted successfully.")
+                        await client.delete_object(Bucket=bucket_name, Key=content['Key'])
+                LOGGER.info("All objects deleted successfully.")
             response = await client.delete_bucket(Bucket=bucket_name)
-            self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
+            LOGGER.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response

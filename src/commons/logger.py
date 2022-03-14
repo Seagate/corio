@@ -18,36 +18,34 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 #
-"""Logger for CorIO tool."""
+""" Logger for CorIO tool."""
 
-import datetime
-import gzip
-import logging
 import os
+import gzip
 import shutil
-from logging import handlers
+import datetime
+import logging
 from os import path
-
+from logging import handlers
 from config import CORIO_CFG
-from src.commons.constants import FORMATTER
 
 
 class StreamToLogger:
     """logger class for corio."""
 
-    def __init__(self, file_path, logger, stream=False):
-        """Initialize root logger.
+    def __init__(self, file_path, logger):
+        """"
+        Initialize root logger.
 
         :param file_path: File path of the logger.
         :param logger: logger object from logging.getLogger(__name__).
-        :param stream: To enable/disable stream handler/logging.
         """
         self.file_path = file_path
         self.logger = logger
-        self.formatter = FORMATTER
+        self.formatter = '[%(asctime)s] [%(threadName)-6s] [%(levelname)-6s] ' \
+                         '[%(filename)s: %(lineno)d]: %(message)s'
         self.make_logdir()
-        if stream:
-            self.set_stream_logger()
+        self.set_stream_logger()
         self.set_filehandler_logger()
 
     def make_logdir(self) -> None:
@@ -84,7 +82,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
 
     def __init__(self, filename, maxbyte, backupcount):
         """
-        Initialize for cortx rotating file handler.
+        Initialization for cortx rotating file handler.
 
         :param filename: Filename of the log.
         :param maxbyte: Rollover occurs whenever the current log file is nearly maxBytes in
@@ -95,16 +93,16 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
 
     def rotation_filename(self, default_name):
         """
-        Form log file name for rotation internally called by rotation_filename method.
+        Method to form log file name for rotation internally called by rotation_filename method.
 
         :param default_name: name of the base file
         :return: rotated log file name e.g., io_driver-YYYY-MM-DD-1.gz
         """
-        return f"{default_name}-{str(datetime.date.today())}.gz"
+        return "{}-{}.gz".format(default_name, str(datetime.date.today()))
 
     def rotate(self, source, dest):
         """
-        Compress and rotate the current log when size limit is reached.
+        Method to compress and rotate the current log when size limit is reached.
 
         :param source: current log file path.
         :param dest: destination path for rotated file.
@@ -113,32 +111,3 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
             with gzip.open(dest, "wb", 9) as df_obj:
                 shutil.copyfileobj(sf_obj, df_obj)
         os.remove(source)
-
-
-def get_logger(level, name) -> object:
-    """
-    Initialize and get the logger object.
-
-    :param level: Set logging level, which is used across execution.
-    :param name: Name of the logger.
-    :returns: logger object.
-    """
-    logger = logging.Logger.manager.loggerDict.get(name)
-    if logger:
-        return logger
-    dir_path = os.path.join(os.getcwd(), "log", "latest")
-    if not os.path.exists(dir_path):
-        os.makedirs(dir_path, exist_ok=True)
-    level = logging.getLevelName(level)
-    if level == logging.DEBUG:
-        logger = logging.getLogger()
-        for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
-            logging.getLogger(pkg).setLevel(logging.DEBUG)
-            fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
-    else:
-        logger = logging.getLogger(name)
-        fpath = os.path.join(dir_path, f"{name}_console.INFO")
-    logger.setLevel(level)
-    StreamToLogger(fpath, logger)
-
-    return logger
