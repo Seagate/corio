@@ -1,0 +1,9 @@
+"product_family": "LC"
+"product_type": "k8s"
+#K8s based s3 server master details.
+"nodes":
+    - "hostname": ""
+      "ip": ""
+      "username": ""
+      "password": ""
+      "node_type": "master"
