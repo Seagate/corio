@@ -13,21 +13,6 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
-#
-
-"""All common constants and params for corio."""
-
-import os
-
-
-SCRIPT_HOME = os.getcwd()  # Fetches you CWD of the runner.
-CONFIG_DIR = 'config'
-
-SETUP_CONFIG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
-S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
-CORIO_CFG_PATH = os.path.join(CONFIG_DIR, "corio_config.yaml")
-S3_TOOL_PATH = os.path.join(CONFIG_DIR, 's3', "s3_tools.yaml")

@@ -247,7 +247,8 @@ class S3Object(S3RestApi):
             f_obj.seek(offset)
             while read_length:
                 current_read_length = chunk_size if read_length >= chunk_size else read_length
-                LOGGER.info("Reading %s from starting offset %s", current_read_length, f_obj.tell())
+                LOGGER.debug("Reading %s from starting offset %s", current_read_length,
+                             f_obj.tell())
                 content = f_obj.read(current_read_length)
                 file_hash.update(content)
                 read_length -= len(content)
