@@ -21,41 +21,36 @@
 
 """library having config related operations."""
 
-import logging
 import os
-from configparser import ConfigParser
-from configparser import MissingSectionHeaderError
-from configparser import NoSectionError
-
+import logging
 import yaml
+from configparser import ConfigParser
+from configparser import NoSectionError
+from configparser import MissingSectionHeaderError
 
-from src.commons.constants import ROOT
-
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(__name__)
 
 
 def get_config_yaml(fpath: str) -> dict:
-    """
-    Read the config and decrypts the passwords.
+    """Reads the config and decrypts the passwords
 
-    :param fpath: configuration file path.
-    :return [type]: dictionary containing config data.
+    :param fpath: configuration file path
+    :return [type]: dictionary containing config data
     """
-    with open(fpath, encoding="utf-8") as fin:
+    with open(fpath) as fin:
         LOGGER.debug("Reading details from file : %s", fpath)
         data = yaml.safe_load(fin)
 
     return data
 
-
 def get_config_section_key(path: str, section: str = None, key: str = None) -> list or str:
     """
     Get config file value as per the section and key.
 
-    :param path: File path.
-    :param section: Section name.
-    :param key: Section key name.
-    :return: key value else all items else None.
+    :param path: File path
+    :param section: Section name
+    :param key: Section key name
+    :return: key value else all items else None
     """
     try:
         config = ConfigParser()
@@ -67,7 +62,6 @@ def get_config_section_key(path: str, section: str = None, key: str = None) -> l
     except (MissingSectionHeaderError, NoSectionError) as error:
         LOGGER.error(error)
         return None
-
 
 def get_local_aws_keys(fpath, section="default"):
     """
