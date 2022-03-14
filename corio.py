@@ -165,9 +165,9 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict,
         loop.run_until_complete(
             schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        logger.info("%s Loop interrupted", process_name)
+        LOGGER.info("%s Loop interrupted", process_name)
         loop.stop()
-    logger.info("%s terminating", process_name)
+    LOGGER.info("%s terminating", process_name)
 
 
 def setup_environment():
@@ -186,7 +186,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time,
     :param corio_start_time: Start time for main process
     :param test_failed: Reason for failure is any
     """
-    logger.info("Logging current status to corio_status.log")
+    LOGGER.info("Logging current status to corio_status.log")
     with open('corio_status.log', 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
         if test_failed == 'KeyboardInterrupt':
@@ -267,7 +267,7 @@ def main(options):
     Main function for CORIO
     :param options: Parsed Arguments
     """
-    logger.info("Setting up environment!!")
+    LOGGER.info("Setting up environment!!")
     setup_environment()
 
     commons_params = {'access_key': S3_CFG.access_key,
@@ -282,7 +282,7 @@ def main(options):
         file_list = [os.path.abspath(options.test_input)]
     else:
         raise IOError(f"Incorrect test input: {options.test_input}")
-    logger.info("Test YAML Files to be executed : %s", file_list)
+    LOGGER.info("Test YAML Files to be executed : %s", file_list)
     parsed_input = {}
     for each in file_list:
         parsed_input[each] = yaml_parser.test_parser(each,
@@ -290,14 +290,14 @@ def main(options):
 
     for _, value in parsed_input.items():
         for test_key, test_value in value.items():
-            logger.info("Test Values : %s", value)
+            LOGGER.info("Test Values : %s", value)
             if 'operation' in test_value.keys():
                 test_value['operation'] = function_mapping[
                     test_value['operation']]
                 value[test_key] = test_value
 
-    logger.info("Parsed input files : ")
-    logger.info(pformat(parsed_input))
+    LOGGER.info("Parsed input files : ")
+    LOGGER.info(pformat(parsed_input))
     processes = []
     for test_plan, test_plan_value in parsed_input.items():
         process = multiprocessing.Process(target=schedule_test_plan,
@@ -306,8 +306,8 @@ def main(options):
         processes.append(process)
     # TODO: Add support to schedule support bundle and health check periodically
     corio_start_time = datetime.now()
-    logger.info("Parsed input files : ")
-    logger.info(pformat(parsed_input))
+    LOGGER.info("Parsed input files : ")
+    LOGGER.info(pformat(parsed_input))
     processes = {}
 
     for test_plan, test_plan_value in parsed_input.items():
@@ -316,7 +316,7 @@ def main(options):
                                                 commons_params))
         processes[test_plan] = process
 
-    logger.info(processes)
+    LOGGER.info(processes)
 
     # TODO: Add support to schedule support bundle and health check periodically
     sched_job = schedule.every(30).minutes.do(log_status,
@@ -334,7 +334,7 @@ def main(options):
             schedule.run_pending()
             for key, process in processes.items():
                 if not process.is_alive():
-                    logger.info(
+                    LOGGER.info(
                         "Process with PID %s Name %s exited. Stopping other Process.",
                         process.pid, process.name)
                     terminate = True
