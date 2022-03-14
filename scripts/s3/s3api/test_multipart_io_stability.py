@@ -18,9 +18,8 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 #
-"""This file contains s3 multipart test script for io stability."""
+"""File contains s3 multipart test script for io stability."""
 
-from __future__ import division
 import logging
 import os
 import random
@@ -35,17 +34,17 @@ from src.libs.s3api.s3_bucket_ops import S3Bucket
 LOGGER = logging.getLogger(__name__)
 
 
-# pylint: disable=too-few-public-methods, too-many-statements
 class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
-    """S3 multipart class for executing given io stability workload."""
+    """Multipart class for executing given io stability workload."""
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
+    # pylint: disable=too-few-public-methods, too-many-statements
+
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, use_ssl: bool,
                  object_size: Union[dict, bytes], part_range: dict, seed: int, test_id: str = None,
                  range_read: Union[dict, bytes] = None, part_copy: bool = False,
                  duration: timedelta = None) -> None:
-        """
-        s3 multipart init class.
+        """s3 multipart init for multipart, part copy operations with different workload.
 
         :param access_key: access key.
         :param secret_key: secret key.
@@ -73,9 +72,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
         mpart_bucket = "s3mpart-bkt-{}-{}".format(self.test_id, perf_counter_ns())
-        response = await self.create_bucket(mpart_bucket)
-        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200, \
-            f"Failed to create bucket: {mpart_bucket}"
+        await self.create_bucket(mpart_bucket)
         while True:
             LOGGER.info("Iteration %s is started...", self.iteration)
             try:
@@ -131,9 +128,10 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 assert upload_obj_checksum != download_obj_checksum,\
                     f"Failed to match checksum: {upload_obj_checksum}, {download_obj_checksum}"
                 if self.range_read:
-                    self.range_read = self.range_read = {
-                        "start": random.randrange(1, self.range_read), "end": self.range_read} \
-                        if isinstance(self.range_read, int) else self.range_read
+                    self.range_read = {
+                        "start": random.randrange(
+                            1, self.range_read), "end": self.range_read} if isinstance(
+                        self.range_read, int) else self.range_read
                     LOGGER.info("Get object using suggested range read '%s'.", self.range_read)
                     resp = await self.get_object(bucket=mpart_bucket,
                                                  key=s3mpart_object,
@@ -147,9 +145,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 raise err
             timedelta_sec = (self.finish_time - datetime.now()).total_seconds()
             if timedelta_sec < self.min_duration:
-                response = await self.delete_bucket(mpart_bucket, force=True)
-                assert response["ResponseMetadata"][
-                    "HTTPStatusCode"] == 204, f"Failed to delete s3 bucket: {mpart_bucket}"
+                await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
             LOGGER.info("Iteration %s is completed...", self.iteration)
             self.iteration += 1

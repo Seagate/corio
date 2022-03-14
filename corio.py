@@ -101,7 +101,8 @@ def parse_args():
     parser.add_argument("-sk", "--secret_key", type=str, help="s3 secret Key.")
     parser.add_argument("-ak", "--access_key", type=str, help="s3 access Key.")
     parser.add_argument("-ep", "--endpoint", type=str,
-                        help="fqdn of s3 endpoint for io operations.",
+                        help="fqdn/ip:port of s3 endpoint for io operations without http/https."
+                             "protocol in endpoint is based on use_ssl flag.",
                         default="s3.seagate.com")
     parser.add_argument("-nn", "--number_of_nodes", type=int,
                         help="number of nodes in k8s system", default=1)
