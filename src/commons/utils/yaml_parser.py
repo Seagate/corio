@@ -29,6 +29,7 @@ logger = logging.getLogger()
 
 def yaml_parser(yaml_file) -> dict:
     """
+
     YAML file to python dictionary.
 
     :param yaml_file: yaml file to parse.
@@ -46,6 +47,7 @@ def yaml_parser(yaml_file) -> dict:
 
 def convert_to_bytes(size):
     """
+
     function to convert any size to bytes.
 
     :param size: object size
@@ -79,6 +81,7 @@ def convert_to_bytes(size):
 
 def convert_to_time_delta(time):
     """
+
     function to convert execution time in time delta format.
 
     :param time : accepts time in format 0d0h0m0s
@@ -104,6 +107,7 @@ def convert_to_time_delta(time):
 
 def test_parser(yaml_file, number_of_nodes):
     """
+
     parse a test yaml file.
 
     :param yaml_file: accepts and parses a test YAML file
