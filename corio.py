@@ -38,28 +38,35 @@ from pprint import pformat
 import pandas as pd
 import schedule
 
+from scripts.s3.s3api import copy_object
+from scripts.s3.s3api import multipart_io_stability
+from scripts.s3.s3api import s3_obj_range_read_io_stability
+from src.commons.utils import yaml_parser
+from src.libs.s3api.s3_object_ops import S3Object
+
+
 from config import S3_CFG
 from src.commons.logger import StreamToLogger
 
 LOGGER = logging.getLogger()
 
 function_mapping = {
-    'copy_object': [test_s3_copy_object.TestS3CopyObjects,
+    'copy_object': [copy_object.TestS3CopyObjects,
                     'execute_copy_object_workload'],
-    'copy_object_range_read': [test_s3_copy_object.TestS3CopyObjects,
+    'copy_object_range_read': [copy_object.TestS3CopyObjects,
                                'execute_copy_object_workload'],
-    'bucket': [test_s3_bucket_io_stability.TestBucketOps,
-               'execute_bucket_workload'],
+    # 'bucket': [test_s3_bucket_io_stability.TestBucketOps,
+    #            'execute_bucket_workload'],
     'multipart': [multipart_io_stability.TestMultiParts,
                   'execute_multipart_workload'],
-    'object': [test_s3_object_io_stability.TestS3Object,
-               'execute_object_workload'],
+    # 'object': [test_s3_object_io_stability.TestS3Object,
+    #            'execute_object_workload'],
     'object_range_read': [
-        test_s3_obj_range_read_io_stability.TestObjectRangeReadOps,
+        s3_obj_range_read_io_stability.TestObjectRangeReadOps,
         'execute_object_range_read_workload'],
-    'multipart_partcopy': [
-        test_s3api_multipart_partcopy_io_stability.TestMultiPartsPartCopy,
-        'execute_multipart_partcopy_workload']
+    # 'multipart_partcopy': [
+    #     test_s3api_multipart_partcopy_io_stability.TestMultiPartsPartCopy,
+    #     'execute_multipart_partcopy_workload']
 }
 
 
@@ -182,12 +189,12 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict,
     LOGGER.info("%s terminating", process_name)
 
 
-def setup_environment():
-    """
-    Tool installations for test execution
-    """
-    ret = mount_nfs_server(NFS_SERVER_DIR, MOUNT_DIR)
-    assert ret, "Error while Mounting NFS directory"
+# def setup_environment():
+#     """
+#     Tool installations for test execution
+#     """
+#     ret = mount_nfs_server(NFS_SERVER_DIR, MOUNT_DIR)
+#     assert ret, "Error while Mounting NFS directory"
 
 
 def log_status(parsed_input: dict, corio_start_time: datetime.time,
@@ -280,7 +287,7 @@ def main(options):
     :param options: Parsed Arguments
     """
     LOGGER.info("Setting up environment!!")
-    setup_environment()
+    # setup_environment()
 
     commons_params = {'access_key': S3_CFG.access_key,
                       'secret_key': S3_CFG.secret_key,
