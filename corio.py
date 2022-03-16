@@ -42,7 +42,7 @@ from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_io_stability
 from scripts.s3.s3api import s3_obj_range_read_io_stability
 from src.commons.utils import yaml_parser
-from src.libs.s3api.s3_object_ops import S3Object
+# from src.libs.s3api.s3_object_ops import S3Object
 
 
 from config import S3_CFG
