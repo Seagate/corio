@@ -30,3 +30,4 @@ CONFIG_DIR = 'config'
 SETUP_CONFIG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
 S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
 CORIO_CFG_PATH = os.path.join(CONFIG_DIR, "corio_config.yaml")
+S3_TOOL_PATH = os.path.join(CONFIG_DIR, 's3', "s3_tools.yaml")
