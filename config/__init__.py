@@ -18,14 +18,16 @@
 
 """Configs are initialized here."""
 
-import sys
 import ast
-import munch
+import sys
 from typing import List
-from src.commons.utils import config_utils
-from src.commons.constants import S3_CONFIG
-from src.commons.constants import SETUP_CONFIG
+
+import munch
+
 from src.commons.constants import CORIO_CFG_PATH
+from src.commons.constants import S3_CONFIG, S3_TOOL_PATH
+from src.commons.constants import SETUP_CONFIG
+from src.commons.utils import config_utils
 
 
 def split_args(sys_cmd: List):
@@ -43,6 +45,7 @@ def split_args(sys_cmd: List):
 CORIO_CFG = config_utils.get_config_yaml(CORIO_CFG_PATH)
 S3_CFG = config_utils.get_config_yaml(fpath=S3_CONFIG)
 SETUP_CFG = config_utils.get_config_yaml(fpath=SETUP_CONFIG)
+S3_TOOLS_CFG = config_utils.get_config_yaml(fpath=S3_TOOL_PATH)
 
 
 io_driver_args = split_args(sys.argv)
