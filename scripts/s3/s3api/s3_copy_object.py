@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 class TestS3CopyObjects(S3Object, S3Bucket):
+
     """S3 Copy Object class for executing given io stability workload"""
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
@@ -40,6 +41,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
                  use_ssl: bool, object_size: Union[int, dict],seed: int,
                  range_read: Union[int, dict], duration: timedelta = None) -> None:
+
         """s3 Copy Object init class.
 
         :param access_key: access key
