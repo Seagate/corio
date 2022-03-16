@@ -39,12 +39,13 @@ import pandas as pd
 import schedule
 
 from config import S3_CFG
-from src.commons.logger import StreamToLogger
 from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_io_stability
 from scripts.s3.s3api import s3_obj_range_read_io_stability
+from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
+
 LOGGER = logging.getLogger()
 
 function_mapping = {
@@ -219,26 +220,26 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time,
 
         status_file.write("\nTestWise Execution Details:")
         date_format = '%Y-%m-%d %H:%M:%S'
-        for k, v in parsed_input.items():
-            df = pd.DataFrame()
-            for k1, v1 in v.items():
-                input_dict = {"TEST_NO": k1,
-                              "TEST_ID": v1['TEST_ID'],
+        for key, value in parsed_input.items():
+            dataframe = pd.DataFrame()
+            for key1, value1 in value.items():
+                input_dict = {"TEST_NO": key1,
+                              "TEST_ID": value1['TEST_ID'],
                               "OBJECT_SIZE_START": convert_size(
-                                  v1['object_size']['start']),
+                                  value1['object_size']['start']),
                               "OBJECT_SIZE_END": convert_size(
-                                  v1['object_size']['end']),
-                              "SESSIONS": int(v1['sessions']),
+                                  value1['object_size']['end']),
+                              "SESSIONS": int(value1['sessions']),
                               }
-                test_start_time = corio_start_time + v1['start_time']
+                test_start_time = corio_start_time + value1['start_time']
                 if datetime.now() > test_start_time:
                     input_dict[
                         "START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
                     if datetime.now() > (
-                            test_start_time + v1['result_duration']):
+                            test_start_time + value1['result_duration']):
                         input_dict[
                             "RESULT_UPDATE"] = f"Passed at " \
-                                f"{(test_start_time + v1['result_duration']).strftime(date_format)}"
+                            f"{(test_start_time + value1['result_duration']).strftime(date_format)}"
                     else:
                         input_dict["RESULT_UPDATE"] = "In Progress"
                     input_dict[
@@ -249,9 +250,9 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time,
                     input_dict["RESULT_UPDATE"] = "Not Triggered"
                     input_dict["TOTAL_TEST_EXECUTION"] = "NA"
 
-                df = df.append(input_dict, ignore_index=True)
-            status_file.write(f"\n\nTEST YAML FILE : {k}")
-            status_file.write(f'\n{df}')
+                dataframe = dataframe.append(input_dict, ignore_index=True)
+            status_file.write(f"\n\nTEST YAML FILE : {key}")
+            status_file.write(f'\n{dataframe}')
 
 
 def terminate_processes(process_list):
@@ -272,12 +273,13 @@ def convert_size(size_bytes):
     if size_bytes == 0:
         return "0B"
     size_name = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
-    i = int(math.floor(math.log(size_bytes, 1024)))
-    p = math.pow(1024, i)
-    s = round(size_bytes / p, 2)
-    return "%s %s" % (s, size_name[i])
+    check_pow = int(math.floor(math.log(size_bytes, 1024)))
+    power = math.pow(1024, check_pow)
+    size = round(size_bytes / power, 2)
+    return "%s %s" % (size, size_name[check_pow])
 
 
+# pylint: disable-msg=too-many-branches,too-many-locals
 def main(options):
     """
     Main function for CORIO
