@@ -38,6 +38,7 @@ logger = logging.getLogger(__name__)
 # pylint: disable=too-few-public-methods, too-many-statements
 
 class TestObjectRangeReadOps(S3Object, S3Bucket):
+
     """S3 Object range read operations class for executing given io stability workload"""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -45,8 +46,8 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                  range_read: Union[int, dict],
                  duration: timedelta = None) -> None:
 
-        """s3 object operations init class.
-        
+        """
+        s3 object operations init class.
         :param access_key: access key.
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
