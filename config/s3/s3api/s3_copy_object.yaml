@@ -98,8 +98,8 @@ test_10:
   tool: s3api
   operation: copy_object
 
-test_11: TEST-37257
-  TEST_ID:
+test_11: 
+  TEST_ID: TEST-37257
   object_size:
     start: 1Gib
     end: 2Gib
