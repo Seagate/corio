@@ -17,7 +17,7 @@
 #
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
-"""This file contains S3 object range read operations test script for io stability."""
+"""File contains S3 object range read operations test script for io stability."""
 
 import logging
 import os
@@ -40,12 +40,12 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
     """S3 Object range read operations class for executing given io stability workload"""
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
+
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
                  use_ssl: str, object_size: Union[int, dict], seed: int,
                  range_read: Union[int, dict],
                  duration: timedelta = None) -> None:
-        """
-        s3 object operations init class.
+        """s3 object operations init class.
 
         :param access_key: access key.
         :param secret_key: secret key.
