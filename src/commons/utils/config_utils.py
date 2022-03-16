@@ -21,12 +21,13 @@
 
 """library having config related operations."""
 
-import os
 import logging
-import yaml
+import os
 from configparser import ConfigParser
-from configparser import NoSectionError
 from configparser import MissingSectionHeaderError
+from configparser import NoSectionError
+
+import yaml
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ def get_config_yaml(fpath: str) -> dict:
         data = yaml.safe_load(fin)
 
     return data
+
 
 def get_config_section_key(path: str, section: str = None, key: str = None) -> list or str:
     """
@@ -62,6 +64,7 @@ def get_config_section_key(path: str, section: str = None, key: str = None) -> l
     except (MissingSectionHeaderError, NoSectionError) as error:
         LOGGER.error(error)
         return None
+
 
 def get_local_aws_keys(fpath, section="default"):
     """
