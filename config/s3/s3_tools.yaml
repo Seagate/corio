@@ -1,0 +1,5 @@
+s3bench:
+  version: 'https://github.com/Seagate/s3bench/releases/download/v2021-06-28/s3bench.2021-06-28'
+  path: '/usr/bin/s3bench'
+warp:
+  version: 'https://github.com/minio/warp/releases/download/v0.5.5/warp_0.5.5_Linux_x86_64.rpm'
