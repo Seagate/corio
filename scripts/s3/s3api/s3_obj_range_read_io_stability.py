@@ -45,8 +45,8 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                  range_read: Union[int, dict],
                  duration: timedelta = None) -> None:
 
-        """
-        s3 object operations init class.
+        """s3 object operations init class.
+        
         :param access_key: access key.
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
