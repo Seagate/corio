@@ -38,16 +38,13 @@ from pprint import pformat
 import pandas as pd
 import schedule
 
+from config import S3_CFG
+from src.commons.logger import StreamToLogger
+from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_io_stability
 from scripts.s3.s3api import s3_obj_range_read_io_stability
 from src.commons.utils import yaml_parser
-# from src.libs.s3api.s3_object_ops import S3Object
-
-
-from config import S3_CFG
-from src.commons.logger import StreamToLogger
-
 LOGGER = logging.getLogger()
 
 function_mapping = {
@@ -55,8 +52,8 @@ function_mapping = {
                     'execute_copy_object_workload'],
     'copy_object_range_read': [copy_object.TestS3CopyObjects,
                                'execute_copy_object_workload'],
-    # 'bucket': [test_s3_bucket_io_stability.TestBucketOps,
-    #            'execute_bucket_workload'],
+    'bucket': [bucket_operations.TestBucketOps,
+               'execute_bucket_workload'],
     'multipart': [multipart_io_stability.TestMultiParts,
                   'execute_multipart_workload'],
     # 'object': [test_s3_object_io_stability.TestS3Object,
