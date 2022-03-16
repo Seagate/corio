@@ -36,19 +36,18 @@ logger = logging.getLogger(__name__)
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
 # pylint: disable=too-few-public-methods, too-many-statements
+
 class TestObjectRangeReadOps(S3Object, S3Bucket):
-
-    """S3 Object range read operations class for executing given io stability workload"""
-
-    # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
+    """
+    S3 Object range read operations class for executing given io stability workload"""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
                  use_ssl: str, object_size: Union[int, dict], seed: int,
                  range_read: Union[int, dict],
                  duration: timedelta = None) -> None:
 
-        """s3 object operations init class.
-
+        """
+        s3 object operations init class.
         :param access_key: access key.
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
@@ -74,6 +73,7 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
         """Execute object range read operations workload for specific duration."""
         bucket_name = f'range-read-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
         logger.info("Create bucket %s", bucket_name)
+        system_random = random.SystemRandom()
         await self.create_bucket(bucket_name)
         while True:
             logger.info("Iteration %s is started...", self.iteration)
@@ -81,11 +81,11 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                 if not isinstance(self.object_size, dict):
                     file_size = self.object_size
                 else:
-                    file_size = random.randrange(self.object_size["start"], self.object_size["end"])
+                    file_size = system_random.randrange(self.object_size["start"], self.object_size["end"])
                 if not isinstance(self.range_read, dict):
                     range_read = self.range_read
                 else:
-                    range_read = random.randrange(self.range_read["start"], self.range_read["end"])
+                    range_read = system_random.randrange(self.range_read["start"], self.range_read["end"])
                 # Put object in bucket1
                 logger.info("Upload object to bucket %s", bucket_name)
                 file_name = f'object-range-op-{time.perf_counter_ns()}'
@@ -104,9 +104,9 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                 second_part_end = part * 2
                 third_part_start = second_part_end + 1
                 third_part_end = file_size - range_read
-                byte_range_loc_1 = random.randrange(first_part_start, first_part_end)
-                byte_range_loc_2 = random.randrange(second_part_start, second_part_end)
-                byte_range_loc_3 = random.randrange(third_part_start, third_part_end)
+                byte_range_loc_1 = system_random.randrange(first_part_start, first_part_end)
+                byte_range_loc_2 = system_random.randrange(second_part_start, second_part_end)
+                byte_range_loc_3 = system_random.randrange(third_part_start, third_part_end)
                 checksum1 = await self.get_s3object_checksum(
                     bucket_name, file_name, 1024,
                     f'bytes={byte_range_loc_1}-{byte_range_loc_1 + range_read - 1}')
