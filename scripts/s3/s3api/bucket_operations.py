@@ -28,7 +28,7 @@ from botocore.exceptions import ClientError
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods, too-many-statements
@@ -41,6 +41,7 @@ class TestBucketOps(S3Object, S3Bucket):
                  duration: timedelta = None) -> None:
         """
         s3 bucket operations init class.
+
         :param access_key: access key.
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
@@ -64,36 +65,36 @@ class TestBucketOps(S3Object, S3Bucket):
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
         while True:
-            logger.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started...", self.iteration)
             try:
-                file_size = self.object_size if not isinstance(
-                    self.object_size, dict) else random.randrange(
+                file_size = self.object_size if not isinstance(self.object_size,
+                                                               dict) else random.randrange(
                     self.object_size["start"], self.object_size["end"])
                 bucket_name = f'bucket-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
-                logger.info("Create bucket %s", bucket_name)
+                LOGGER.info("Create bucket %s", bucket_name)
                 await self.create_bucket(bucket_name)
-                logger.info("Upload %s objects to bucket %s", self.object_per_iter, bucket_name)
+                LOGGER.info("Upload %s objects to bucket %s", self.object_per_iter, bucket_name)
                 for _ in range(0, self.object_per_iter):
                     file_name = f'object-bucket-op-{time.perf_counter_ns()}'
                     with open(file_name, 'wb') as fout:
                         fout.write(os.urandom(file_size))
                     await self.upload_object(bucket_name, file_name, file_path=file_name)
-                    logger.info("Delete generated file")
+                    LOGGER.info("Delete generated file")
                     os.remove(file_name)
-                logger.info("List all buckets")
+                LOGGER.info("List all buckets")
                 await self.list_buckets()
-                logger.info("List objects of created %s bucket", bucket_name)
+                LOGGER.info("List objects of created %s bucket", bucket_name)
                 await self.list_objects(bucket_name)
-                logger.info("Perform Head bucket")
+                LOGGER.info("Perform Head bucket")
                 await self.head_bucket(bucket_name)
-                logger.info("Delete all objects of bucket %s", bucket_name)
+                LOGGER.info("Delete all objects of bucket %s", bucket_name)
                 await self.delete_bucket(bucket_name, True)
             except (ClientError, IOError, AssertionError) as err:
-                logger.exception(err)
+                LOGGER.exception(err)
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
                 return True, "Bucket operation execution completed successfully."
-            logger.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed...", self.iteration)
             self.iteration += 1
