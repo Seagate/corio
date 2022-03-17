@@ -4,3 +4,4 @@ sb_interval_mins: 60
 max_no_of_sb: 5
 perform_health_check: True
 hc_interval_mins: 60
+nfs_server: 

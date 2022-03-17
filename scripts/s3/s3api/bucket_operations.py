@@ -67,9 +67,10 @@ class TestBucketOps(S3Object, S3Bucket):
         while True:
             LOGGER.info("Iteration %s is started...", self.iteration)
             try:
-                file_size = self.object_size if not isinstance(self.object_size,
-                                                               dict) else random.randrange(
-                    self.object_size["start"], self.object_size["end"])
+                if not isinstance(self.object_size, dict):
+                    file_size = self.object_size
+                else:
+                    file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 bucket_name = f'bucket-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
                 LOGGER.info("Create bucket %s", bucket_name)
                 await self.create_bucket(bucket_name)
