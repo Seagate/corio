@@ -39,29 +39,22 @@ import pandas as pd
 import schedule
 
 from config import S3_CFG
-from scripts.s3.s3api import bucket_operations
+from scripts.s3.s3api import bucket_operations, object_operations, object_range_read_operations
 from scripts.s3.s3api import copy_object
-from scripts.s3.s3api import multipart_io_stability
-from scripts.s3.s3api import s3_obj_range_read_io_stability
+from scripts.s3.s3api import multipart_operations
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
 
 LOGGER = logging.getLogger()
 
 function_mapping = {
-    'copy_object': [copy_object.TestS3CopyObjects,
-                    'execute_copy_object_workload'],
-    'copy_object_range_read': [copy_object.TestS3CopyObjects,
-                               'execute_copy_object_workload'],
-    'bucket': [bucket_operations.TestBucketOps,
-               'execute_bucket_workload'],
-    'multipart': [multipart_io_stability.TestMultiParts,
-                  'execute_multipart_workload'],
-    # 'object': [test_s3_object_io_stability.TestS3Object,
-    #            'execute_object_workload'],
-    'object_range_read': [
-        s3_obj_range_read_io_stability.TestObjectRangeReadOps,
-        'execute_object_range_read_workload'],
+    'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
+    'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
+    'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
+    'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
+    'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
+    'object_range_read': [object_range_read_operations.TestObjectRangeReadOps,
+                          'execute_object_range_read_workload'],
     # 'multipart_partcopy': [
     #     test_s3api_multipart_partcopy_io_stability.TestMultiPartsPartCopy,
     #     'execute_multipart_partcopy_workload']
@@ -276,7 +269,7 @@ def convert_size(size_bytes):
     check_pow = int(math.floor(math.log(size_bytes, 1024)))
     power = math.pow(1024, check_pow)
     size = round(size_bytes / power, 2)
-    return "%s %s" % (size, size_name[check_pow])
+    return f"{size} {size_name[check_pow]}"
 
 
 # pylint: disable-msg=too-many-branches,too-many-locals
