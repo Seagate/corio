@@ -1,6 +1,6 @@
 # This is under development project, Use with Caution
 
-CORIO (Pronounced as KOR-IO) is a open source tool to exercise long run IO to check IO stability.
+CORIO (Pronounced as KOR-IO) is a open source tool to exercise long run IO to check IO stability. This is a protocol agnostic tool hence any other protocol IO can be plugged in and exercises as and when needed.
 This Tool can be divided logically in following sections:
 
     Core Library
@@ -38,20 +38,21 @@ Set up dev environment:
 
     Following steps helps to set up env, where corio runs. These steps assume that you have installed git client and cloned repo.
 
-1. Python 3.7 Version should be installed and configured in Client System
+1. Python 3.7 Version should be installed and configured in Client System.
 2. `yum update -y`
 3. `pip install --upgrade pip`
-4. Change dir to corio project directory, make sure a requirement file is present in project dir
+4. Change dir to corio project directory, make sure a requirement file is present in project dir.
 5. Create Virtual environment `python3.7 -m venv virenv`
 6. Activate Virtual environment `source virenv/bin/activate`
 7. Use following command to install python packages.
         `pip install --ignore-installed -r requirements.txt`
 
+
 Steps to Configure test scripts for execution in parallel mode.:
 
     Use following command to execute workloads from different scenarios in parallel.
 
-    python corio.py -ak <access_key> -sk <secret_key> -ti config/io
+    python corio.py -ak <access_key> -sk <secret_key> -ep <s3.seagate.com> -ti config/io
 
 Prerequisite: A S3 account and access key and secret key should be present to carry out execution.
 
