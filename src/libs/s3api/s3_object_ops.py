@@ -144,7 +144,7 @@ class S3Object(S3RestApi):
             LOGGER.info("download_object s3://%s/%s Response %s", bucket, key, response)
             async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
-                LOGGER.info(chunk)
+                LOGGER.debug(chunk)
                 while len(chunk) > 0:
                     with open(file_path, "wb+") as file_obj:
                         file_obj.write(chunk)
@@ -196,7 +196,7 @@ class S3Object(S3RestApi):
             async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
                 file_hash = hashlib.sha256()
-                LOGGER.info(chunk)
+                LOGGER.debug(chunk)
                 while len(chunk) > 0:
                     file_hash.update(chunk)
                     chunk = await stream.read(chunk_size)
@@ -217,7 +217,7 @@ class S3Object(S3RestApi):
         with open(file_path, 'rb') as f_obj:
             file_hash = hashlib.sha256()
             chunk = f_obj.read(chunk_size)
-            LOGGER.info(chunk)
+            LOGGER.debug(chunk)
             while len(chunk) > 0:
                 file_hash.update(chunk)
                 chunk = f_obj.read(chunk_size)
