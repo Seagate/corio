@@ -81,12 +81,12 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 LOGGER.info("Object name: %s", s3mpart_object)
                 file_size = random.randrange(self.object_size["start"], self.object_size["end"]) \
                     if isinstance(self.object_size, dict) else self.object_size
-                LOGGER.info("File size: %s GB", (file_size ** 3))
+                LOGGER.info("File size: %s GiB", (file_size / (1024 ** 3)))
                 number_of_parts = random.randrange(self.part_range["start"], self.part_range["end"])
                 LOGGER.info("Number of parts: %s", number_of_parts)
                 assert number_of_parts <= 10000, "Number of parts should be equal/less than 10k"
                 single_part_size = round(file_size / number_of_parts)
-                LOGGER.info("single part size: %s MB", single_part_size / (1024 ** 2))
+                LOGGER.info("single part size: %s MiB", single_part_size / (1024 ** 2))
                 response = await self.create_multipart_upload(mpart_bucket, s3mpart_object)
                 assert response["UploadId"], f"Failed to initiate multipart upload: {response}"
                 mpu_id = response["UploadId"]
@@ -125,7 +125,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 download_obj_checksum = await self.get_s3object_checksum(
                     mpart_bucket, s3mpart_object, single_part_size)
                 LOGGER.info("Checksum of s3 object: %s", download_obj_checksum)
-                assert upload_obj_checksum != download_obj_checksum,\
+                assert upload_obj_checksum == download_obj_checksum,\
                     f"Failed to match checksum: {upload_obj_checksum}, {download_obj_checksum}"
                 if self.range_read:
                     self.range_read = {
