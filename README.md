@@ -32,21 +32,21 @@ Fork local repository from Seagate's CORIO. Clone CORIO repository from your loc
     > upstream        https://github.com/Seagate/corio.git (fetch)
     > upstream        https://github.com/Seagate/corio.git (push)
     git fetch upstream
-    git pull upstream dev
+    git pull upstream --rebase dev
 
 Set up dev environment:
 
     Following steps helps to set up env, where corio runs. These steps assume that you have installed git client and cloned repo.
 
-1. Python 3.7 Version should be installed and configured in Client System.
-2. `yum update -y`
-3. `pip install --upgrade pip`
-4. Change dir to corio project directory, make sure a requirement file is present in project dir.
-5. Create Virtual environment `python3.7 -m venv virenv`
-6. Activate Virtual environment `source virenv/bin/activate`
-7. Use following command to install python packages.
-        `pip install --ignore-installed -r requirements.txt`
-
+    1. Python 3.7 Version should be installed and configured in client system.
+    2. Run following commands to update yum repo and pip.
+    3. `yum update -y`
+    4. `pip install --upgrade pip`
+    5. Change dir to corio project directory, make sure a requirement file is present in project dir.
+    6. Create Virtual environment `python3.7 -m venv virenv`
+    7. Activate Virtual environment `source virenv/bin/activate`
+    8. Use following command to install python packages.
+            `pip install --ignore-installed -r requirements.txt`
 
 Steps to Configure test scripts for execution in parallel mode.:
 
@@ -66,13 +66,16 @@ i.e. config/s3/s3api or any other customized directory(i.e. config/s3/io) locati
 
 CORIO Runner Help Options:
 
-usage: corio.py [-h] [-ti TEST_INPUT] [-ll LOGGING_LEVEL] [-us USE_SSL]
-                [-sd SEED] [-sk SECRET_KEY] [-ak ACCESS_KEY] [-ep ENDPOINT]
-                [-nn NUMBER_OF_NODES]
+corio.py --help
 
-optional arguments:
+usage:
 
-  -h, --help            show this help message and exit
+corio.py [-h HELP][-ti TEST_INPUT] [-ll LOGGING_LEVEL] [-us USE_SSL] [-sd SEED]
+[-sk SECRET_KEY] [-ak ACCESS_KEY] [-ep ENDPOINT] [-nn NUMBER_OF_NODES]
+
+arguments:
+
+  -h HELP, --help       show this help message and exit
 
   -ti TEST_INPUT, --test_input TEST_INPUT
                         Directory path containing test data input yaml files
