@@ -1,6 +1,6 @@
 test_1:
     TEST_ID: TEST-36536
-    object_size: 128Mb
+    object_size: 128Mib
     part_range:
         start: 20
         end: 25
@@ -14,7 +14,7 @@ test_1:
 
 test_2:
     TEST_ID: TEST-36537
-    object_size: 256Mb
+    object_size: 256Mib
     part_range:
         start: 25
         end: 50
@@ -28,7 +28,7 @@ test_2:
 
 test_3:
     TEST_ID: TEST-36538
-    object_size: 512Mb
+    object_size: 512Mib
     part_range:
         start: 50
         end: 75
@@ -42,7 +42,7 @@ test_3:
 
 test_4:
     TEST_ID: TEST-36539
-    object_size: 1Gb
+    object_size: 1Gib
     part_range:
         start: 75
         end: 100
@@ -56,7 +56,7 @@ test_4:
 
 test_5:
     TEST_ID: TEST-36540
-    object_size: 4Gb
+    object_size: 4Gib
     part_range:
         start: 100
         end: 150
@@ -70,7 +70,7 @@ test_5:
 
 test_6:
     TEST_ID: TEST-36541
-    object_size: 8Gb
+    object_size: 8Gib
     part_range:
         start: 150
         end: 200
@@ -84,7 +84,7 @@ test_6:
 
 test_7:
     TEST_ID: TEST-36542
-    object_size: 16Gb
+    object_size: 16Gib
     part_range:
         start: 200
         end: 250
@@ -98,7 +98,7 @@ test_7:
 
 test_8:
     TEST_ID: TEST-36543
-    object_size: 32Gb
+    object_size: 32Gib
     part_range:
         start: 250
         end: 300
@@ -112,7 +112,7 @@ test_8:
 
 test_9:
     TEST_ID: TEST-36544
-    object_size: 64Gb
+    object_size: 64Gib
     part_range:
         start: 300
         end: 350
@@ -126,7 +126,7 @@ test_9:
 
 test_10:
     TEST_ID: TEST-36545
-    object_size: 128Gb
+    object_size: 128Gib
     part_range:
         start: 350
         end: 400
@@ -140,7 +140,7 @@ test_10:
 
 test_11:
     TEST_ID: TEST-36546
-    object_size: 256Gb
+    object_size: 256Gib
     part_range:
         start: 400
         end: 500
@@ -154,7 +154,7 @@ test_11:
 
 test_12:
     TEST_ID: TEST-36547
-    object_size: 512Gb
+    object_size: 512Gib
     part_range:
         start: 500
         end: 600
