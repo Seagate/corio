@@ -265,9 +265,4 @@ cython_debug/
 # Covers VisualStudioCode Editor
 
 # User-specific stuff
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-!.vscode/*.code-snippets
+.vscode/
