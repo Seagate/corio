@@ -26,7 +26,7 @@ import munch
 
 from src.commons.constants import CORIO_CFG_PATH
 from src.commons.constants import S3_CONFIG, S3_TOOL_PATH
-from src.commons.constants import SETUP_CONFIG
+from src.commons.constants import CLUSTER_CFG
 from src.commons.utils import config_utils
 
 
@@ -44,7 +44,7 @@ def split_args(sys_cmd: List):
 
 CORIO_CFG = config_utils.get_config_yaml(CORIO_CFG_PATH)
 S3_CFG = config_utils.get_config_yaml(fpath=S3_CONFIG)
-SETUP_CFG = config_utils.get_config_yaml(fpath=SETUP_CONFIG)
+CLUSTER_CFG = config_utils.get_config_yaml(fpath=CLUSTER_CFG)
 S3_TOOLS_CFG = config_utils.get_config_yaml(fpath=S3_TOOL_PATH)
 
 
