@@ -4,3 +4,4 @@ pandas~=1.3.5
 munch~=2.5.0
 pyyaml~=6.0
 pylint~=2.12.2
+paramiko~=2.10.2
