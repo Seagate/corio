@@ -126,8 +126,6 @@ def test_parser(yaml_file, number_of_nodes):
                     out = []
                     for item in data[size_type]:
                         out.append(convert_to_bytes(item))
-                        out.append(out[-1]+1)
-                        out.append(out[-1]-2)
                     data[size_type] = out
                 else:
                     size = data[size_type]

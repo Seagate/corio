@@ -79,7 +79,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
             try:
                 # Put object in bucket1
                 if isinstance(self.object_size, list):
-                    file_size = self.object_size[self.iteration % len(self.object_size)]
+                    file_size = self.object_size[random.randrange(0, len(self.object_size))]
                 elif isinstance(self.object_size, int):
                     file_size = self.object_size
                 else:
