@@ -44,7 +44,7 @@ from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
 from scripts.s3.s3api import object_range_read_operations
-from src.commons.utils.corio_utils import cleanup
+from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
 from src.commons.constants import MOUNT_DIR
@@ -201,7 +201,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
     :param test_failed: Reason for failure is any
     """
     status_fpath = os.path.join(
-        os.getcwd(), "reports", f"corio_status_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
+        os.getcwd(), "reports", f"corio_status_{DT_STRING}.log")
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
@@ -411,7 +411,7 @@ def main(options):
 
 
 if __name__ == '__main__':
-    cleanup()
+    log_cleanup()
     opts = parse_args()
     log_level = logging.getLevelName(opts.logging_level)
     initialize_loghandler(level=log_level)

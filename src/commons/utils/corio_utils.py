@@ -29,7 +29,7 @@ from datetime import datetime
 LOGGER = logging.getLogger(__name__)
 
 
-def cleanup():
+def log_cleanup():
     """
     Create backup of log/latest & reports.
 
