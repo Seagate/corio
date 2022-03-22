@@ -31,7 +31,7 @@ from botocore.exceptions import ClientError
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
@@ -54,43 +54,46 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.duration = duration
         self.object_size = object_size
         self.test_id = test_id
         self.min_duration = 10  # In seconds
+        self.iteration = 1
+        self.range_read = range_read
+        self.parts = 3
         if duration:
             self.finish_time = datetime.now() + duration
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
-        self.iteration = 1
-        self.range_read = range_read
-        self.parts = 3
 
     async def execute_object_range_read_workload(self):
         """Execute object range read operations workload for specific duration."""
         bucket_name = f'range-read-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
-        logger.info("Create bucket %s", bucket_name)
+        LOGGER.info("Create bucket %s", bucket_name)
         system_random = random.SystemRandom()
         await self.create_bucket(bucket_name)
         while True:
-            logger.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
-                if not isinstance(self.object_size, dict):
-                    file_size = self.object_size
+                if isinstance(self.object_size, dict):
+                    file_size = system_random.randrange(
+                        self.object_size["start"], self.object_size["end"])
                 else:
-                    file_size = system_random.randrange(self.object_size["start"], self.object_size["end"])
-                if not isinstance(self.range_read, dict):
+                    file_size =  self.object_size
+                LOGGER.info("object size: %s MB", file_size / (1000 * 2))
+                if isinstance(self.range_read, dict):
+                    range_read = system_random.randrange(
+                        self.range_read["start"], self.range_read["end"])
+                else:
                     range_read = self.range_read
-                else:
-                    range_read = system_random.randrange(self.range_read["start"], self.range_read["end"])
+                LOGGER.info("Range read: %s bytes", range_read)
                 # Put object in bucket1
-                logger.info("Upload object to bucket %s", bucket_name)
                 file_name = f'object-range-op-{time.perf_counter_ns()}'
-                with open(file_name, 'wb') as fout:
-                    fout.write(os.urandom(file_size))
+                with open(file_name, 'wb') as f_out:
+                    f_out.write(os.urandom(file_size))
                 await self.upload_object(bucket_name, file_name, file_path=file_name)
+                LOGGER.info("'s3://%s/%s' uploaded successfully.", file_name, bucket_name)
                 # Head object
-                logger.info("Perform Head object")
+                LOGGER.info("Perform Head object")
                 await self.head_object(bucket_name, file_name)
                 # Consider three logical parts, select random offset, read given number of bytes
                 # and compare checksum for each part
@@ -123,17 +126,17 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                 assert checksum3 == checksum6, f"part {checksum3} is not matching for first part " \
                                                f"with {checksum6} "
                 # Delete object
-                logger.info("Delete %s object of bucket %s", file_name, bucket_name)
+                LOGGER.info("Delete %s object of bucket %s", file_name, bucket_name)
                 await self.delete_object(bucket_name, file_name)
                 os.remove(file_name)
             except (ClientError, IOError, AssertionError) as err:
-                logger.exception(err)
+                LOGGER.exception(err)
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
-                logger.info("Delete all objects of bucket %s", bucket_name)
+                LOGGER.info("Delete all objects of bucket %s", bucket_name)
                 await self.delete_bucket(bucket_name, True)
                 return True, "Bucket operation execution completed successfully."
-            logger.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1
