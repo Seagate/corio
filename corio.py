@@ -63,6 +63,7 @@ function_mapping = {
     'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_range_read': [object_range_read_operations.TestObjectRangeReadOps,
                           'execute_object_range_read_workload'],
+    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     # 'multipart_partcopy': [
     #     test_s3api_multipart_partcopy_io_stability.TestMultiPartsPartCopy,
     #     'execute_multipart_partcopy_workload']

@@ -1,0 +1,335 @@
+test_1:
+  TEST_ID: TEST-37260
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_2:
+  TEST_ID: TEST-37261
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_3:
+  TEST_ID: TEST-37262
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_4:
+  TEST_ID: TEST-37263
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_5:
+  TEST_ID: TEST-37264
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_6:
+  TEST_ID: TEST-37265
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_7:
+  TEST_ID: TEST-37266
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_8:
+  TEST_ID: TEST-37267
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_9:
+  TEST_ID: TEST-37268
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_10:
+  TEST_ID: TEST-37269
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_11:
+  TEST_ID: TEST-37270
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
+
+test_12:
+  TEST_ID: TEST-37271
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  result_duration: 2m
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object_fix_size
