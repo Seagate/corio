@@ -190,7 +190,7 @@ def setup_environment():
     assert ret, "Error while Mounting NFS directory"
 
 
-def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed):
+def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str):
     """
     Log execution status into log file.
 
@@ -199,7 +199,9 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed)
     :param test_failed: Reason for failure is any
     """
     LOGGER.info("Logging current status to corio_status.log")
-    with open('corio_status.log', 'w') as status_file:
+    status_fpath = os.path.join(os.getcwd(), "reports",
+                                f"corio_status_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
+    with open(status_fpath, 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
         if test_failed == 'KeyboardInterrupt':
             status_file.write("\nTest Execution stopped due to Keyboard interrupt")
