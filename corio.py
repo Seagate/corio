@@ -39,13 +39,16 @@ import pandas as pd
 import schedule
 
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from scripts.s3.s3api import bucket_operations, object_operations, object_range_read_operations
+from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_operations
-from src.commons.constants import MOUNT_DIR
+from scripts.s3.s3api import object_operations
+from scripts.s3.s3api import object_range_read_operations
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
+from src.commons.constants import MOUNT_DIR
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server, mount_nfs_server
+from src.commons.utils.jira_utils import JiraApp
 
 LOGGER = logging.getLogger()
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -91,8 +94,7 @@ def parse_args():
                              "ERROR=40 " +
                              "WARNING=30 " +
                              "INFO=20 " +
-                             "DEBUG=10"
-                        )
+                             "DEBUG=10")
     parser.add_argument("-us", "--use_ssl", type=lambda x: bool(strtobool(str(x))), default=True,
                         help="Use HTTPS/SSL connection for S3 endpoint.")
     parser.add_argument("-sd", "--seed", type=int, help="seed.",
@@ -103,18 +105,21 @@ def parse_args():
                         help="fqdn/ip:port of s3 endpoint for io operations without http/https."
                              "protocol in endpoint is based on use_ssl flag.",
                         default="s3.seagate.com")
-    parser.add_argument("-nn", "--number_of_nodes", type=int, help="number of nodes in k8s system",
-                        default=1)
+    parser.add_argument("-nn", "--number_of_nodes", type=int,
+                        help="number of nodes in k8s system", default=1)
     parser.add_argument("-sb", "--support_bundle", type=lambda x: bool(strtobool(str(x))),
                         default=False, help="Capture Support bundle.")
     parser.add_argument("-hc", "--health_check", type=lambda x: bool(strtobool(str(x))),
                         default=False, help="Health Check.")
+    parser.add_argument("-tp", "--test_plan", type=str, default=None,
+                        help="jira xray test plan id")
     return parser.parse_args()
 
 
 async def create_session(funct: list, session: str, start_time: float, **kwargs) -> None:
     """
     Execute the test function in sessions.
+
     :param funct: List of class name and method name to be called
     :param session: session name
     :param start_time: Start time for session
@@ -129,7 +134,8 @@ async def create_session(funct: list, session: str, start_time: float, **kwargs)
 
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
-    Create and Schedule specified number of sessions for each test in test_plan
+    Create and Schedule specified number of sessions for each test in test_plan.
+
     :param test_plan: YAML file name for specific S3 operation
     :param test_plan_value: Parsed test_plan values
     :param common_params: Common arguments to be sent to function
@@ -159,7 +165,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
     """
-    Create event loop for each test plan
+    Create event loop for each test plan.
+
     :param test_plan: YAML file name for specific S3 operation
     :param test_plan_values: Parsed yaml file values
     :param common_params: Common arguments to be passed to function.
@@ -185,7 +192,8 @@ def setup_environment():
 
 def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed):
     """
-    Log execution status into log file
+    Log execution status into log file.
+
     :param parsed_input: Dict for all the input yaml files
     :param corio_start_time: Start time for main process
     :param test_failed: Reason for failure is any
@@ -230,7 +238,6 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed)
                         "START_TIME"] = f"Scheduled at {test_start_time.strftime(date_format)}"
                     input_dict["RESULT_UPDATE"] = "Not Triggered"
                     input_dict["TOTAL_TEST_EXECUTION"] = "NA"
-
                 dataframe = dataframe.append(input_dict, ignore_index=True)
             status_file.write(f"\n\nTEST YAML FILE : {key}")
             status_file.write(f'\n{dataframe}')
@@ -238,7 +245,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed)
 
 def terminate_processes(process_list):
     """
-    Terminate Process on failure
+    Terminate Process on failure.
+
     :param process_list: Terminate the given list of process
     """
     for process in process_list:
@@ -248,7 +256,8 @@ def terminate_processes(process_list):
 
 def convert_size(size_bytes):
     """
-    Convert size to KiB, MiB etc
+    Convert size to KiB, MiB etc.
+
     :param size_bytes: Size in bytes
     """
     if size_bytes == 0:
@@ -290,7 +299,8 @@ def health_check_process(interval):
 # pylint: disable-msg=too-many-branches,too-many-locals
 def main(options):
     """
-    Main function for CORIO
+    Main function for CORIO.
+
     :param options: Parsed Arguments
     """
     LOGGER.info("Setting up environment!!")
@@ -301,6 +311,13 @@ def main(options):
                       'endpoint_url': S3_CFG.endpoint,
                       'use_ssl': S3_CFG["use_ssl"],
                       'seed': options.seed}
+    tests_details = dict()
+    tests_to_execute = dict()
+    jira_obj = None
+    jira_flg = options.test_plan
+    if jira_flg:
+        jira_obj = JiraApp()
+        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan)
     if os.path.isdir(options.test_input):
         file_list = glob.glob(options.test_input + "/*")
     elif os.path.isfile(options.test_input):
@@ -311,7 +328,6 @@ def main(options):
     parsed_input = {}
     for each in file_list:
         parsed_input[each] = yaml_parser.test_parser(each, options.number_of_nodes)
-
     for _, value in parsed_input.items():
         for test_key, test_value in value.items():
             LOGGER.info("Test Values : %s", value)
@@ -319,10 +335,17 @@ def main(options):
                 test_value['operation'] = function_mapping[
                     test_value['operation']]
                 value[test_key] = test_value
-
+            if jira_flg:
+                if test_value["TEST_ID"] in tests_details:
+                    tests_to_execute[test_value["TEST_ID"]] = tests_details[test_value["TEST_ID"]]
+                    tests_to_execute[test_value["TEST_ID"]]['start_time'] = test_value['start_time']
+                    tests_to_execute[test_value["TEST_ID"]
+                                     ]['result_duration'] = test_value['result_duration']
     corio_start_time = datetime.now()
     LOGGER.info("Parsed input files : ")
     LOGGER.info(pformat(parsed_input))
+    LOGGER.info("List of tests to be executed..")
+    LOGGER.info(tests_to_execute)
     processes = {}
     for test_plan, test_plan_value in parsed_input.items():
         process = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
@@ -345,9 +368,13 @@ def main(options):
             process.start()
         terminate = False
         terminated_tp = None
+        test_ids = list()
         while True:
             time.sleep(1)
             schedule.run_pending()
+            if jira_flg:
+                jira_obj.update_jira_status(
+                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
             for key, process in processes.items():
                 if not process.is_alive():
                     if key == "support_bundle":
@@ -361,14 +388,22 @@ def main(options):
                                     process.pid, process.name)
                     terminate = True
                     terminated_tp = key
+                    test_ids = [td["TEST_ID"] for td in parsed_input[terminated_tp].values()]
             if terminate:
                 terminate_processes(processes.values())
                 log_status(parsed_input, corio_start_time, terminated_tp)
+                if jira_flg:
+                    jira_obj.update_jira_status(corio_start_time=corio_start_time,
+                                                tests_details=tests_to_execute, aborted=True,
+                                                terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
                 break
     except KeyboardInterrupt:
         terminate_processes(processes.values())
         log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
+        if jira_flg:
+            jira_obj.update_jira_status(corio_start_time=corio_start_time,
+                                        tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         # TODO: cleanup object files created
         sys.exit()

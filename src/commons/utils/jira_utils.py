@@ -35,9 +35,7 @@ from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 from requests.packages.urllib3.util.retry import Retry
 
-from src.commons.constants import ROOT
-
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(__name__)
 
 
 class JiraApp:
@@ -48,8 +46,9 @@ class JiraApp:
         self.auth = (self.get_jira_credential())
         self.headers = {'content-type': "application/json", 'accept': "application/json"}
         self.retry_strategy = Retry(
-            total=10, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504, 400, 404, 408],
-            method_whitelist=["HEAD", "GET", "OPTIONS"])
+            total=10, backoff_factor=2, status_forcelist=[
+                429, 500, 502, 503, 504, 400, 404, 408], method_whitelist=[
+                "HEAD", "GET", "OPTIONS"])
         self.adapter = HTTPAdapter(max_retries=self.retry_strategy)
         self.http = requests.Session()
         self.http.mount("https://", self.adapter)
@@ -86,7 +85,7 @@ class JiraApp:
             [{'id': 123270, 'status': 'PASS', 'key': 'TEST-19537', 'rank': 1},
             {'id': 184244, 'status': 'TODO', 'key': 'TEST-19526', 'rank': 2},]
         """
-        tests_info = []
+        tests_info = list()
         try:
             te_response = requests.get(f"{self.jira_base_url}api/testexec/{test_exe_id}/test",
                                        auth=self.auth)
@@ -104,7 +103,7 @@ class JiraApp:
                         except JIRAError as err:
                             LOGGER.error('Exception in GET tests details from te, error: %s', err)
                         else:
-                            page_cnt = page_cnt + 1 if data else 0
+                            page_cnt = 0 if len(data) == 0 else page_cnt + 1
                 else:
                     tests_info.extend(te_response.json())
         except (RequestException, ValueError, JIRAError) as err:
@@ -126,7 +125,8 @@ class JiraApp:
         "testIssues":{"success": [{"id":"328135","key":"TEST-19537",
         "self":"https://jts.seagate.com/rest/api/2/issue/328135"}]},"infoMessages":[]}
         """
-        state, status = {}, {}
+        state = dict()
+        status = dict()
         state["testExecutionKey"] = test_exe_id
         status["testKey"] = test_id
         if test_status.upper() == 'EXECUTING':
@@ -173,15 +173,15 @@ class JiraApp:
             LOGGER.exception("Error code: %s, error test: %s", err.status_code, err.text)
             return err
 
-    def get_all_tests_details_from_tp(self, tp_id: str, reset_status: bool = False) -> dict:
+    def get_all_tests_details_from_tp(self, tp_id: str) -> dict:
         """
         Get all tests execution details from test plan.
 
         :param tp_id: ID of the test plan.
-        :param reset_status: Reset jira status to 'TODO' to reuse existing TP.
         :return: Dictionary of tests from test execution ticket.
+
         """
-        tests_dict = {}
+        tests_dict = dict()
         te_details = self.get_te_details_from_test_plan(tp_id)
         for texe in te_details:
             tests_details = self.get_tests_details_from_te(texe['key'])
@@ -191,13 +191,6 @@ class JiraApp:
                                     f" TE '{texe['key']}'")
                 tests_dict[test['key']] = test
                 tests_dict[test['key']]["te"] = texe
-                if reset_status:
-                    # Reset jira test status to start new execution.
-                    if test["status"].upper() != "TODO":
-                        self.update_test_jira_status(test['te']['key'], test['key'], "TODO")
-                        LOGGER.debug("%s: status '%s' reset to '%s'", test['key'],
-                                     test['status'], 'TODO')
-                        test["status"] = "TODO"
         LOGGER.info(tests_dict)
 
         return tests_dict
@@ -215,7 +208,7 @@ class JiraApp:
         for test_id, test_data in tests_details.items():
             test_start_time = corio_start_time + test_data['start_time']
             if datetime.now() >= test_start_time:
-                if datetime.now() >= (test_start_time + test_data['min_runtime']):
+                if datetime.now() >= (test_start_time + test_data['result_duration']):
                     if test_data['status'] == "EXECUTING":
                         if aborted:
                             aborted_tests = terminated_tests if terminated_tests else []
@@ -230,7 +223,7 @@ class JiraApp:
                             LOGGER.info(resp)
                             resp = self.update_execution_details(
                                 test_data['id'], test_id,
-                                f"Execution completed after {test_data['min_runtime']}")
+                                f"Execution completed after {test_data['result_duration']}")
                             tests_details[test_id]['status'] = "PASS"
                             LOGGER.info(resp)
                 elif test_data['status'] == "TODO":
