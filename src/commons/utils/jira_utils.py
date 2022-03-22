@@ -41,10 +41,9 @@ LOGGER = logging.getLogger(__name__)
 class JiraApp:
     """JiraApp class for jira operations."""
 
-    def __init__(self):
+    def __init__(self, jira_user, jira_password):
         """Initialization for JiraApp."""
-        self.jira_user,  self.jira_password = self.get_jira_credential()
-        self.auth = (self.jira_user, self.jira_password)
+        self.auth = (jira_user, jira_password)
         self.headers = {'content-type': "application/json", 'accept': "application/json"}
         self.retry_strategy = Retry(
             total=10, backoff_factor=2, status_forcelist=[
@@ -71,7 +70,7 @@ class JiraApp:
         tp_response = requests.get(f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
                                    auth=self.auth)
         if tp_response.status_code != HTTPStatus.OK:
-            LOGGER.exception(f"Failed to get TE details: {test_plan_id}")
+            LOGGER.exception("Failed to get TE details: %s", test_plan_id)
             sys.exit(1)
 
         return tp_response.json()
@@ -101,13 +100,13 @@ class JiraApp:
                                                        auth=self.auth)
                             data = te_response.json()
                             tests_info.extend(data)
-                        except Exception as err:
+                        except JIRAError as err:
                             LOGGER.error('Exception in GET tests details from te, error: %s', err)
                         else:
                             page_cnt = 0 if len(data) == 0 else page_cnt + 1
                 else:
                     tests_info.extend(te_response.json())
-        except (RequestException, ValueError, Exception) as err:
+        except (RequestException, ValueError, JIRAError) as err:
             LOGGER.error('Request exception in get_test_details %s', err)
 
         return tests_info
@@ -171,7 +170,8 @@ class JiraApp:
 
             return comment_response.text
         except JIRAError as err:
-            LOGGER.error("Error code: %s, error test: %s", err.status_code, err.text)
+            LOGGER.exception("Error code: %s, error test: %s", err.status_code, err.text)
+            return err
 
     def get_all_tests_details_from_tp(self, tp_id: str) -> dict:
         """
@@ -183,14 +183,14 @@ class JiraApp:
         """
         tests_dict = dict()
         te_details = self.get_te_details_from_test_plan(tp_id)
-        for te in te_details:
-            tests_details = self.get_tests_details_from_te(te['key'])
+        for texe in te_details:
+            tests_details = self.get_tests_details_from_te(texe['key'])
             for test in tests_details:
                 if test['key'] in tests_dict:
-                    raise Exception("Duplicate test id '%s' found in TP '%s', TE '%s'", test['key'],
-                                    tp_id, te['key'])
+                    raise Exception(f"Duplicate test id '{test['key']}' found in TP '{tp_id}',"
+                                    f" TE '{texe['key']}'")
                 tests_dict[test['key']] = test
-                tests_dict[test['key']]["te"] = te
+                tests_dict[test['key']]["te"] = texe
         LOGGER.info(tests_dict)
 
         return tests_dict
@@ -206,41 +206,40 @@ class JiraApp:
         :param terminated_tests: Terminated tests from yaml file path.
         """
         for test_id, test_data in tests_details.items():
-            if "start_time" in test_data and "result_duration" in test_data:
-                test_start_time = corio_start_time + test_data['start_time']
-                if datetime.now() >= test_start_time:
-                    if datetime.now() >= (test_start_time + test_data['result_duration']):
-                        if test_data['status'] == "EXECUTING":
-                            if aborted:
-                                TE = terminated_tests if terminated_tests else []
-                                test_status = "FAILED" if test_id in TE else "ABORTED"
-                                resp = self.update_test_jira_status(
-                                    test_data['te']['key'], test_id, test_status)
-                                tests_details[test_id]['status'] = test_status
-                                LOGGER.info(resp)
-                            else:
-                                resp = self.update_test_jira_status(
-                                    test_data['te']['key'], test_id, "PASS")
-                                LOGGER.info(resp)
-                                resp = self.update_execution_details(
-                                    test_data['id'], test_id,
-                                    f"Execution completed after {test_data['result_duration']}")
-                                tests_details[test_id]['status'] = "PASS"
-                                LOGGER.info(resp)
-                    elif test_data['status'] == "TODO":
-                        resp = self.update_test_jira_status(
-                            test_data['te']['key'], test_id, "EXECUTING")
-                        tests_details[test_id]['status'] = "EXECUTING"
-                        LOGGER.info(resp)
-                    else:
+            test_start_time = corio_start_time + test_data['start_time']
+            if datetime.now() >= test_start_time:
+                if datetime.now() >= (test_start_time + test_data['result_duration']):
+                    if test_data['status'] == "EXECUTING":
                         if aborted:
-                            TE = terminated_tests if terminated_tests else []
-                            test_status = "FAIL" if test_id in TE else "ABORTED"
-                            if test_data['status'] == "EXECUTING":
-                                resp = self.update_test_jira_status(
-                                    test_data['te']['key'], test_id, test_status)
-                                tests_details[test_id]['status'] = test_status
-                                LOGGER.info(resp)
+                            aborted_tests = terminated_tests if terminated_tests else []
+                            test_status = "FAILED" if test_id in aborted_tests else "ABORTED"
+                            resp = self.update_test_jira_status(
+                                test_data['te']['key'], test_id, test_status)
+                            tests_details[test_id]['status'] = test_status
+                            LOGGER.info(resp)
+                        else:
+                            resp = self.update_test_jira_status(
+                                test_data['te']['key'], test_id, "PASS")
+                            LOGGER.info(resp)
+                            resp = self.update_execution_details(
+                                test_data['id'], test_id,
+                                f"Execution completed after {test_data['result_duration']}")
+                            tests_details[test_id]['status'] = "PASS"
+                            LOGGER.info(resp)
+                elif test_data['status'] == "TODO":
+                    resp = self.update_test_jira_status(
+                        test_data['te']['key'], test_id, "EXECUTING")
+                    tests_details[test_id]['status'] = "EXECUTING"
+                    LOGGER.info(resp)
+                else:
+                    if aborted:
+                        aborted_tests = terminated_tests if terminated_tests else []
+                        test_status = "FAIL" if test_id in aborted_tests else "ABORTED"
+                        if test_data['status'] == "EXECUTING":
+                            resp = self.update_test_jira_status(
+                                test_data['te']['key'], test_id, test_status)
+                            tests_details[test_id]['status'] = test_status
+                            LOGGER.info(resp)
 
     @staticmethod
     def get_jira_credential() -> tuple:

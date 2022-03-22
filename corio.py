@@ -316,7 +316,8 @@ def main(options):
     jira_obj = None
     jira_flg = options.test_plan
     if jira_flg:
-        jira_obj = JiraApp()
+        jira_id, jira_password = JiraApp.get_jira_credential()
+        jira_obj = JiraApp(jira_id, jira_password)
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan)
     if os.path.isdir(options.test_input):
         file_list = glob.glob(options.test_input + "/*")
