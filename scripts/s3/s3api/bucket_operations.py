@@ -16,6 +16,7 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 """S3 bucket operation workload for io stability."""
+
 import logging
 import os
 import random
@@ -53,33 +54,36 @@ class TestBucketOps(S3Object, S3Bucket):
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.duration = duration
         self.object_size = object_size
         self.test_id = test_id
         self.min_duration = 10  # In seconds
-        self.finish_time = datetime.now() + duration \
-            if duration else datetime.now() + timedelta(hours=int(100 * 24))
         self.object_per_iter = 500
         self.iteration = 1
+        if duration:
+            self.finish_time = datetime.now() + duration
+        else:
+            self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
         while True:
-            LOGGER.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
-                if not isinstance(self.object_size, dict):
-                    file_size = self.object_size
-                else:
+                if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
+                else:
+                    file_size = self.object_size
                 bucket_name = f'bucket-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
                 LOGGER.info("Create bucket %s", bucket_name)
                 await self.create_bucket(bucket_name)
                 LOGGER.info("Upload %s objects to bucket %s", self.object_per_iter, bucket_name)
                 for _ in range(0, self.object_per_iter):
                     file_name = f'object-bucket-op-{time.perf_counter_ns()}'
-                    with open(file_name, 'wb') as fout:
-                        fout.write(os.urandom(file_size))
+                    LOGGER.info("Object '%s', object size %s Kib", file_name, file_size / 1024)
+                    with open(file_name, 'wb') as f_out:
+                        f_out.write(os.urandom(file_size))
                     await self.upload_object(bucket_name, file_name, file_path=file_name)
+                    LOGGER.info("'s3://%s/%s' uploaded successfully.", bucket_name, file_name)
                     LOGGER.info("Delete generated file")
                     os.remove(file_name)
                 LOGGER.info("List all buckets")
@@ -97,5 +101,5 @@ class TestBucketOps(S3Object, S3Bucket):
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
                 return True, "Bucket operation execution completed successfully."
-            LOGGER.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1

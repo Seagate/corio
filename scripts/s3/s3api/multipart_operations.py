@@ -58,29 +58,35 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.duration = duration
         self.object_size = object_size
         self.part_range = part_range
         self.part_copy = part_copy
         self.range_read = range_read
         self.iteration = 1
         self.min_duration = 10  # In seconds
-        self.test_id = test_id.lower() if test_id else str(random.randrange(24, 240))
-        self.finish_time = datetime.now() + duration if duration else datetime.now() + \
-            timedelta(hours=int(100 * 24))
+        if test_id:
+            self.test_id = test_id.lower()
+        else:  # If test_id missing then generate random number for execution.
+            self.test_id = str(random.randrange(24, 240))
+        if duration:
+            self.finish_time = datetime.now() + duration
+        else:  # If duration not given then test will run for 100 Day
+            self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
         mpart_bucket = "s3mpart-bkt-{}-{}".format(self.test_id, perf_counter_ns())
         await self.create_bucket(mpart_bucket)
         while True:
-            LOGGER.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
                 LOGGER.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = "s3mpart-obj-{}-{}".format(self.test_id, perf_counter_ns())
                 LOGGER.info("Object name: %s", s3mpart_object)
-                file_size = random.randrange(self.object_size["start"], self.object_size["end"]) \
-                    if isinstance(self.object_size, dict) else self.object_size
+                if isinstance(self.object_size, dict):
+                    file_size = random.randrange(self.object_size["start"], self.object_size["end"])
+                else:
+                    file_size = self.object_size
                 LOGGER.info("File size: %s GiB", (file_size / (1024 ** 3)))
                 number_of_parts = random.randrange(self.part_range["start"], self.part_range["end"])
                 LOGGER.info("Number of parts: %s", number_of_parts)
@@ -119,6 +125,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 assert response, f"Failed to list multipart uploads: {response}"
                 response = await self.complete_multipart_upload(
                     mpu_id, parts, mpart_bucket, s3mpart_object)
+                LOGGER.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
                 assert response, f"Failed to completed multi parts: {response}"
                 response = await self.head_object(mpart_bucket, s3mpart_object)
                 assert response, f"Failed to do head object on {s3mpart_object}"
@@ -147,5 +154,5 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
             if timedelta_sec < self.min_duration:
                 await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
-            LOGGER.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1
