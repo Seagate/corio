@@ -46,7 +46,6 @@ class TestS3Object(S3Bucket, S3Object):
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.duration = duration
         self.start_object_size = object_size["start"]
         self.end_object_size = object_size["end"]
         self.test_id = test_id
@@ -63,7 +62,7 @@ class TestS3Object(S3Bucket, S3Object):
         LOGGER.info("Create bucket %s", bucket)
         await self.create_bucket(bucket)
         while True:
-            LOGGER.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
                 file_size = random.randrange(self.start_object_size, self.end_object_size)
                 file_name = f'object-bucket-op-{time.perf_counter_ns()}'
@@ -72,8 +71,8 @@ class TestS3Object(S3Bucket, S3Object):
                 checksum_in = self.checksum_file(file_name)
                 LOGGER.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_name)
-                LOGGER.info("Uploaded s3://%s/%s", bucket, file_name)
-                LOGGER.info("Perform Head bucket")
+                LOGGER.info("'s3://%s/%s' uploaded successfully.", bucket, file_name)
+                LOGGER.info("Perform Head bucket.")
                 await self.head_object(bucket, file_name)
                 LOGGER.info("Get Object")
                 checksum_out = await self.get_s3object_checksum(bucket, file_name)
@@ -90,5 +89,5 @@ class TestS3Object(S3Bucket, S3Object):
             if timedelta_sec < self.min_duration:
                 await self.delete_bucket(bucket, True)
                 return True, "Multipart execution completed successfully."
-            LOGGER.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1

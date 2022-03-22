@@ -29,7 +29,7 @@ from botocore.exceptions import ClientError
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
-logger = logging.getLogger(__name__)
+LOGGER = logging.getLogger(__name__)
 
 
 # pylint: disable=too-few-public-methods, too-many-statements
@@ -53,7 +53,6 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.duration = duration
         self.object_size = object_size
         self.test_id = test_id
         self.iteration = 1
@@ -72,23 +71,27 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         object1 = f"object-1-{self.test_id}-{time.perf_counter_ns()}".lower()
         object2 = f"object-2-{self.test_id}-{time.perf_counter_ns()}".lower()
         await self.create_bucket(bucket1)
-        logger.info("Created bucket %s", bucket1)
+        LOGGER.info("Created bucket %s", bucket1)
         await self.create_bucket(bucket2)
-        logger.info("Created bucket %s", bucket2)
+        LOGGER.info("Created bucket %s", bucket2)
         while True:
-            logger.info("Iteration %s is started...", self.iteration)
+            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
                 # Put object in bucket1
-                if not isinstance(self.object_size, dict):
-                    file_size = self.object_size
-                else:
+                if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
-                with open(object1, 'wb') as fout:
-                    fout.write(os.urandom(file_size))
+                else:
+                    file_size = self.object_size
+                with open(object1, 'wb') as f_out:
+                    f_out.write(os.urandom(file_size))
+                LOGGER.info("Object1 '%s', object size %s Kib", object1, file_size / 1024)
                 await self.upload_object(bucket1, object1, file_path=object1)
+                LOGGER.info("Objects 's3://%s/%s' uploaded successfully.", object1, bucket1)
                 ret1 = await self.head_object(bucket1, object1)
-                # copy object from bucket-1 to bucket-2 in same account
                 await self.copy_object(bucket1, object1, bucket2, object2)
+                LOGGER.info(
+                    "Copied object 's3://%s/%s' to s3://%s/%s in same account successfully.",
+                    bucket1, object1, bucket1, bucket2)
                 ret2 = await self.head_object(bucket2, object2)
                 assert ret1["ETag"] == ret2["ETag"], \
                     f"etag of original object ({ret1['ETag']})\netag of copied object " \
@@ -97,10 +100,11 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                     if not isinstance(self.range_read, dict):
                         range_read = self.range_read
                     else:
-                        range_read = random.randrange(self.range_read["start"],
-                                                      self.range_read["end"])
-                    logger.info("Get object using suggested range read '%s'.", range_read)
+                        range_read = random.randrange(
+                            self.range_read["start"], self.range_read["end"])
+                    LOGGER.info("Get object using suggested range read '%s'.", range_read)
                     offset = random.randrange(file_size - range_read)
+                    LOGGER.info("Reading chunk bytes=%s-%s", offset, range_read + offset)
                     checksum1 = await self.get_s3object_checksum(
                         bucket=bucket1, key=object1, ranges=f'bytes={offset}-{range_read + offset}')
                     checksum2 = await self.get_s3object_checksum(
@@ -109,21 +113,21 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                         f"SHA256 of original range ({checksum1})\nSHA256 of copied range " \
                         f"({checksum2}) are not matching"
                 else:
-                    # Download source and destination object and compare checksum
+                    LOGGER.info("Download source and destination object and compare checksum.")
                     checksum1 = await self.get_s3object_checksum(bucket1, object1)
                     checksum2 = await self.get_s3object_checksum(bucket2, object2)
                     assert checksum1 == checksum2, \
                         f"SHA256 of original range ({checksum1})\nSHA256 of copied range " \
                         f"({checksum2}) are not matching"
-                # Delete source object from bucket-1
+                LOGGER.info("Delete source object from bucket-1.")
                 await self.delete_object(bucket1, object1)
-                # List destination object from bucket-2
+                LOGGER.info("List destination object from bucket-2.")
                 await self.head_object(bucket2, object2)
-                # Delete destination object from bucket-2
+                LOGGER.info("Delete destination object from bucket-2.")
                 await self.delete_object(bucket2, object2)
                 os.remove(object1)
             except (ClientError, IOError, AssertionError) as err:
-                logger.exception(err)
+                LOGGER.exception(err)
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
@@ -131,5 +135,5 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 await self.delete_bucket(bucket1, True)
                 await self.delete_bucket(bucket2, True)
                 return True, "Copy Object execution completed successfully."
-            logger.info("Iteration %s is completed...", self.iteration)
+            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1
