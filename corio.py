@@ -220,12 +220,13 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
             for key1, value1 in value.items():
                 input_dict = {"TEST_NO": key1,
                               "TEST_ID": value1['TEST_ID'],
-                              "OBJECT_SIZE_START": convert_size(
-                                  value1['object_size']['start']),
-                              "OBJECT_SIZE_END": convert_size(
-                                  value1['object_size']['end']),
-                              "SESSIONS": int(value1['sessions']),
-                              }
+                              "SESSIONS": int(value1['sessions'])}
+                if isinstance(value1['object_size'], list):
+                    input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value1['object_size']]
+                else:
+                    input_dict.update({
+                              "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
+                              "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
                 test_start_time = corio_start_time + value1['start_time']
                 if datetime.now() > test_start_time:
                     input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
