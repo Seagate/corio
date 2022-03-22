@@ -44,10 +44,12 @@ from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
 from scripts.s3.s3api import object_range_read_operations
+from src.commons.utils.corio_utils import cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
 from src.commons.constants import MOUNT_DIR
-from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server, mount_nfs_server
+from src.commons.utils.cluster_services import mount_nfs_server
+from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 
 LOGGER = logging.getLogger()
@@ -198,9 +200,9 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
     :param corio_start_time: Start time for main process
     :param test_failed: Reason for failure is any
     """
-    LOGGER.info("Logging current status to corio_status.log")
-    status_fpath = os.path.join(os.getcwd(), "reports",
-                                f"corio_status_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
+    status_fpath = os.path.join(
+        os.getcwd(), "reports", f"corio_status_{datetime.now().strftime('%d_%m_%Y_%H_%M_%S')}.log")
+    LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
         if test_failed == 'KeyboardInterrupt':
@@ -209,9 +211,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
             status_file.write('\nTest Execution still in progress')
         else:
             status_file.write(f'\nTest Execution terminated due to error in {test_failed}')
-
         status_file.write(f'\nTotal Execution Duration : {datetime.now() - corio_start_time}')
-
         status_file.write("\nTestWise Execution Details:")
         date_format = '%Y-%m-%d %H:%M:%S'
         for key, value in parsed_input.items():
@@ -307,7 +307,6 @@ def main(options):
     """
     LOGGER.info("Setting up environment!!")
     setup_environment()
-
     commons_params = {'access_key': S3_CFG.access_key,
                       'secret_key': S3_CFG.secret_key,
                       'endpoint_url': S3_CFG.endpoint,
@@ -412,6 +411,7 @@ def main(options):
 
 
 if __name__ == '__main__':
+    cleanup()
     opts = parse_args()
     log_level = logging.getLevelName(opts.logging_level)
     initialize_loghandler(level=log_level)
