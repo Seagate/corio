@@ -41,9 +41,9 @@ LOGGER = logging.getLogger(__name__)
 class JiraApp:
     """JiraApp class for jira operations."""
 
-    def __init__(self, jira_user, jira_password):
+    def __init__(self):
         """Initialization for JiraApp."""
-        self.auth = (jira_user, jira_password)
+        self.auth = (self.get_jira_credential())
         self.headers = {'content-type': "application/json", 'accept': "application/json"}
         self.retry_strategy = Retry(
             total=10, backoff_factor=2, status_forcelist=[
@@ -140,13 +140,13 @@ class JiraApp:
         status_response = requests.request("POST", f"{self.jira_base_url}import/execution",
                                            data=data, auth=self.auth, headers=self.headers,
                                            params=None)
+        if status_response.status_code == HTTPStatus.OK:
+            LOGGER.info("Test '%s' status updated successfully to %s", test_id, test_status)
+            return status_response.json()
         test_issue = status_response.json().get("testIssues", None)
         if test_issue:
             if not test_issue.get("success", None):
                 LOGGER.error("Failed to update test '%s' status.", test_id)
-        if status_response.status_code == HTTPStatus.OK:
-            LOGGER.info("Test '%s' status updated successfully to %s", test_id, test_status)
-            return status_response.json()
 
         return status_response.text
 
