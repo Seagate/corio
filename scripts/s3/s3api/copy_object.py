@@ -78,7 +78,11 @@ class TestS3CopyObjects(S3Object, S3Bucket):
             LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
                 # Put object in bucket1
-                if isinstance(self.object_size, dict):
+                if isinstance(self.object_size, list):
+                    file_size = self.object_size[random.randrange(0, len(self.object_size))]
+                elif isinstance(self.object_size, int):
+                    file_size = self.object_size
+                else:
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
