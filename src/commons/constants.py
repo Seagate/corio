@@ -27,7 +27,12 @@ import os
 SCRIPT_HOME = os.getcwd()  # Fetches you CWD of the runner.
 CONFIG_DIR = 'config'
 
-SETUP_CONFIG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
+CLUSTER_CFG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
 S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
 CORIO_CFG_PATH = os.path.join(CONFIG_DIR, "corio_config.yaml")
 S3_TOOL_PATH = os.path.join(CONFIG_DIR, 's3', "s3_tools.yaml")
+MOUNT_DIR = os.path.join("/root", "nfs_share")
+
+K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
+CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
+CMD_MOUNT = "mount -t nfs {} {}"
