@@ -78,7 +78,7 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
                     file_size = system_random.randrange(
                         self.object_size["start"], self.object_size["end"])
                 else:
-                    file_size =  self.object_size
+                    file_size = self.object_size
                 LOGGER.info("object size: %s MB", file_size / (1000 * 2))
                 if isinstance(self.range_read, dict):
                     range_read = system_random.randrange(
@@ -135,7 +135,7 @@ class TestObjectRangeReadOps(S3Object, S3Bucket):
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
-                LOGGER.info("Delete all objects of bucket %s", bucket_name)
+                LOGGER.info("Delete bucket %s with all objects in it.", bucket_name)
                 await self.delete_bucket(bucket_name, True)
                 return True, "Bucket operation execution completed successfully."
             LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
