@@ -82,6 +82,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
             try:
                 LOGGER.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = "s3mpart-obj-{}-{}".format(self.test_id, perf_counter_ns())
+                s3_object = "s3-obj-{}-{}".format(self.test_id, perf_counter_ns())
                 LOGGER.info("Object name: %s", s3mpart_object)
                 if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
@@ -102,7 +103,6 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 for i in range(1, number_of_parts + 1):
                     byte_s = os.urandom(single_part_size)
                     if self.part_copy and i == random_part:
-                        s3_object = "s3-obj-{}-{}".format(self.test_id, perf_counter_ns())
                         resp = await self.upload_object(body=byte_s, bucket=mpart_bucket,
                                                         key=s3_object)
                         assert resp["ETag"] is not None, f"Failed upload object: {resp}"
@@ -110,6 +110,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                                                            mpart_bucket, s3_object, part_number=i,
                                                            upload_id=mpu_id)
                         parts.append({"PartNumber": i, "ETag": resp[1]["CopyPartResult"]["ETag"]})
+                        object_list = await self.list_objects(mpart_bucket)
+                        assert s3_object in object_list, f"Failed to upload object {s3_object}"
                     else:
                         response = await self.upload_part(byte_s, mpart_bucket,
                                                           s3mpart_object, upload_id=mpu_id,
@@ -126,6 +128,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 response = await self.complete_multipart_upload(
                     mpu_id, parts, mpart_bucket, s3mpart_object)
                 LOGGER.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
+                all_object = await self.list_objects(mpart_bucket)
+                assert s3mpart_object in all_object, f"Failed to upload object {s3mpart_object}"
                 assert response, f"Failed to completed multi parts: {response}"
                 response = await self.head_object(mpart_bucket, s3mpart_object)
                 assert response, f"Failed to do head object on {s3mpart_object}"
@@ -144,14 +148,17 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                                                  key=s3mpart_object,
                                                  ranges=f"bytes={self.range_read['start']}"
                                                         f"-{self.range_read['end']}")
-                    assert resp['Body'].read() is not None, f"Failed to read bytes " \
-                                                            f"{self.range_read} from " \
-                                                            f"s3://{mpart_bucket}/{s3mpart_object}"
+                    assert resp['Body'].read(), f"Failed to read bytes {self.range_read} from " \
+                        f"s3://{mpart_bucket}/{s3mpart_object}"
+                if self.part_copy:
+                    await self.delete_object(mpart_bucket, s3_object)
+                await self.delete_object(mpart_bucket, s3mpart_object)
             except Exception as err:
                 LOGGER.exception(err)
                 raise err
             timedelta_sec = (self.finish_time - datetime.now()).total_seconds()
             if timedelta_sec < self.min_duration:
+                LOGGER.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
             LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
