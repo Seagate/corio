@@ -1,7 +1,7 @@
 test_1:
   TEST_ID: TEST-36564
   object_size:
-    start: 0Kb
+    start: 300b
     end: 100Kb
   result_duration: 2h
   sessions_per_node: 1
