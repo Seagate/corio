@@ -80,9 +80,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 # Put object in bucket1
                 if isinstance(self.object_size, list):
                     file_size = self.object_size[random.randrange(0, len(self.object_size))]
-                elif isinstance(self.object_size, int):
-                    file_size = self.object_size
-                else:
+                elif isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
@@ -136,8 +134,9 @@ class TestS3CopyObjects(S3Object, S3Bucket):
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
-                await self.delete_bucket(bucket1, True)
-                await self.delete_bucket(bucket2, True)
+                for bucket in [bucket1, bucket2]:
+                    LOGGER.info("Delete bucket %s with all objects in it.", bucket)
+                    await self.delete_bucket(bucket, True)
                 return True, "Copy Object execution completed successfully."
             LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
             self.iteration += 1

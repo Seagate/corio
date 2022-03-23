@@ -92,7 +92,7 @@ class TestBucketOps(S3Object, S3Bucket):
                 await self.list_objects(bucket_name)
                 LOGGER.info("Perform Head bucket")
                 await self.head_bucket(bucket_name)
-                LOGGER.info("Delete all objects of bucket %s", bucket_name)
+                LOGGER.info("Delete bucket %s with all objects in it.", bucket_name)
                 await self.delete_bucket(bucket_name, True)
             except (ClientError, IOError, AssertionError) as err:
                 LOGGER.exception(err)
