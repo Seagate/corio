@@ -87,6 +87,7 @@ class TestS3Object(S3Bucket, S3Object):
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
+                LOGGER.info("Delete bucket %s with all objects in it.", bucket)
                 await self.delete_bucket(bucket, True)
                 return True, "Multipart execution completed successfully."
             LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)

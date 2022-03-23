@@ -150,12 +150,8 @@ class S3Object(S3RestApi):
                         file_obj.write(chunk)
                     chunk = await stream.read(chunk_size)
         if os.path.exists(file_path):
-            LOGGER.info(
-                "download_object s3://%s/%s Path: %s Response %s",
-                bucket,
-                key,
-                file_path,
-                response)
+            LOGGER.info("download_object s3://%s/%s Path: %s Response %s", bucket, key, file_path,
+                        response)
 
         return response
 
@@ -174,8 +170,8 @@ class S3Object(S3RestApi):
             response = await s3client.copy_object(Bucket=des_bucket,
                                                   CopySource=f'/{src_bucket}/{src_key}',
                                                   Key=des_key, **kwargs)
-            LOGGER.info("copy_object s3://%s/%s to s3://%s/%s Response %s",
-                        src_bucket, src_key, des_bucket, des_key, response)
+            LOGGER.info("copy_object s3://%s/%s to s3://%s/%s Response %s", src_bucket, src_key,
+                        des_bucket, des_key, response)
 
         return response
 
@@ -201,8 +197,7 @@ class S3Object(S3RestApi):
                     file_hash.update(chunk)
                     chunk = await stream.read(chunk_size)
         sha256_digest = file_hash.hexdigest()
-        LOGGER.info("%s s3://%s/%s SHA-256 %s", S3Object.get_s3object_checksum.__name__, bucket,
-                    key, sha256_digest)
+        LOGGER.info("get_s3object_checksum s3://%s/%s, SHA-256: %s", bucket, key, sha256_digest)
 
         return sha256_digest
 
@@ -247,8 +242,8 @@ class S3Object(S3RestApi):
             f_obj.seek(offset)
             while read_length:
                 current_read_length = chunk_size if read_length >= chunk_size else read_length
-                LOGGER.debug("Reading %s from starting offset %s", current_read_length,
-                             f_obj.tell())
+                LOGGER.info("Reading %s from starting offset %s", current_read_length,
+                            f_obj.tell())
                 content = f_obj.read(current_read_length)
                 file_hash.update(content)
                 read_length -= len(content)
