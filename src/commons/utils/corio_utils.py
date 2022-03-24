@@ -70,15 +70,14 @@ def log_cleanup():
         os.makedirs(reports_dir)
 
 def cpu_memory_details():
-    """ cpu and memory usage.
-    """
+    """cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
-    LOGGER.debug("Real Time CPU usage:", cpu_usages)
+    LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
     if cpu_usages > 80.0:
-        LOGGER.info("CPU Usages are:", cpu_usages)
+        LOGGER.info("CPU Usages are: %s", cpu_usages)
     memory_usages = ps.virtual_memory().percent
-    LOGGER.debug("Real Time memory usages are: ", memory_usages)
+    LOGGER.debug("Real Time memory usages are: %s", memory_usages)
     if memory_usages > 80.0:
-        LOGGER.info("MEMORY Usages are:", memory_usages)
+        LOGGER.info("Memory Usages are: %s", memory_usages)
         available_memory = (ps.virtual_memory().available * 100)/ ps.virtual_memory().total
-        LOGGER.info("AVAILABE MEMORY is: ", available_memory)
+        LOGGER.info("Available Memory is: %s", available_memory)
