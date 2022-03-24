@@ -69,7 +69,7 @@ def log_cleanup():
     else:
         os.makedirs(reports_dir)
 
-def cpu_memory_details(self):
+def cpu_memory_details():
     """ cpu and memory usage.
     """
     cpu_usages = ps.cpu_percent()
