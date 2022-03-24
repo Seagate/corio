@@ -52,6 +52,7 @@ from src.commons.constants import MOUNT_DIR
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
+from src.commons.utils.corio_utils import cpu_memory_details
 
 LOGGER = logging.getLogger()
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -385,6 +386,7 @@ def main(options):
         terminated_tp = None
         test_ids = list()
         while True:
+            cpu_memory_details()
             time.sleep(1)
             schedule.run_pending()
             if jira_flg:

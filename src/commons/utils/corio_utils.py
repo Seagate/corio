@@ -24,6 +24,7 @@
 import os
 import logging
 import glob
+import psutil as ps
 from datetime import datetime
 
 LOGGER = logging.getLogger(__name__)
@@ -67,3 +68,17 @@ def log_cleanup():
             LOGGER.info("Backup directory: %s", now_dir)
     else:
         os.makedirs(reports_dir)
+
+def cpu_memory_details(self):
+    """ cpu and memory usage.
+    """
+    cpu_usages = ps.cpu_percent()
+    LOGGER.debug("Real Time CPU usage:", cpu_usages)
+    if cpu_usages > 80.0:
+        LOGGER.info("CPU Usages are:", cpu_usages)
+    memory_usages = ps.virtual_memory().percent
+    LOGGER.debug("Real Time memory usages are: ", memory_usages)
+    if memory_usages > 80.0:
+        LOGGER.info("MEMORY Usages are:", memory_usages)
+        available_memory = (ps.virtual_memory().available * 100)/ ps.virtual_memory().total
+        LOGGER.info("AVAILABE MEMORY is: ", available_memory)
