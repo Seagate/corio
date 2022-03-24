@@ -377,7 +377,7 @@ def main(options):
         process = multiprocessing.Process(target=health_check_process, name="health_check",
                                           args=(CORIO_CFG['hc_interval_mins'] * 60,))
         processes["health_check"] = process
-    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
+    sched_job = schedule.every(1).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
     try:
         for process in processes.values():
