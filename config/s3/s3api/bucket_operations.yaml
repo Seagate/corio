@@ -3,7 +3,7 @@ test_1:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1h
+  result_duration: 1m
   sessions_per_node: 1
   tool: s3api
   operation: bucket
@@ -13,7 +13,7 @@ test_2:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 4h
+  result_duration: 1m
   sessions_per_node: 2
   tool: s3api
   operation: bucket
@@ -23,7 +23,7 @@ test_3:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1d
+  result_duration: 1m
   sessions_per_node: 3
   tool: s3api
   operation: bucket
@@ -33,7 +33,7 @@ test_4:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 2d
+  result_duration: 1m
   sessions_per_node: 5
   tool: s3api
   operation: bucket
@@ -43,7 +43,7 @@ test_5:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 3d
+  result_duration: 1m
   sessions_per_node: 8
   tool: s3api
   operation: bucket
@@ -53,7 +53,7 @@ test_6:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 5d
+  result_duration: 1m
   sessions_per_node: 13
   tool: s3api
   operation: bucket
@@ -63,7 +63,7 @@ test_7:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 7d
+  result_duration: 1m
   sessions_per_node: 21
   tool: s3api
   operation: bucket
@@ -73,7 +73,7 @@ test_8:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 15d
+  result_duration: 1m
   sessions_per_node: 34
   tool: s3api
   operation: bucket
@@ -83,7 +83,7 @@ test_9:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 20d
+  result_duration: 1m
   sessions_per_node: 55
   tool: s3api
   operation: bucket
@@ -93,7 +93,7 @@ test_10:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 25d
+  result_duration: 1m
   sessions_per_node: 89
   tool: s3api
   operation: bucket
@@ -103,7 +103,7 @@ test_11:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 30d
+  result_duration: 1m
   sessions_per_node: 144
   tool: s3api
   operation: bucket
@@ -113,7 +113,7 @@ test_12:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 40d
+  result_duration: 1m
   sessions_per_node: 233
   tool: s3api
   operation: bucket
