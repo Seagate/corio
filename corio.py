@@ -34,6 +34,7 @@ import time
 from datetime import datetime
 from distutils.util import strtobool
 from pprint import pformat
+from collections import Counter
 
 import pandas as pd
 import schedule
@@ -331,8 +332,10 @@ def main(options):
     parsed_input = {}
     for each in file_list:
         parsed_input[each] = yaml_parser.test_parser(each, options.number_of_nodes)
+    test_ids, missing_jira_ids = list(), list()
     for _, value in parsed_input.items():
         for test_key, test_value in value.items():
+            test_ids.append(test_value["TEST_ID"])
             LOGGER.info("Test Values : %s", value)
             if 'operation' in test_value.keys():
                 test_value['operation'] = function_mapping[
@@ -341,9 +344,18 @@ def main(options):
             if jira_flg:
                 if test_value["TEST_ID"] in tests_details:
                     tests_to_execute[test_value["TEST_ID"]] = tests_details[test_value["TEST_ID"]]
-                    tests_to_execute[test_value["TEST_ID"]]['start_time'] = test_value['start_time']
-                    tests_to_execute[test_value["TEST_ID"]
-                                     ]['result_duration'] = test_value['result_duration']
+                    tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value["start_time"]
+                    tests_to_execute[test_value["TEST_ID"]]["result_duration"] = test_value[
+                        "result_duration"]
+                else:
+                    missing_jira_ids.append(test_value["TEST_ID"])
+    # Check and report duplicate test ids from workload.
+    duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
+    assert (not duplicate_ids),  f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
+    if jira_flg:
+        # If jira update selected then will report missing workload test ids from jira TP.
+        assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
+                                       f"which are missing from jira tp: {options.test_plan}"
     corio_start_time = datetime.now()
     LOGGER.info("Parsed input files : ")
     LOGGER.info(pformat(parsed_input))
