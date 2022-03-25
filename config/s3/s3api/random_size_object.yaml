@@ -29,7 +29,7 @@ test_3:
   operation: object_random_size
 
 test_4:
-  TEST_ID: TEST-35681
+  TEST_ID: TEST-35739
   object_size:
     start: 10Mib
     end: 20Mib
