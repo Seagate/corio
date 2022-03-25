@@ -1,25 +1,25 @@
 test_1:
-  TEST_ID: TEST-35678
+  TEST_ID: TEST-35736
   object_size:
     start : 0Kib
     end : 100Kib
-  result_duration: 1h
+  result_duration: 2h
   sessions_per_node: 1
   tool: s3api
   operation: object_random_size
 
 test_2:
-  TEST_ID: TEST-35679
+  TEST_ID: TEST-35737
   object_size:
     start: 100Kib
     end: 1Mib
-  result_duration: 4h
+  result_duration: 2h
   sessions_per_node: 2
   tool: s3api
   operation: object_random_size
 
 test_3:
-  TEST_ID: TEST-35680
+  TEST_ID: 35738
   object_size:
     start: 1Mib
     end: 10Mib
@@ -39,51 +39,81 @@ test_4:
   operation: object_random_size
 
 test_5:
-  TEST_ID: TEST-35682
+  TEST_ID: TEST-35740
   object_size:
     start: 20Mib
-    end: 100Mib
+    end: 50Mib
   result_duration: 1d
   sessions_per_node: 8
   tool: s3api
   operation: object_random_size
 
 test_6:
-  TEST_ID: TEST-35683
+  TEST_ID: TEST-35741
   object_size:
-    start: 100Mib
-    end: 500Mib
+    start: 50Mib
+    end: 100Mib
   result_duration: 2d
   sessions_per_node: 13
   tool: s3api
   operation: object_random_size
 
 test_7:
-  TEST_ID: TEST-35684
+  TEST_ID: TEST-35742
   object_size:
-    start: 500Mib
-    end: 1Gib
+    start: 100Mib
+    end: 250Mib
   result_duration: 2d
   sessions_per_node: 21
   tool: s3api
   operation: object_random_size
 
 test_8:
-  TEST_ID: TEST-35685
+  TEST_ID: TEST-35743
   object_size:
-    start: 1Gib
-    end: 2Gib
+    start: 250Mib
+    end: 500Mib
   result_duration: 4d
   sessions_per_node: 34
   tool: s3api
   operation: object_random_size
 
 test_9:
-  TEST_ID: TEST-35686
+  TEST_ID: TEST-35744
+  object_size:
+    start: 500Mib
+    end: 750Mib
+  result_duration: 5d
+  sessions_per_node: 55
+  tool: s3api
+  operation: object_random_size
+
+test_10:
+  TEST_ID: TEST-35745
+  object_size:
+    start: 750Mib
+    end: 1Gib
+  result_duration: 5d
+  sessions_per_node: 89
+  tool: s3api
+  operation: object_random_size
+
+test_11:
+  TEST_ID: TEST-35746
+  object_size:
+    start: 1Gib
+    end: 2Gib
+  result_duration: 5d
+  sessions_per_node: 144
+  tool: s3api
+  operation: object_random_size
+
+test_12:
+  TEST_ID: TEST-35747
   object_size:
     start: 2Gib
     end: 5Gib
   result_duration: 5d
-  sessions_per_node: 55
+  sessions_per_node: 233
   tool: s3api
   operation: object_random_size

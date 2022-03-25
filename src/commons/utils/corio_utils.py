@@ -90,7 +90,7 @@ def cpu_memory_details():
         top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > corio/reports/topreport.txt")
         LOGGER.info(top_processes)
 
-def run_local_cmd(cmd: str = None) -> tuple:
+def run_local_cmd(cmd: str) -> tuple:
     """
     Execute any given command on local machine(Windows, Linux).
     :param cmd: command to be executed.
