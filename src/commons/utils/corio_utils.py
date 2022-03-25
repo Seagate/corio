@@ -86,6 +86,7 @@ def cpu_memory_details():
         LOGGER.info("Available Memory is: %s", available_memory)
         if memory_usages > 95.0:
             LOGGER.warning("memory usages greater then 95 percent hence tool may stop execution")
+            raise MemoryError(memory_usages)
         top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > corio/reports/topreport.txt")
         LOGGER.info(top_processes)
 
@@ -93,8 +94,6 @@ def run_local_cmd(cmd: str = None) -> tuple:
     """
     Execute any given command on local machine(Windows, Linux).
     :param cmd: command to be executed.
-    :param flg: To get str(proc.communicate())
-    :param chk_stderr: Check if stderr is none.
     :return: bool, response.
     """
     if not cmd:
