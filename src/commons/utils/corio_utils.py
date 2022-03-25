@@ -75,9 +75,13 @@ def cpu_memory_details():
     LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
     if cpu_usages > 80.0:
         LOGGER.info("CPU Usages are: %s", cpu_usages)
+        if cpu_usages > 95.0:
+            LOGGER.info("usages greater then 95 percent hence tool may stop execution")
     memory_usages = ps.virtual_memory().percent
     LOGGER.debug("Real Time memory usages are: %s", memory_usages)
     if memory_usages > 80.0:
         LOGGER.info("Memory Usages are: %s", memory_usages)
         available_memory = (ps.virtual_memory().available * 100)/ ps.virtual_memory().total
         LOGGER.info("Available Memory is: %s", available_memory)
+        if memory_usages > 95.0:
+            LOGGER.warning("memory usages greater then 95 percent hence tool may stop execution")
