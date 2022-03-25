@@ -13,7 +13,7 @@ test_2:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 2
   tool: s3api
   operation: bucket
@@ -23,7 +23,7 @@ test_3:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 3
   tool: s3api
   operation: bucket
@@ -33,7 +33,7 @@ test_4:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 5
   tool: s3api
   operation: bucket
@@ -43,7 +43,7 @@ test_5:
   object_size:
     start: 0Kib
     end: 100Kib
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 8
   tool: s3api
   operation: bucket

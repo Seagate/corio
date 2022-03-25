@@ -14,7 +14,7 @@ test_2:
   object_size:
     start: 100Kb
     end: 1Mb
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 2
   range_read: 200bytes
   tool: s3api
@@ -25,7 +25,7 @@ test_3:
   object_size:
     start: 1Mb
     end: 10Mb
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 3
   range_read: 500bytes
   tool: s3api
@@ -36,7 +36,7 @@ test_4:
   object_size:
     start: 10Mb
     end: 20Mb
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 5
   range_read: 1000bytes
   tool: s3api
@@ -47,7 +47,7 @@ test_5:
   object_size:
     start: 20Mb
     end: 100Mb
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 8
   range_read: 10Kb
   tool: s3api
@@ -58,7 +58,7 @@ test_6:
   object_size:
     start: 100Mb
     end: 500Mb
-  result_duration: 2d
+  result_duration: 2m
   sessions_per_node: 13
   range_read: 100Kb
   tool: s3api
@@ -69,7 +69,7 @@ test_7:
   object_size:
     start: 500Mb
     end: 1Gb
-  result_duration: 1m
+  result_duration: 2m
   sessions_per_node: 21
   range_read: 1Mb
   tool: s3api
