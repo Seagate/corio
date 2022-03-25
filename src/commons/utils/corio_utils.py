@@ -24,9 +24,9 @@
 import os
 import logging
 import glob
+from subprocess import Popen, PIPE, CalledProcessError
 import psutil as ps
 from datetime import datetime
-from subprocess import Popen, PIPE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -71,7 +71,7 @@ def log_cleanup():
         os.makedirs(reports_dir)
 
 def cpu_memory_details():
-    """cpu and memory usage."""
+    """Cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
     LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
     if cpu_usages > 80.0:
@@ -102,16 +102,16 @@ def run_local_cmd(cmd: str = None) -> tuple:
     LOGGER.debug("Command: %s", cmd)
     proc = None
     try:
-        proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
         output, error = proc.communicate()
         LOGGER.debug("output = %s", str(output))
         LOGGER.debug("error = %s", str(error))
         if proc.returncode != 0:
             return False, str(error)
         return True, str(output)
-    except Exception as ex:
-        LOGGER.error(ex)
-        return False, ex
+    except (CalledProcessError, OSError) as error:
+        LOGGER.error(error)
+        return False, error
     finally:
         if proc:
             proc.terminate()
