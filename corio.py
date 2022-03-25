@@ -195,16 +195,17 @@ def setup_environment():
     assert ret, "Error while Mounting NFS directory"
 
 
-def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str):
+def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str,
+               terminated_tests: list = None):
     """
     Log execution status into log file.
 
     :param parsed_input: Dict for all the input yaml files
     :param corio_start_time: Start time for main process
     :param test_failed: Reason for failure is any
+    :param terminated_tests: terminated tests from workload..
     """
-    status_fpath = os.path.join(
-        os.getcwd(), "reports", f"corio_status_{DT_STRING}.log")
+    status_fpath = os.path.join(os.getcwd(), "reports", f"corio_summary_{DT_STRING}.report")
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
@@ -213,6 +214,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
         elif test_failed is None:
             status_file.write('\nTest Execution still in progress')
         else:
+            LOGGER.info(terminated_tests)
             status_file.write(f'\nTest Execution terminated due to error in {test_failed}')
         status_file.write(f'\nTotal Execution Duration : {datetime.now() - corio_start_time}')
         status_file.write("\nTestWise Execution Details:")
@@ -238,6 +240,12 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                         input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
                     else:
                         input_dict["RESULT_UPDATE"] = "In Progress"
+                    if input_dict["RESULT_UPDATE"] == "In Progress":
+                        if terminated_tests:
+                            if input_dict["TEST_ID"] in terminated_tests:
+                                input_dict["RESULT_UPDATE"] = "Fail"
+                        elif test_failed:
+                            input_dict["RESULT_UPDATE"] = "Aborted"
                     input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
                 else:
                     input_dict[
@@ -405,17 +413,20 @@ def main(options):
                                     process.pid, process.name)
                     terminate = True
                     terminated_tp = key
-                    test_ids = [td["TEST_ID"] for td in parsed_input[terminated_tp].values()]
+                    # Get all test id from terminated workload due to failure.
+                    for tests in parsed_input[terminated_tp].values():
+                        test_ids.append(tests["TEST_ID"])
             if terminate:
                 terminate_processes(processes.values())
-                log_status(parsed_input, corio_start_time, terminated_tp)
+                log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
                 if jira_flg:
                     jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                                 tests_details=tests_to_execute, aborted=True,
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
                 break
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, MemoryError) as error:
+        LOGGER.exception(error)
         terminate_processes(processes.values())
         log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
         if jira_flg:
@@ -426,7 +437,7 @@ def main(options):
         sys.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     log_cleanup()
     opts = parse_args()
     log_level = logging.getLevelName(opts.logging_level)
