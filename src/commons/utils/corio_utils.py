@@ -26,6 +26,7 @@ import logging
 import glob
 import psutil as ps
 from datetime import datetime
+from subprocess import Popen, PIPE
 
 LOGGER = logging.getLogger(__name__)
 
@@ -85,3 +86,33 @@ def cpu_memory_details():
         LOGGER.info("Available Memory is: %s", available_memory)
         if memory_usages > 95.0:
             LOGGER.warning("memory usages greater then 95 percent hence tool may stop execution")
+        top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > corio/reports/topreport.txt")
+        LOGGER.info(top_processes)
+
+def run_local_cmd(cmd: str = None) -> tuple:
+    """
+    Execute any given command on local machine(Windows, Linux).
+    :param cmd: command to be executed.
+    :param flg: To get str(proc.communicate())
+    :param chk_stderr: Check if stderr is none.
+    :return: bool, response.
+    """
+    if not cmd:
+        raise ValueError("Missing required parameter: {}".format(cmd))
+    LOGGER.debug("Command: %s", cmd)
+    proc = None
+    try:
+        proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
+        output, error = proc.communicate()
+        LOGGER.debug("output = %s", str(output))
+        LOGGER.debug("error = %s", str(error))
+        if proc.returncode != 0:
+            return False, str(error)
+        return True, str(output)
+    except Exception as ex:
+        LOGGER.error(ex)
+        return False, ex
+    finally:
+        if proc:
+            proc.terminate()
+            
