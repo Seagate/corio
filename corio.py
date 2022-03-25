@@ -195,6 +195,7 @@ def setup_environment():
     assert ret, "Error while Mounting NFS directory"
 
 
+# pylint: disable-msg=too-many-branches
 def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str,
                terminated_tests: list = None):
     """
@@ -229,8 +230,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                     input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value1['object_size']]
                 else:
                     input_dict.update({
-                              "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
-                              "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
+                        "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
+                        "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
                 test_start_time = corio_start_time + value1['start_time']
                 if datetime.now() > test_start_time:
                     input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
@@ -241,9 +242,12 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                     else:
                         input_dict["RESULT_UPDATE"] = "In Progress"
                     if input_dict["RESULT_UPDATE"] == "In Progress":
+                        # Report failure and update status.
                         if terminated_tests:
                             if input_dict["TEST_ID"] in terminated_tests:
                                 input_dict["RESULT_UPDATE"] = "Fail"
+                            else:
+                                input_dict["RESULT_UPDATE"] = "Aborted"
                         elif test_failed:
                             input_dict["RESULT_UPDATE"] = "Aborted"
                     input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
@@ -253,6 +257,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                     input_dict["RESULT_UPDATE"] = "Not Triggered"
                     input_dict["TOTAL_TEST_EXECUTION"] = "NA"
                 dataframe = dataframe.append(input_dict, ignore_index=True)
+            # Convert sessions into integer.
+            dataframe = dataframe.astype({"SESSIONS": 'int'})
             status_file.write(f"\n\nTEST YAML FILE : {key}")
             status_file.write(f'\n{dataframe}')
 
@@ -360,7 +366,7 @@ def main(options):
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
     duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
-    assert (not duplicate_ids),  f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
+    assert (not duplicate_ids), f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
     if jira_flg:
         # If jira update selected then will report missing workload test ids from jira TP.
         assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
@@ -385,7 +391,7 @@ def main(options):
         process = multiprocessing.Process(target=health_check_process, name="health_check",
                                           args=(CORIO_CFG['hc_interval_mins'] * 60,))
         processes["health_check"] = process
-    sched_job = schedule.every(1).minutes.do(log_status, parsed_input=parsed_input,
+    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
     try:
         for process in processes.values():
@@ -414,8 +420,8 @@ def main(options):
                     terminate = True
                     terminated_tp = key
                     # Get all test id from terminated workload due to failure.
-                    for tests in parsed_input[terminated_tp].values():
-                        test_ids.append(tests["TEST_ID"])
+                    for test in parsed_input[terminated_tp].values():
+                        test_ids.append(test["TEST_ID"])
             if terminate:
                 terminate_processes(processes.values())
                 log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
