@@ -68,12 +68,15 @@ function_mapping = {
 }
 
 
-def initialize_loghandler(level=logging.INFO):
+def initialize_loghandler(opt):
     """
     Initialize io driver runner logging with stream and file handlers.
 
-    param level: logging level used in CorIO tool.
+    param opt.logging_level: logging level used in CorIO tool.
     """
+    if opt.logging_level not in [10, 20, 30, 40, 50]:
+        opt.logging_level = 20
+    level = logging.getLevelName(opt.logging_level)
     LOGGER.setLevel(level)
     dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
     if not os.path.exists(dir_path):
@@ -443,7 +446,6 @@ def main(options):
 if __name__ == "__main__":
     log_cleanup()
     opts = parse_args()
-    log_level = logging.getLevelName(opts.logging_level)
-    initialize_loghandler(level=log_level)
+    initialize_loghandler(opts)
     LOGGER.info("Arguments: %s", opts)
     main(opts)
