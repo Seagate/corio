@@ -52,6 +52,7 @@ from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
+from src.commons.exception import HealthCheckError
 
 LOGGER = logging.getLogger()
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -183,23 +184,23 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
 
 
 def setup_environment():
-    """
-    Tool installations for test execution
-    """
+    """Tool installations for test execution."""
     ret = mount_nfs_server(CORIO_CFG['nfs_server'], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
 
 
-def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str):
+# pylint: disable-msg=too-many-branches
+def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str,
+               terminated_tests: list = None):
     """
     Log execution status into log file.
 
     :param parsed_input: Dict for all the input yaml files
     :param corio_start_time: Start time for main process
     :param test_failed: Reason for failure is any
+    :param terminated_tests: terminated tests from workload..
     """
-    status_fpath = os.path.join(
-        os.getcwd(), "reports", f"corio_status_{DT_STRING}.log")
+    status_fpath = os.path.join(os.getcwd(), "reports", f"corio_summary_{DT_STRING}.report")
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w') as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
@@ -222,8 +223,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                     input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value1['object_size']]
                 else:
                     input_dict.update({
-                              "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
-                              "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
+                        "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
+                        "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
                 test_start_time = corio_start_time + value1['start_time']
                 if datetime.now() > test_start_time:
                     input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
@@ -232,7 +233,15 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                             date_format)
                         input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
                     else:
-                        input_dict["RESULT_UPDATE"] = "In Progress"
+                        # Report In Progress, Fail, Aborted and update status.
+                        if terminated_tests and input_dict["TEST_ID"] in terminated_tests:
+                            LOGGER.error("Test execution terminated due to error in %s.",
+                                         input_dict["TEST_ID"])
+                            input_dict["RESULT_UPDATE"] = "Fail"
+                        elif test_failed:
+                            input_dict["RESULT_UPDATE"] = "Aborted"
+                        else:
+                            input_dict["RESULT_UPDATE"] = "In Progress"
                     input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
                 else:
                     input_dict[
@@ -240,6 +249,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                     input_dict["RESULT_UPDATE"] = "Not Triggered"
                     input_dict["TOTAL_TEST_EXECUTION"] = "NA"
                 dataframe = dataframe.append(input_dict, ignore_index=True)
+            # Convert sessions into integer.
+            dataframe = dataframe.astype({"SESSIONS": 'int'})
             status_file.write(f"\n\nTEST YAML FILE : {key}")
             status_file.write(f'\n{dataframe}')
 
@@ -347,7 +358,7 @@ def main(options):
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
     duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
-    assert (not duplicate_ids),  f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
+    assert (not duplicate_ids), f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
     if jira_flg:
         # If jira update selected then will report missing workload test ids from jira TP.
         assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
@@ -363,8 +374,9 @@ def main(options):
                                           args=(test_plan, test_plan_value, commons_params))
         processes[test_plan] = process
     LOGGER.info(processes)
+    sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING if options.support_bundle \
+        else DT_STRING
     if options.support_bundle:
-        sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING
         process = multiprocessing.Process(target=support_bundle_process, name="support_bundle",
                                           args=(CORIO_CFG['sb_interval_mins'] * 60, sb_identifier))
         processes["support_bundle"] = process
@@ -372,15 +384,14 @@ def main(options):
         process = multiprocessing.Process(target=health_check_process, name="health_check",
                                           args=(CORIO_CFG['hc_interval_mins'] * 60,))
         processes["health_check"] = process
-    sched_job = schedule.every(1).minutes.do(log_status, parsed_input=parsed_input,
+    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
     try:
         for process in processes.values():
             process.start()
-        terminate = False
-        terminated_tp = None
         test_ids = list()
         while True:
+            terminated_tp = None
             cpu_memory_details()
             time.sleep(1)
             schedule.run_pending()
@@ -390,38 +401,46 @@ def main(options):
             for key, process in processes.items():
                 if not process.is_alive():
                     if key == "support_bundle":
-                        LOGGER.error("Process with PID %s stopped Support bundle collection error.",
-                                     process.pid)
+                        LOGGER.warning("Process with PID %s stopped Support bundle collection"
+                                       " error.", process.pid)
+                        continue
                     if key == "health_check":
-                        LOGGER.error("Process with PID %s stopped. Health Check collection error.",
-                                     process.pid)
-                    else:
-                        LOGGER.info("Process with PID %s Name %s exited. Stopping other Process.",
+                        raise HealthCheckError(f"Process with PID {process.pid} stopped."
+                                               f" Health Check collection error.")
+                    LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                                     process.pid, process.name)
-                    terminate = True
                     terminated_tp = key
-                    test_ids = [td["TEST_ID"] for td in parsed_input[terminated_tp].values()]
-            if terminate:
+                    # Get all test id from terminated workload due to failure.
+                    for test in parsed_input[terminated_tp].values():
+                        test_ids.append(test["TEST_ID"])
+            if terminated_tp:
                 terminate_processes(processes.values())
-                log_status(parsed_input, corio_start_time, terminated_tp)
+                log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
                 if jira_flg:
                     jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                                 tests_details=tests_to_execute, aborted=True,
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
-                break
-    except KeyboardInterrupt:
+                if options.support_bundle:
+                    collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
+                                                    max_sb=CORIO_CFG['max_no_of_sb'])
+                sys.exit()
+    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
+        LOGGER.exception(error)
         terminate_processes(processes.values())
         log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
         if jira_flg:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
+        if options.support_bundle:
+            collect_upload_sb_to_nfs_server(
+                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
         # TODO: cleanup object files created
         sys.exit()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     log_cleanup()
     opts = parse_args()
     log_level = logging.getLevelName(opts.logging_level)
