@@ -53,6 +53,7 @@ from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
+from src.commons.exception import HealthCheckError
 
 LOGGER = logging.getLogger()
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -188,9 +189,7 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
 
 
 def setup_environment():
-    """
-    Tool installations for test execution
-    """
+    """Tool installations for test execution."""
     ret = mount_nfs_server(CORIO_CFG['nfs_server'], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
 
@@ -380,8 +379,9 @@ def main(options):
                                           args=(test_plan, test_plan_value, commons_params))
         processes[test_plan] = process
     LOGGER.info(processes)
+    sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING if options.support_bundle \
+        else DT_STRING
     if options.support_bundle:
-        sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING
         process = multiprocessing.Process(target=support_bundle_process, name="support_bundle",
                                           args=(CORIO_CFG['sb_interval_mins'] * 60, sb_identifier))
         processes["support_bundle"] = process
@@ -394,10 +394,9 @@ def main(options):
     try:
         for process in processes.values():
             process.start()
-        terminate = False
-        terminated_tp = None
         test_ids = list()
         while True:
+            terminated_tp = None
             cpu_memory_details()
             time.sleep(1)
             schedule.run_pending()
@@ -407,20 +406,19 @@ def main(options):
             for key, process in processes.items():
                 if not process.is_alive():
                     if key == "support_bundle":
-                        LOGGER.error("Process with PID %s stopped Support bundle collection error.",
-                                     process.pid)
+                        LOGGER.warning("Process with PID %s stopped Support bundle collection"
+                                       " error.", process.pid)
+                        continue
                     if key == "health_check":
-                        LOGGER.error("Process with PID %s stopped. Health Check collection error.",
-                                     process.pid)
-                    else:
-                        LOGGER.info("Process with PID %s Name %s exited. Stopping other Process.",
+                        raise HealthCheckError(f"Process with PID {process.pid} stopped."
+                                               f" Health Check collection error.")
+                    LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                                     process.pid, process.name)
-                    terminate = True
                     terminated_tp = key
                     # Get all test id from terminated workload due to failure.
                     for test in parsed_input[terminated_tp].values():
                         test_ids.append(test["TEST_ID"])
-            if terminate:
+            if terminated_tp:
                 terminate_processes(processes.values())
                 log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
                 if jira_flg:
@@ -428,8 +426,11 @@ def main(options):
                                                 tests_details=tests_to_execute, aborted=True,
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
-                break
-    except (KeyboardInterrupt, MemoryError) as error:
+                if options.support_bundle:
+                    collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
+                                                    max_sb=CORIO_CFG['max_no_of_sb'])
+                sys.exit()
+    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminate_processes(processes.values())
         log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
@@ -437,6 +438,9 @@ def main(options):
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
+        if options.support_bundle:
+            collect_upload_sb_to_nfs_server(
+                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
         # TODO: cleanup object files created
         sys.exit()
 

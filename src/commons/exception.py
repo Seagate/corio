@@ -23,7 +23,7 @@
 
 
 class HealthCheckError(Exception):
-    """class for health check error."""
+    """Class for health check error."""
 
     def __init__(self, message=''):
         """Initialize health check error."""
@@ -31,5 +31,5 @@ class HealthCheckError(Exception):
         self.message = message
 
     def __str__(self):
-        """print error message."""
+        """Print error message."""
         return self.message
