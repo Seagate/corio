@@ -44,7 +44,6 @@ from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
-from scripts.s3.s3api import object_range_read_operations
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
@@ -63,12 +62,8 @@ function_mapping = {
     'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
     'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_range_read': [object_range_read_operations.TestObjectRangeReadOps,
-                          'execute_object_range_read_workload'],
-    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    # 'multipart_partcopy': [
-    #     test_s3api_multipart_partcopy_io_stability.TestMultiPartsPartCopy,
-    #     'execute_multipart_partcopy_workload']
+    'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
+    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload']
 }
 
 
