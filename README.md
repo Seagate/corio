@@ -1,5 +1,4 @@
-# This is under development project, Use with Caution
-
+#CORIO (KOR-I-O)
 CORIO (Pronounced as KOR-IO) is a open source tool to exercise long run IO to check IO stability. This is a protocol agnostic tool hence any other protocol IO can be plugged in and exercises as and when needed.
 This Tool can be divided logically in following sections:
 
@@ -8,7 +7,7 @@ This Tool can be divided logically in following sections:
     Scripts
     Utils
 Start Here:
-
+Note: CORIO is a under development project, Use with Caution and report issues.
 brush up Git knowledge if you are coming from other versioning systems
 Follow the link <https://github.com/Seagate/cortx/blob/main/doc/github-process-readme.md> to configure git on your local machine
 Create a GitHub account and get access to Seagate Repositories
