@@ -20,6 +20,7 @@ import os
 import random
 import time
 from datetime import timedelta, datetime
+from typing import Union
 
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
@@ -33,7 +34,8 @@ class TestS3Object(S3Bucket, S3Object):
 
     # pylint: disable=too-many-arguments
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
-                 use_ssl: bool, object_size: dict, seed: int, duration: timedelta = None):
+                 use_ssl: bool, object_size: Union[int, dict], seed: int,
+                 range_read: Union[int, dict] = None, duration: timedelta = None):
         """S3 Object operation init.
 
         :param access_key: access key.
@@ -42,20 +44,24 @@ class TestS3Object(S3Bucket, S3Object):
         :param test_id: Test ID string.
         :param use_ssl: To use secure connection.
         :param object_size: Size of the object in bytes..
+        :param seed: Seed for random number generator
+        :param range_read: Range read size
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
         random.seed(seed)
-        self.start_object_size = object_size["start"]
-        self.end_object_size = object_size["end"]
+        self.object_size = object_size
         self.test_id = test_id
         self.iteration = 1
+        self.range_read = range_read
         self.min_duration = 10  # In seconds
+        self.parts = 3
         if duration:
             self.finish_time = datetime.now() + duration
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=too-many-locals
     async def execute_object_workload(self):
         """Execute object workload with given parameters."""
         bucket = f'object-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
@@ -64,23 +70,45 @@ class TestS3Object(S3Bucket, S3Object):
         while True:
             LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
             try:
-                file_size = random.randrange(self.start_object_size, self.end_object_size)
+                if isinstance(self.object_size, dict):
+                    file_size = random.randrange(self.object_size["start"], self.object_size["end"])
+                else:
+                    file_size = self.object_size
+                if isinstance(self.range_read, dict):
+                    range_read = random.randrange(self.range_read["start"], self.range_read["end"])
+                else:
+                    range_read = self.range_read
                 file_name = f'object-bucket-op-{time.perf_counter_ns()}'
                 with open(file_name, 'wb') as fout:
                     fout.write(os.urandom(file_size))
                 checksum_in = self.checksum_file(file_name)
                 LOGGER.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_name)
-                LOGGER.info("'s3://%s/%s' uploaded successfully.", bucket, file_name)
-                LOGGER.info("Perform Head bucket.")
-                await self.head_object(bucket, file_name)
-                LOGGER.info("Get Object")
-                checksum_out = await self.get_s3object_checksum(bucket, file_name)
-                assert checksum_in == checksum_out, "Checksum are not equal"
-                LOGGER.debug("Checksum Out = %s", checksum_out)
-                LOGGER.info("Delete object")
-                await self.delete_object(bucket, file_name)
-                os.remove(file_name)
+                LOGGER.info("s3://%s/%s uploaded successfully.", bucket, file_name)
+                if range_read:
+                    part = int(file_size / self.parts)
+                    part_ranges = [(0, part), (part + 1, part * 2),
+                                   (part * 2 + 1, file_size - range_read)]
+                    for start, end in part_ranges:
+                        loc = random.randrange(start, end)
+                        byte_range = f"{loc}-{loc + range_read - 1}"
+                        checksum_out = await self.get_s3object_checksum(
+                            bucket, file_name, ranges=f'bytes={byte_range}')
+                        checksum_in = self.checksum_part_file(file_name, loc, range_read)
+                        assert checksum_out == checksum_in, \
+                            f"Checksum of downloaded part for range ({byte_range}) does not " \
+                            f"match for s3://{bucket}/{file_name}. Uploaded Checksum = " \
+                            f"{checksum_out} Downloaded Checksum = {checksum_in}"
+                else:
+                    LOGGER.info("Perform Head bucket.")
+                    await self.head_object(bucket, file_name)
+                    LOGGER.info("Get Object")
+                    checksum_out = await self.get_s3object_checksum(bucket, file_name)
+                    assert checksum_in == checksum_out, "Checksum are not equal"
+                    LOGGER.debug("Checksum Out = %s", checksum_out)
+                    LOGGER.info("Delete object")
+                    await self.delete_object(bucket, file_name)
+                    os.remove(file_name)
             except Exception as err:
                 LOGGER.exception(err)
                 raise err
