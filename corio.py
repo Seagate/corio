@@ -215,7 +215,6 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
         elif test_failed is None:
             status_file.write('\nTest Execution still in progress')
         else:
-            LOGGER.info(terminated_tests)
             status_file.write(f'\nTest Execution terminated due to error in {test_failed}')
         status_file.write(f'\nTotal Execution Duration : {datetime.now() - corio_start_time}')
         status_file.write("\nTestWise Execution Details:")
@@ -240,16 +239,15 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                             date_format)
                         input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
                     else:
-                        input_dict["RESULT_UPDATE"] = "In Progress"
-                    if input_dict["RESULT_UPDATE"] == "In Progress":
-                        # Report failure and update status.
-                        if terminated_tests:
-                            if input_dict["TEST_ID"] in terminated_tests:
-                                input_dict["RESULT_UPDATE"] = "Fail"
-                            else:
-                                input_dict["RESULT_UPDATE"] = "Aborted"
+                        # Report In Progress, Fail, Aborted and update status.
+                        if terminated_tests and input_dict["TEST_ID"] in terminated_tests:
+                            LOGGER.error("Test execution terminated due to error in %s.",
+                                         input_dict["TEST_ID"])
+                            input_dict["RESULT_UPDATE"] = "Fail"
                         elif test_failed:
                             input_dict["RESULT_UPDATE"] = "Aborted"
+                        else:
+                            input_dict["RESULT_UPDATE"] = "In Progress"
                     input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
                 else:
                     input_dict[
