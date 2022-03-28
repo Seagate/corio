@@ -24,6 +24,8 @@
 import os
 import logging
 import glob
+from subprocess import Popen, PIPE, CalledProcessError
+import psutil as ps
 from datetime import datetime
 
 LOGGER = logging.getLogger(__name__)
@@ -67,3 +69,49 @@ def log_cleanup():
             LOGGER.info("Backup directory: %s", now_dir)
     else:
         os.makedirs(reports_dir)
+
+def cpu_memory_details():
+    """Cpu and memory usage."""
+    cpu_usages = ps.cpu_percent()
+    LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
+    if cpu_usages > 80.0:
+        LOGGER.info("CPU Usages are: %s", cpu_usages)
+        if cpu_usages > 95.0:
+            LOGGER.info("usages greater then 95 percent hence tool may stop execution")
+    memory_usages = ps.virtual_memory().percent
+    LOGGER.debug("Real Time memory usages are: %s", memory_usages)
+    if memory_usages > 80.0:
+        LOGGER.info("Memory Usages are: %s", memory_usages)
+        available_memory = (ps.virtual_memory().available * 100)/ ps.virtual_memory().total
+        LOGGER.info("Available Memory is: %s", available_memory)
+        if memory_usages > 95.0:
+            LOGGER.warning("memory usages greater then 95 percent hence tool may stop execution")
+            raise MemoryError(memory_usages)
+        top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > corio/reports/topreport.txt")
+        LOGGER.info(top_processes)
+
+def run_local_cmd(cmd: str) -> tuple:
+    """
+    Execute any given command on local machine(Windows, Linux).
+    :param cmd: command to be executed.
+    :return: bool, response.
+    """
+    if not cmd:
+        raise ValueError("Missing required parameter: {}".format(cmd))
+    LOGGER.debug("Command: %s", cmd)
+    proc = None
+    try:
+        proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
+        output, error = proc.communicate()
+        LOGGER.debug("output = %s", str(output))
+        LOGGER.debug("error = %s", str(error))
+        if proc.returncode != 0:
+            return False, str(error)
+        return True, str(output)
+    except (CalledProcessError, OSError) as error:
+        LOGGER.error(error)
+        return False, error
+    finally:
+        if proc:
+            proc.terminate()
+            
