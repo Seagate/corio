@@ -48,13 +48,15 @@ from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
 from src.commons.constants import MOUNT_DIR
+from src.commons.constants import LOG_LEVEL
+from src.commons.constants import ROOT
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.exception import HealthCheckError
 
-LOGGER = logging.getLogger()
+LOGGER = logging.getLogger(ROOT)
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
 function_mapping = {
@@ -74,16 +76,16 @@ def initialize_loghandler(opt):
 
     param opt.logging_level: logging level used in CorIO tool.
     """
-    if opt.logging_level not in [10, 20, 30, 40, 50]:
-        opt.logging_level = 20
-    level = logging.getLevelName(opt.logging_level)
+    # If wrong log level provided then it will use default INFO.
+    level = logging.getLevelName(LOG_LEVEL.get(opt.logging_level.upper(), logging.INFO))
+    os.environ['log_level'] = level
     LOGGER.setLevel(level)
     dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
     name = os.path.splitext(os.path.basename(__file__))[0]
     name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.log")
-    StreamToLogger(name, LOGGER)
+    StreamToLogger(name, LOGGER, stream=True)
 
 
 def parse_args():
@@ -92,13 +94,14 @@ def parse_args():
     parser.add_argument("-ti", "--test_input", type=str,
                         help="Directory path containing test data input yaml files or "
                              "input yaml file path.")
-    parser.add_argument("-ll", "--logging-level", type=int, default=20,
+    parser.add_argument("-ll", "--logging-level", type=str, default="INFO",
                         help="log level value as defined below: " +
-                             "CRITICAL=50 " +
-                             "ERROR=40 " +
-                             "WARNING=30 " +
-                             "INFO=20 " +
-                             "DEBUG=10")
+                             "CRITICAL " +
+                             "ERROR " +
+                             'WARNING ' +
+                             'INFO ' +
+                             'DEBUG ' +
+                             'VERBOSE')
     parser.add_argument("-us", "--use_ssl", type=lambda x: bool(strtobool(str(x))), default=True,
                         help="Use HTTPS/SSL connection for S3 endpoint.")
     parser.add_argument("-sd", "--seed", type=int, help="seed.",
@@ -120,20 +123,20 @@ def parse_args():
     return parser.parse_args()
 
 
-async def create_session(funct: list, session: str, start_time: float, **kwargs) -> None:
+async def create_session(funct: list, start_time: float, **kwargs) -> None:
     """
     Execute the test function in sessions.
 
-    :param funct: List of class name and method name to be called
-    :param session: session name
-    :param start_time: Start time for session
+    :param funct: List of class name and method name to be called.
+    :param start_time: Start time for session.
+    :param kwargs: session name from each test and test parameters.
     """
     await asyncio.sleep(start_time)
-    LOGGER.info("Starting Session %s, PID - %s", session, os.getpid())
+    LOGGER.info("Starting Session %s, PID - %s", kwargs.get("session"), os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
     await func()
-    LOGGER.info("Ended Session %s, PID - %s", session, os.getpid())
+    LOGGER.info("Ended Session %s, PID - %s", kwargs.get("session"), os.getpid())
 
 
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
@@ -154,8 +157,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params['range_read'] = each['range_read']
         params.update(common_params)
         for i in range(int(each['sessions'])):
+            params["session"] = f"{each['TEST_ID']}_session{i}"
             tasks.append(create_session(funct=each['operation'],
-                                        session=each['TEST_ID'] + "_session" + str(i),
                                         start_time=each['start_time'].total_seconds(), **params))
 
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
@@ -425,8 +428,9 @@ def main(options):
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
                 if options.support_bundle:
-                    collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                                    max_sb=CORIO_CFG['max_no_of_sb'])
+                    resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
+                                                           max_sb=CORIO_CFG['max_no_of_sb'])
+                    LOGGER.info("collect support bundles response: %s", resp)
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
@@ -437,8 +441,9 @@ def main(options):
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         if options.support_bundle:
-            collect_upload_sb_to_nfs_server(
+            resp = collect_upload_sb_to_nfs_server(
                 MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
+            LOGGER.info("collect support bundles response: %s", resp)
         # TODO: cleanup object files created
         sys.exit()
 

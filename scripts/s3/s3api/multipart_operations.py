@@ -20,7 +20,6 @@
 #
 """File contains s3 multipart test script for io stability."""
 
-import logging
 import os
 import random
 import hashlib
@@ -31,8 +30,6 @@ from src.libs.s3api.s3_multipart_ops import S3MultiParts
 from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 
-LOGGER = logging.getLogger(__name__)
-
 
 class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
     """Multipart class for executing given io stability workload."""
@@ -41,9 +38,9 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
     # pylint: disable=too-few-public-methods, too-many-statements
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, use_ssl: bool,
-                 object_size: Union[dict, bytes], part_range: dict, seed: int, test_id: str = None,
-                 range_read: Union[dict, bytes] = None, part_copy: bool = False,
-                 duration: timedelta = None) -> None:
+                 object_size: Union[dict, bytes], part_range: dict, seed: int, session: str,
+                 test_id: str = None, range_read: Union[dict, bytes] = None,
+                 part_copy: bool = False, duration: timedelta = None) -> None:
         """s3 multipart init for multipart, part copy operations with different workload.
 
         :param access_key: access key.
@@ -52,16 +49,19 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         :param test_id: Test ID string.
         :param use_ssl: To use secure connection.
         :param object_size: Size of the object in bytes.
+        :param session: session name.
         :param part_range: Number of parts to be uploaded from given range.
         :param part_copy: Perform part copy if True else normal part upload.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url,
+                         use_ssl=use_ssl, test_id=test_id)
         random.seed(seed)
         self.object_size = object_size
         self.part_range = part_range
         self.part_copy = part_copy
         self.range_read = range_read
+        self.session_id = session
         self.iteration = 1
         self.min_duration = 10  # In seconds
         if test_id:
@@ -78,22 +78,22 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         mpart_bucket = "s3mpart-bkt-{}-{}".format(self.test_id, perf_counter_ns())
         await self.create_bucket(mpart_bucket)
         while True:
-            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
+            self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
-                LOGGER.info("Bucket name: %s", mpart_bucket)
+                self.log.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = "s3mpart-obj-{}-{}".format(self.test_id, perf_counter_ns())
                 s3_object = "s3-obj-{}-{}".format(self.test_id, perf_counter_ns())
-                LOGGER.info("Object name: %s", s3mpart_object)
+                self.log.info("Object name: %s", s3mpart_object)
                 if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
-                LOGGER.info("File size: %s GiB", (file_size / (1024 ** 3)))
+                self.log.info("File size: %s GiB", (file_size / (1024 ** 3)))
                 number_of_parts = random.randrange(self.part_range["start"], self.part_range["end"])
-                LOGGER.info("Number of parts: %s", number_of_parts)
+                self.log.info("Number of parts: %s", number_of_parts)
                 assert number_of_parts <= 10000, "Number of parts should be equal/less than 10k"
                 single_part_size = round(file_size / number_of_parts)
-                LOGGER.info("single part size: %s MiB", single_part_size / (1024 ** 2))
+                self.log.info("single part size: %s MiB", single_part_size / (1024 ** 2))
                 response = await self.create_multipart_upload(mpart_bucket, s3mpart_object)
                 assert response["UploadId"], f"Failed to initiate multipart upload: {response}"
                 mpu_id = response["UploadId"]
@@ -120,14 +120,14 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                         parts.append({"PartNumber": i, "ETag": response["ETag"]})
                     file_hash.update(byte_s)
                 upload_obj_checksum = file_hash.hexdigest()
-                LOGGER.info("Checksum of uploaded object: %s", upload_obj_checksum)
+                self.log.info("Checksum of uploaded object: %s", upload_obj_checksum)
                 response = await self.list_parts(mpu_id, mpart_bucket, s3mpart_object)
                 assert response, f"Failed to list parts: {response}"
                 response = await self.list_multipart_uploads(mpart_bucket)
                 assert response, f"Failed to list multipart uploads: {response}"
                 response = await self.complete_multipart_upload(
                     mpu_id, parts, mpart_bucket, s3mpart_object)
-                LOGGER.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
+                self.log.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
                 all_object = await self.list_objects(mpart_bucket)
                 assert s3mpart_object in all_object, f"Failed to upload object {s3mpart_object}"
                 assert response, f"Failed to completed multi parts: {response}"
@@ -135,7 +135,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 assert response, f"Failed to do head object on {s3mpart_object}"
                 download_obj_checksum = await self.get_s3object_checksum(
                     mpart_bucket, s3mpart_object, single_part_size)
-                LOGGER.info("Checksum of s3 object: %s", download_obj_checksum)
+                self.log.info("Checksum of s3 object: %s", download_obj_checksum)
                 assert upload_obj_checksum == download_obj_checksum,\
                     f"Failed to match checksum: {upload_obj_checksum}, {download_obj_checksum}"
                 if self.range_read:
@@ -143,7 +143,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                         "start": random.randrange(
                             1, self.range_read), "end": self.range_read} if isinstance(
                         self.range_read, int) else self.range_read
-                    LOGGER.info("Get object using suggested range read '%s'.", self.range_read)
+                    self.log.info("Get object using suggested range read '%s'.", self.range_read)
                     resp = await self.get_object(bucket=mpart_bucket,
                                                  key=s3mpart_object,
                                                  ranges=f"bytes={self.range_read['start']}"
@@ -154,12 +154,12 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
             except Exception as err:
-                LOGGER.exception(err)
+                self.log.exception(err)
                 raise err
             timedelta_sec = (self.finish_time - datetime.now()).total_seconds()
             if timedelta_sec < self.min_duration:
-                LOGGER.info("Delete bucket %s with all objects in it.", mpart_bucket)
+                self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
-            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
+            self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1

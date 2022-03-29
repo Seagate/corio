@@ -21,12 +21,9 @@
 
 """Python Library to perform multipart operations using aiobotocore module."""
 
-import logging
 import os
 
 from src.libs.s3api.s3_restapi import S3RestApi
-
-LOGGER = logging.getLogger(__name__)
 
 
 class S3MultiParts(S3RestApi):
@@ -42,8 +39,8 @@ class S3MultiParts(S3RestApi):
         """
         async with self.get_client() as client:
             response = await client.create_multipart_upload(Bucket=bucket_name, Key=obj_name)
-            LOGGER.info("create_multipart_upload: %s/%s, Response: %s", bucket_name, obj_name,
-                        response)
+            self.log.info("create_multipart_upload: %s/%s, Response: %s", bucket_name, obj_name,
+                          response)
 
         return response
 
@@ -63,7 +60,7 @@ class S3MultiParts(S3RestApi):
         async with self.get_client() as client:
             response = await client.upload_part(Body=body, Bucket=bucket_name, Key=object_name,
                                                 UploadId=upload_id, PartNumber=part_number)
-            LOGGER.info("upload_part: %s/%s, Response: %s", bucket_name, object_name, response)
+            self.log.info("upload_part: %s/%s, Response: %s", bucket_name, object_name, response)
 
         return response
 
@@ -83,7 +80,7 @@ class S3MultiParts(S3RestApi):
                     Bucket=bucket_name, Key=object_name, UploadId=mpu_id):
                 for content in result.get('Parts', []):
                     parts.append(content)
-            LOGGER.info("list_parts: %s/%s, parts: %s", bucket_name, object_name, parts)
+            self.log.info("list_parts: %s/%s, parts: %s", bucket_name, object_name, parts)
 
         return parts
 
@@ -98,14 +95,14 @@ class S3MultiParts(S3RestApi):
         :param object_name: Name of the object.
         :return: response of complete multipart upload.
         """
-        LOGGER.info("initiated complete multipart upload")
+        self.log.info("initiated complete multipart upload")
         async with self.get_client() as client:
             response = await client.complete_multipart_upload(Bucket=bucket,
                                                               Key=object_name,
                                                               UploadId=mpu_id,
                                                               MultipartUpload={"Parts": parts})
-            LOGGER.info("complete_multipart_upload: %s/%s, response: %s", bucket, object_name,
-                        response)
+            self.log.info("complete_multipart_upload: %s/%s, response: %s", bucket, object_name,
+                          response)
 
         return response
 
@@ -122,7 +119,7 @@ class S3MultiParts(S3RestApi):
             async for result in paginator.paginate(Bucket=bucket_name):
                 for content in result.get('Uploads', []):
                     uploads.append(content)
-            LOGGER.info("list_multipart_uploads: %s, Uploads: %s", bucket_name, uploads)
+            self.log.info("list_multipart_uploads: %s, Uploads: %s", bucket_name, uploads)
 
         return uploads
 
@@ -139,7 +136,7 @@ class S3MultiParts(S3RestApi):
         async with self.get_client() as client:
             response = await client.abort_multipart_upload(
                 Bucket=bucket_name, Key=object_name, UploadId=upload_id)
-            LOGGER.info("abort_multipart_upload: %s, Response: %s", bucket_name, response)
+            self.log.info("abort_multipart_upload: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -161,8 +158,8 @@ class S3MultiParts(S3RestApi):
             response = await client.upload_part_copy(Bucket=bucket_name, Key=object_name,
                                                      UploadId=upload_id, PartNumber=part_number,
                                                      CopySource=copy_source)
-            LOGGER.info("upload_part_copy: copy source: %s to %s/%s, Response: %s", copy_source,
-                        bucket_name, object_name, response)
+            self.log.info("upload_part_copy: copy source: %s to %s/%s, Response: %s", copy_source,
+                          bucket_name, object_name, response)
 
         return response
 
@@ -189,18 +186,18 @@ class S3MultiParts(S3RestApi):
             i = 1
             while True:
                 data = file_pointer.read(single_part_size)
-                LOGGER.info("data_len %s", str(len(data)))
+                self.log.info("data_len %s", str(len(data)))
                 if not data:
                     break
                 part = await self.upload_part(
                     data, bucket_name, object_name, upload_id=mpu_id, part_number=i)
-                LOGGER.info("Part : %s", str(part))
+                self.log.info("Part : %s", str(part))
                 parts.append({"PartNumber": i, "ETag": part["ETag"]})
                 uploaded_bytes += len(data)
-                LOGGER.info("{0} of {1} uploaded ({2:.2f}%)".format(
+                self.log.debug("{0} of {1} uploaded ({2:.2f}%)".format(
                     uploaded_bytes, multipart_obj_size * 1048576,
                     (float(uploaded_bytes) / float(multipart_obj_size * 1048576) * 100.0)))
                 i += 1
-        LOGGER.info("upload_parts: %s/%s, Parts: %s", bucket_name, object_name, parts)
+        self.log.info("upload_parts: %s/%s, Parts: %s", bucket_name, object_name, parts)
 
         return parts
