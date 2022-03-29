@@ -22,6 +22,7 @@ import time
 from datetime import timedelta, datetime
 from typing import Union
 
+from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
@@ -79,8 +80,7 @@ class TestS3Object(S3Bucket, S3Object):
                 else:
                     range_read = self.range_read
                 file_name = f'object-bucket-op-{time.perf_counter_ns()}'
-                with open(file_name, 'wb') as fout:
-                    fout.write(os.urandom(file_size))
+                create_file(file_name, file_size)
                 checksum_in = self.checksum_file(file_name)
                 LOGGER.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_name)
