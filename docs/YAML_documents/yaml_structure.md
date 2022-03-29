@@ -23,9 +23,9 @@ in it.
 Start and End range parameters are object/part sizes for which test will be executed.
 Sizes can be given from bytes, KB, MB up to TB. We can also use KiB format as well. 
 
-Result duration can be specified from seconds up to days. For example, 1d1h, 1h or 2d1h.
+Result duration can be specified from seconds up to days. For example: 1d1h, 1h or 2d1h2s.
 
 Tool can be specified from one of these **s3bench**, **s3api** or **warp**.
 
 Operation should be specified according to type of workload and need to map it in corio.py with 
-appropriate test script. 
+appropriate test script.
