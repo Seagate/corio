@@ -19,33 +19,51 @@
 
 """Module to collect resource utilisation utils."""
 
+import logging
 from src.commons.utils import corio_utils as cu
 from src.commons.utils import support_bundle_utils as remote_cmd
 from src.commons.constants import CMD_YUM_NMON, CMD_RUN_NMON
 from src.commons.constants import CMD_KILL_NMON, K8S_WORKER_NODES
 from config import CLUSTER_CFG
 
+LOGGER = logging.getLogger(__name__)
 
-def start_resource_utilisation():
+
+def collect_resource_utilisation(action: str):
     """start collect resource utilisation
+
+    :param action: start or stop collection resource_utilisation
     """
-    # install nmon on client & all master, nodes
-    resp = cu.run_local_cmd(cmd=CMD_YUM_NMON)
     host, user, passwd = None, None, None
-    resp = m_node_obj.execute_cmd(cmd=cm_cmd.K8S_WORKER_NODES, read_lines=True)
-    pods_list = m_node_obj.get_all_pods(pod_prefix=cm_const.SERVER_POD_NAME_PREFIX)
-    worker_node = {resp[index].strip("\n"): dict() for index in range(1, len(resp))}
+    worker_node = []
     for node in CLUSTER_CFG["nodes"]:
-        host, user, passwd = node["hostname"], node["username"], node["password"]
+        if node["node_type"] == "master":
+            host, user, passwd = node["hostname"], node["username"], node["password"]
+            resp = remote_cmd.execute_remote_command(K8S_WORKER_NODES, host, user, passwd)
+            LOGGER.info("response is: ", resp)
+            resp = resp[1].read(-1).decode()
+            LOGGER.info("response[1] is: ", resp)
+            worker_node = resp.strip().split("\n")[1:]
+            LOGGER.info("worker nodes: ", worker_node)
+    if action == "start":
+        resp = cu.run_local_cmd(cmd=CMD_YUM_NMON)
+        LOGGER.info(resp)
         resp = remote_cmd.execute_remote_command(CMD_YUM_NMON, host, user, passwd)
-        resp = remote_cmd.execute_remote_command(CMD_RUN_NMON, host, user, passwd)
+        LOGGER.info(resp)
+        for worker in worker_node:
+            host = worker
+            resp = remote_cmd.execute_remote_command(CMD_YUM_NMON, host, user, passwd)
+            LOGGER.info(resp)
+            resp = remote_cmd.execute_remote_command(CMD_RUN_NMON, host, user, passwd)
+            LOGGER.info(resp)
+    else:
+        resp = cu.run_local_cmd(cmd=CMD_KILL_NMON)
+        LOGGER.info(resp)
+        resp = remote_cmd.execute_remote_command(CMD_YUM_NMON, host, user, passwd)
+        LOGGER.info(resp)
+        for worker in worker_node:
+            host = worker
+            resp = remote_cmd.execute_remote_command(CMD_KILL_NMON, host, user, passwd)
+            LOGGER.info(resp)
 
 
-def stop_resource_utilisation():
-    """stop collection
-    """
-    resp = cu.run_local_cmd(cmd=CMD_KILL_NMON)
-    host, user, passwd = None, None, None
-    for node in CLUSTER_CFG["nodes"]:
-        host, user, passwd = node["hostname"], node["username"], node["password"]
-        resp = remote_cmd.execute_remote_command(CMD_KILL_NMON, host, user, passwd)
