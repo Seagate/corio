@@ -17,3 +17,30 @@ test_2:
   sessions_per_node: 2
   tool: s3api
   operation: bucket
+
+test_3:
+  TEST_ID: unique_string3
+  object_size:
+      start: 1Gib
+      end: 4Gib
+  part_range:
+      start: 50
+      end: 100
+  min_runtime: 2h
+  sessions: 5
+  tool: s3api
+  operation: multipart
+
+test_12:
+  TEST_ID: unique_string4
+  object_size: 512Gib
+  part_range:
+      start: 500
+      end: 600
+  min_runtime: 7d
+  sessions: 30
+  range_read:
+      start: 200Mb
+      end: 1Gb
+  tool: s3api
+  operation: multipart_partcopy
