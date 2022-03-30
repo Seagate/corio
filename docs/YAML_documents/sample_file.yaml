@@ -9,7 +9,7 @@ test_1:
   operation: bucket
 
 test_2:
-  TEST_ID: unique_string
+  TEST_ID: unique_string2
   object_size:
     start: 0Kb
     end: 100Kb
