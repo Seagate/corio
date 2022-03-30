@@ -326,6 +326,7 @@ def main(options):
     tests_to_execute = dict()
     jira_obj = None
     jira_flg = options.test_plan
+    # start resource util
     if jira_flg:
         jira_obj = JiraApp()
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan)
@@ -437,6 +438,7 @@ def main(options):
             collect_upload_sb_to_nfs_server(
                 MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
         # TODO: cleanup object files created
+        # stop resource util
         sys.exit()
 
 
