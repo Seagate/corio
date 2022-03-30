@@ -63,6 +63,7 @@ function_mapping = {
     'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
     'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
+    'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
     'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload']
 }
