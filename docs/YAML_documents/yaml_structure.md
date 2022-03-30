@@ -5,7 +5,7 @@ A test yaml file should have the following parameters:
 * test_id
 * object_size
 * part_size
-* result_duration
+* min_runtime
 * sessions_per_node
 * sessions
 * tool

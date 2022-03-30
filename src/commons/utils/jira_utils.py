@@ -208,7 +208,7 @@ class JiraApp:
         for test_id, test_data in tests_details.items():
             test_start_time = corio_start_time + test_data['start_time']
             if datetime.now() >= test_start_time:
-                if datetime.now() >= (test_start_time + test_data['result_duration']):
+                if datetime.now() >= (test_start_time + test_data['min_runtime']):
                     if test_data['status'] == "EXECUTING":
                         if aborted:
                             aborted_tests = terminated_tests if terminated_tests else []
@@ -223,7 +223,7 @@ class JiraApp:
                             LOGGER.info(resp)
                             resp = self.update_execution_details(
                                 test_data['id'], test_id,
-                                f"Execution completed after {test_data['result_duration']}")
+                                f"Execution completed after {test_data['min_runtime']}")
                             tests_details[test_id]['status'] = "PASS"
                             LOGGER.info(resp)
                 elif test_data['status'] == "TODO":
