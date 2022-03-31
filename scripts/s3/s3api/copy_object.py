@@ -26,6 +26,7 @@ from typing import Union
 
 from botocore.exceptions import ClientError
 
+from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
@@ -84,8 +85,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
-                with open(object1, 'wb') as f_out:
-                    f_out.write(os.urandom(file_size))
+                create_file(object1, file_size)
                 LOGGER.info("Object1 '%s', object size %s Kib", object1, file_size / 1024)
                 await self.upload_object(bucket1, object1, file_path=object1)
                 LOGGER.info("Objects 's3://%s/%s' uploaded successfully.", object1, bucket1)
