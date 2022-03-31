@@ -28,7 +28,8 @@ LOGGER = logging.getLogger("corio")
 
 
 def collect_resource_utilisation(action: str) -> None:
-    """start/stop collect resource utilisation.
+    """
+    start/stop collect resource utilisation.
 
     :param action: start or stop collection resource_utilisation
     """
