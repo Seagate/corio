@@ -26,6 +26,7 @@ from typing import Union
 
 from botocore.exceptions import ClientError
 
+from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 
@@ -80,8 +81,7 @@ class TestBucketOps(S3Object, S3Bucket):
                 for _ in range(0, self.object_per_iter):
                     file_name = f'object-bucket-op-{time.perf_counter_ns()}'
                     LOGGER.info("Object '%s', object size %s Kib", file_name, file_size / 1024)
-                    with open(file_name, 'wb') as f_out:
-                        f_out.write(os.urandom(file_size))
+                    create_file(file_name, file_size)
                     await self.upload_object(bucket_name, file_name, file_path=file_name)
                     LOGGER.info("'s3://%s/%s' uploaded successfully.", bucket_name, file_name)
                     LOGGER.info("Delete generated file")
