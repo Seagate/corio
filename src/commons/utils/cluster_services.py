@@ -44,10 +44,13 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
             os.makedirs(mnt_dir)
             LOGGER.info("Created directory: %s", mnt_dir)
         if host_dir:
-            resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
-            if resp:
-                raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
-            LOGGER.info("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
+            if not os.path.ismount(mnt_dir):
+                resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
+                if resp:
+                    raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
+                LOGGER.info("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
+            else:
+                LOGGER.info("NFS Server already mounted.")
             return os.path.ismount(mnt_dir)
         LOGGER.info("NFS Server not provided, Storing logs locally at %s", mnt_dir)
         return os.path.isdir(mnt_dir)
@@ -114,8 +117,6 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
     """
     try:
         sb_dir = os.path.join(mount_path, "CorIO-Execution", str(run_id), "Support_Bundles")
-        if not os.path.ismount(mount_path):
-            raise IOError(f"Incorrect mount path: {mount_path}")
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
         status, fpath = collect_support_bundle()
