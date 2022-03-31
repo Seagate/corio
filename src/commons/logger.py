@@ -115,20 +115,19 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
         os.remove(source)
 
 
-def get_logger(level, name, logger=None) -> object:
+def get_logger(level, name) -> object:
     """
     Initialize and get the logger object.
 
     :param level: Set logging level, which is used across execution.
     :param name: Name of the logger.
-    :param logger: logger object from logging.getLogger.
     :returns: logger object.
     """
-    level = logging.getLevelName(level)
+    logger = logging.Logger.manager.loggerDict.get(name)
     if logger:
-        logger = logger.manager.getLogger(name)
-    else:
-        logger = logging.getLogger(name)
+        return logger
+    level = logging.getLevelName(level)
+    logger = logging.getLogger(name)
     logger.setLevel(level)
     dir_path = os.path.join(os.getcwd(), "log", "latest")
     if not os.path.exists(dir_path):
