@@ -21,12 +21,13 @@
 
 """common operations/methods from corio tool."""
 
-import os
-import logging
 import glob
-from subprocess import Popen, PIPE, CalledProcessError
-import psutil as ps
+import logging
+import os
 from datetime import datetime
+from subprocess import Popen, PIPE, CalledProcessError
+
+import psutil as ps
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,6 +71,7 @@ def log_cleanup():
     else:
         os.makedirs(reports_dir)
 
+
 def cpu_memory_details():
     """Cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
@@ -82,13 +84,14 @@ def cpu_memory_details():
     LOGGER.debug("Real Time memory usages are: %s", memory_usages)
     if memory_usages > 80.0:
         LOGGER.info("Memory Usages are: %s", memory_usages)
-        available_memory = (ps.virtual_memory().available * 100)/ ps.virtual_memory().total
+        available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
         LOGGER.info("Available Memory is: %s", available_memory)
         if memory_usages > 95.0:
             LOGGER.warning("memory usages greater then 95 percent hence tool may stop execution")
             raise MemoryError(memory_usages)
         top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > corio/reports/topreport.txt")
         LOGGER.info(top_processes)
+
 
 def run_local_cmd(cmd: str) -> tuple:
     """
@@ -97,7 +100,7 @@ def run_local_cmd(cmd: str) -> tuple:
     :return: bool, response.
     """
     if not cmd:
-        raise ValueError("Missing required parameter: {}".format(cmd))
+        raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     proc = None
     try:
@@ -114,4 +117,19 @@ def run_local_cmd(cmd: str) -> tuple:
     finally:
         if proc:
             proc.terminate()
-            
+
+
+def create_file(path: str, size: int):
+    """
+    Create file with random data
+
+    :param size: Size in bytes
+    :param path: File name with path
+    """
+    base = 1024 * 1024
+    while size > base:
+        with open(path, 'ab+') as f_out:
+            f_out.write(os.urandom(base))
+        size -= base
+    with open(path, 'ab+') as f_out:
+        f_out.write(os.urandom(size))
