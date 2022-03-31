@@ -28,6 +28,7 @@ from botocore.exceptions import ClientError
 from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.constants import MIN_DURATION
 
 
 # pylint: disable=too-few-public-methods, too-many-statements
@@ -58,7 +59,6 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         self.session_id = session
         self.iteration = 1
         self.range_read = range_read
-        self.min_duration = 10  # In seconds
         if duration:
             self.finish_time = datetime.now() + duration
         else:
@@ -133,7 +133,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
-            if timedelta_sec < self.min_duration:
+            if timedelta_sec < MIN_DURATION:
                 for bucket in [bucket1, bucket2]:
                     self.log.info("Delete bucket %s with all objects in it.", bucket)
                     await self.delete_bucket(bucket, True)

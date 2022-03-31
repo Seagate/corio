@@ -22,7 +22,6 @@
 """All common constants and params for corio."""
 
 import os
-import logging
 
 
 SCRIPT_HOME = os.getcwd()  # Fetches you CWD of the runner.
@@ -37,12 +36,7 @@ MOUNT_DIR = os.path.join("/root", "nfs_share")
 K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
 CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
 CMD_MOUNT = "mount -t nfs {} {}"
-LOG_LEVEL = {"CRITICAL": logging.CRITICAL,
-             "ERROR": logging.ERROR,
-             "INFO": logging.INFO,
-             "WARNING": logging.WARNING,
-             "DEBUG": logging.DEBUG,
-             "VERBOSE": logging.DEBUG}
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"
+MIN_DURATION = 20  # Minimum execution duration in seconds.

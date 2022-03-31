@@ -25,6 +25,7 @@ from typing import Union
 from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.constants import MIN_DURATION
 
 
 # pylint: disable=too-few-public-methods
@@ -56,7 +57,6 @@ class TestS3Object(S3Bucket, S3Object):
         self.session_id = session
         self.iteration = 1
         self.range_read = range_read
-        self.min_duration = 10  # In seconds
         self.parts = 3
         if duration:
             self.finish_time = datetime.now() + duration
@@ -115,7 +115,7 @@ class TestS3Object(S3Bucket, S3Object):
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
-            if timedelta_sec < self.min_duration:
+            if timedelta_sec < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", bucket)
                 await self.delete_bucket(bucket, True)
                 return True, "Multipart execution completed successfully."

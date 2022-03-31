@@ -48,7 +48,6 @@ from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
 from src.commons.constants import MOUNT_DIR
-from src.commons.constants import LOG_LEVEL
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
@@ -74,10 +73,13 @@ def initialize_loghandler(opt):
     """
     Initialize io driver runner logging with stream and file handlers.
 
-    param opt.logging_level: logging level used in CorIO tool.
+    param opt: logging level used in CorIO tool.
     """
-    # If wrong log level provided then it will use default INFO.
-    level = logging.getLevelName(LOG_LEVEL.get(opt.logging_level.upper(), logging.INFO))
+    # If  log level provided then it will use DEBUG else will use default INFO.
+    if opt.verbose:
+        level = logging.getLevelName(logging.DEBUG)
+    else:
+        level = logging.getLevelName(logging.INFO)
     os.environ['log_level'] = level
     LOGGER.setLevel(level)
     dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
@@ -94,14 +96,8 @@ def parse_args():
     parser.add_argument("-ti", "--test_input", type=str,
                         help="Directory path containing test data input yaml files or "
                              "input yaml file path.")
-    parser.add_argument("-ll", "--logging-level", type=str, default="INFO",
-                        help="log level value as defined below: " +
-                             "CRITICAL " +
-                             "ERROR " +
-                             'WARNING ' +
-                             'INFO ' +
-                             'DEBUG ' +
-                             'VERBOSE')
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="log level used verbose(debug), default is info.")
     parser.add_argument("-us", "--use_ssl", type=lambda x: bool(strtobool(str(x))), default=True,
                         help="Use HTTPS/SSL connection for S3 endpoint.")
     parser.add_argument("-sd", "--seed", type=int, help="seed.",
@@ -156,11 +152,10 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         if 'range_read' in each.keys():
             params['range_read'] = each['range_read']
         params.update(common_params)
-        for i in range(int(each['sessions'])):
+        for i in range(1, int(each['sessions']) + 1):
             params["session"] = f"{each['TEST_ID']}_session{i}"
             tasks.append(create_session(funct=each['operation'],
                                         start_time=each['start_time'].total_seconds(), **params))
-
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     LOGGER.info("Completed task %s", done)
     for task in pending:
@@ -208,7 +203,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
     """
     status_fpath = os.path.join(os.getcwd(), "reports", f"corio_summary_{DT_STRING}.report")
     LOGGER.info("Logging current status to %s", status_fpath)
-    with open(status_fpath, 'w') as status_file:
+    with open(status_fpath, 'w', encoding="utf-8") as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
         if test_failed == 'KeyboardInterrupt':
             status_file.write("\nTest Execution stopped due to Keyboard interrupt")
@@ -314,7 +309,7 @@ def health_check_process(interval):
         #     return resp
 
 
-# pylint: disable-msg=too-many-branches,too-many-locals
+# pylint: disable-msg=too-many-branches,too-many-locals, too-many-statements
 def main(options):
     """
     Main function for CORIO.
@@ -328,8 +323,8 @@ def main(options):
                       'endpoint_url': S3_CFG.endpoint,
                       'use_ssl': S3_CFG["use_ssl"],
                       'seed': options.seed}
-    tests_details = dict()
-    tests_to_execute = dict()
+    tests_details = {}
+    tests_to_execute = {}
     jira_obj = None
     jira_flg = options.test_plan
     if jira_flg:
@@ -345,11 +340,11 @@ def main(options):
     parsed_input = {}
     for each in file_list:
         parsed_input[each] = yaml_parser.test_parser(each, options.number_of_nodes)
-    test_ids, missing_jira_ids = list(), list()
-    for _, value in parsed_input.items():
+    test_ids, missing_jira_ids = [], []
+    for key, value in parsed_input.items():
+        LOGGER.info("Test Values : %s", value)
         for test_key, test_value in value.items():
             test_ids.append(test_value["TEST_ID"])
-            LOGGER.info("Test Values : %s", value)
             if 'operation' in test_value.keys():
                 test_value['operation'] = function_mapping[
                     test_value['operation']]
@@ -372,8 +367,7 @@ def main(options):
     corio_start_time = datetime.now()
     LOGGER.info("Parsed input files : ")
     LOGGER.info(pformat(parsed_input))
-    LOGGER.info("List of tests to be executed..")
-    LOGGER.info(tests_to_execute)
+    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
     processes = {}
     for test_plan, test_plan_value in parsed_input.items():
         process = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
@@ -395,7 +389,7 @@ def main(options):
     try:
         for process in processes.values():
             process.start()
-        test_ids = list()
+        test_ids = []
         while True:
             terminated_tp = None
             cpu_memory_details()

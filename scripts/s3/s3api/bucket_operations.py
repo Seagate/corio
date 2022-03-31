@@ -28,6 +28,7 @@ from botocore.exceptions import ClientError
 from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.constants import MIN_DURATION
 
 
 # pylint: disable=too-few-public-methods, too-many-statements
@@ -57,7 +58,6 @@ class TestBucketOps(S3Object, S3Bucket):
         self.object_size = object_size
         self.test_id = test_id
         self.session_id = session
-        self.min_duration = 10  # In seconds
         self.object_per_iter = 500
         self.iteration = 1
         if duration:
@@ -99,7 +99,7 @@ class TestBucketOps(S3Object, S3Bucket):
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
-            if timedelta_sec < self.min_duration:
+            if timedelta_sec < MIN_DURATION:
                 return True, "Bucket operation execution completed successfully."
             self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1

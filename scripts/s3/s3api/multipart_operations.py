@@ -29,6 +29,7 @@ from typing import Union
 from src.libs.s3api.s3_multipart_ops import S3MultiParts
 from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.s3api.s3_bucket_ops import S3Bucket
+from src.commons.constants import MIN_DURATION
 
 
 class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
@@ -39,8 +40,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, use_ssl: bool,
                  object_size: Union[dict, bytes], part_range: dict, seed: int, session: str,
-                 test_id: str = None, range_read: Union[dict, bytes] = None,
-                 part_copy: bool = False, duration: timedelta = None) -> None:
+                 test_id: str, range_read: Union[dict, bytes] = None, part_copy: bool = False,
+                 duration: timedelta = None) -> None:
         """s3 multipart init for multipart, part copy operations with different workload.
 
         :param access_key: access key.
@@ -63,7 +64,6 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         self.range_read = range_read
         self.session_id = session
         self.iteration = 1
-        self.min_duration = 10  # In seconds
         if test_id:
             self.test_id = test_id.lower()
         else:  # If test_id missing then generate random number for execution.
@@ -75,14 +75,14 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
 
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
-        mpart_bucket = "s3mpart-bkt-{}-{}".format(self.test_id, perf_counter_ns())
+        mpart_bucket = f"s3mpart-bkt-{self.test_id}-{perf_counter_ns()}"
         await self.create_bucket(mpart_bucket)
         while True:
             self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
                 self.log.info("Bucket name: %s", mpart_bucket)
-                s3mpart_object = "s3mpart-obj-{}-{}".format(self.test_id, perf_counter_ns())
-                s3_object = "s3-obj-{}-{}".format(self.test_id, perf_counter_ns())
+                s3mpart_object = f"s3mpart-obj-{self.test_id}-{perf_counter_ns()}"
+                s3_object = f"s3-obj-{self.test_id}-{perf_counter_ns()}"
                 self.log.info("Object name: %s", s3mpart_object)
                 if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
@@ -98,7 +98,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 assert response["UploadId"], f"Failed to initiate multipart upload: {response}"
                 mpu_id = response["UploadId"]
                 random_part = random.randrange(1, number_of_parts + 1)
-                parts = list()
+                parts = []
                 file_hash = hashlib.sha256()
                 for i in range(1, number_of_parts + 1):
                     byte_s = os.urandom(single_part_size)
@@ -157,7 +157,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 self.log.exception(err)
                 raise err
             timedelta_sec = (self.finish_time - datetime.now()).total_seconds()
-            if timedelta_sec < self.min_duration:
+            if timedelta_sec < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
