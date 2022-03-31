@@ -45,9 +45,11 @@ def collect_resource_utilisation(action: str):
             worker_node = resp.strip().split("\n")[1:]
             LOGGER.info("worker nodes: ", worker_node)
     if action == "start":
-        resp = cu.run_local_cmd(cmd=cm_cmd.CMD_YUM_NMON)
+        # resp = cu.run_local_cmd(cmd=cm_cmd.CMD_YUM_NMON)
+        remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, "localhost", user, passwd)
         LOGGER.info("Local response: %s", str(resp))
-        resp = cu.run_local_cmd(cmd=cm_cmd.CMD_RUN_NMON)
+        # resp = cu.run_local_cmd(cmd=cm_cmd.CMD_RUN_NMON)
+        remote_cmd.execute_remote_command(cm_cmd.CMD_RUN_NMON, "localhost", user, passwd)
         LOGGER.info("master response: %s", str(resp))
         resp = remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
         LOGGER.info("master response: %s", str(resp))
