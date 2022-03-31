@@ -1,4 +1,4 @@
-Why CORIO (KOR-I-O)
+Why CORIO (KOR-I-O) 
 
 Need to check IO Stability: Sustainability of S3 Ops with IO for expected longer duration.
 
@@ -7,7 +7,6 @@ Hereby needed single aggregator / umbrella tool.
 
     * This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
     * This can be Integrated for any other product requirements
-    * Useful across teams (CICD, DST, Regression, ComponentQA, Dev, CFT)
 
 This tool is capable to execute multi-level test suite that can be executed for a prolonged infinite period 
 with increasing difficulty levels for them to Pass these set period, so we know the defects when fixed allows the 
@@ -24,18 +23,23 @@ This Tool can run multiple tests suites in following manner.
 
 This tool is capable of executing matrix based execution
 
+Integrated for CORTX Requirements:
+
+    1. Jira Integration
+    2. Automated Execution with Jenkins
+    3. System Health Check and
+    4. Resource Monitoring(CPU and Memory)
+    5. Generating Support Bundle Logs (Periodic and on failure)
+    6. Useful across teams (CICD, DST, Regression, ComponentQA, Dev, CFT)
+
+
 Additional Capabilities:
 
     1. Simple and easy to execute tool.
     2. Fully configurable S3 and IO workload to support Stress (exponential workload) as well as longevity (constant workload) testing
-    3. Jira Integration
-    4. Automated Execution with Jenkins
-    5. System Health Check and
-    6. Resource Monitoring(CPU and Memory)
-    7. Generating Support Bundle Logs (Periodic and on failure)
-    8. Error injection and failure modes (TBD)
-    9. Plug, and play architecture such that additional functionalities may be extended
-    10.Can be extended with other IO protocols
+    3. Error injection and failure modes (TBD)
+    4. Plug, and play architecture such that additional functionalities may be extended
+    5. Can be extended with other IO protocols
 
 Tool Components are as following:
 
