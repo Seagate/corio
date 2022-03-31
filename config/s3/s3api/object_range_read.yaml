@@ -1,7 +1,7 @@
 test_1:
   TEST_ID: TEST-36564
   object_size:
-    start: 300b
+    start: 300bytes
     end: 100Kb
   result_duration: 2h
   sessions_per_node: 1
@@ -46,7 +46,7 @@ test_5:
   TEST_ID: TEST-36568
   object_size:
     start: 20Mb
-    end: 100Mb
+    end: 50Mb
   result_duration: 1d
   sessions_per_node: 8
   range_read: 10Kb
@@ -56,8 +56,8 @@ test_5:
 test_6:
   TEST_ID: TEST-36569
   object_size:
-    start: 100Mb
-    end: 500Mb
+    start: 50Mb
+    end: 100Mb
   result_duration: 2d
   sessions_per_node: 13
   range_read: 100Kb
@@ -67,8 +67,8 @@ test_6:
 test_7:
   TEST_ID: TEST-36570
   object_size:
-    start: 500Mb
-    end: 1Gb
+    start: 100Mb
+    end: 250Mb
   result_duration: 2d
   sessions_per_node: 21
   range_read: 1Mb
@@ -78,8 +78,8 @@ test_7:
 test_8:
   TEST_ID: TEST-36571
   object_size:
-    start: 1Gb
-    end: 2Gb
+    start: 250Mb
+    end: 500Mb
   result_duration: 4d
   sessions_per_node: 34
   range_read: 10Mb
@@ -89,8 +89,8 @@ test_8:
 test_9:
   TEST_ID: TEST-36572
   object_size:
-    start: 2Gb
-    end: 5Gb
+    start: 500Mb
+    end: 750Mb
   result_duration: 5d
   sessions_per_node: 55
   range_read: 100Mb
@@ -100,8 +100,8 @@ test_9:
 test_10:
   TEST_ID: TEST-36573
   object_size:
-    start: 5Gb
-    end: 10Gb
+    start: 750Mb
+    end: 1Gb
   result_duration: 5d
   sessions_per_node: 89
   range_read: 150Mb
@@ -111,8 +111,8 @@ test_10:
 test_11:
   TEST_ID: TEST-36574
   object_size:
-    start: 10Gb
-    end: 20Gb
+    start: 1Gb
+    end: 2Gb
   result_duration: 5d
   sessions_per_node: 144
   range_read: 200Mb
@@ -122,10 +122,10 @@ test_11:
 test_12:
   TEST_ID: TEST-36575
   object_size:
-    start: 20Gb
-    end: 50Gb
+    start: 2Gb
+    end: 5Gb
   result_duration: 5d
   sessions_per_node: 233
-  range_read: 1Gb
+  range_read: 500Mb
   tool: s3api
   operation: object_range_read
