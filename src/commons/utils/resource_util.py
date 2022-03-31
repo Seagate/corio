@@ -20,7 +20,6 @@
 """Module to collect resource utilisation utils."""
 
 import logging
-from src.commons.utils import corio_utils as cu
 from src.commons.utils import support_bundle_utils as remote_cmd
 from src.commons import constants as cm_cmd
 from config import CLUSTER_CFG
@@ -45,10 +44,8 @@ def collect_resource_utilisation(action: str):
             worker_node = resp.strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", str(worker_node))
     if action == "start":
-        # resp = cu.run_local_cmd(cmd=cm_cmd.CMD_YUM_NMON)
         remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, "localhost", user, passwd)
         LOGGER.debug("Local response: %s", str(resp))
-        # resp = cu.run_local_cmd(cmd=cm_cmd.CMD_RUN_NMON)
         remote_cmd.execute_remote_command(cm_cmd.CMD_RUN_NMON, "localhost", user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         resp = remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
@@ -70,5 +67,3 @@ def collect_resource_utilisation(action: str):
             host = worker
             resp = remote_cmd.execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
             LOGGER.debug("worker response: %s", str(resp))
-
-

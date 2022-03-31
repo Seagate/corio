@@ -2,8 +2,8 @@
 "product_type": "k8s"
 #K8s based s3 server master details.
 "nodes":
-    - "hostname": "ssc-vm-g2-rhev4-3063.colo.seagate.com"
+    - "hostname": ""
       "ip": ""
-      "username": "root"
-      "password": "seagate"
+      "username": ""
+      "password": ""
       "node_type": "master"
