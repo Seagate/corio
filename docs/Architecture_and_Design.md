@@ -3,31 +3,41 @@ Why CORIO (KOR-I-O)
 Need to check IO Stability: Sustainability of S3 Ops with IO for expected longer duration.
 
 Need for a tool which gives consistent outcome of where do we stand in terms of IO Path stability.
+Hereby needed single aggregator / umbrella tool.
+
+    * This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
+    * This can be Integrated for any other product requirements
+    * Useful across teams (CICD, DST, Regression, ComponentQA, Dev, CFT)
 
 This tool is capable to execute multi-level test suite that can be executed for a prolonged infinite period 
 with increasing difficulty levels for them to Pass these set period, so we know the defects when fixed allows the 
 system to withstand how much period of prolonged IO.
 This tool generates exponential increasing IO sessions.
+
 This Tool can run multiple tests suites in following manner.
 
-Start Given Test Suites/Execution, say N in parallel such that first test from 
-each suite will start and will be marked pass once it achieves minimum run_length duration.
-Then next set of Tests will start and previous will also continue.
-hence, it will increase load on target and, we can check IO sustainability in lesser time/duration  as compared to other
-Tools.
+    1. Start Given Test Suites/Execution, say N in parallel such that first test from 
+    each suite will start and will be marked pass once it achieves minimum run_length duration.
+    2. Then next set of Tests will start and previous will also continue.
+    3. It will increase load on target and, we can check IO sustainability in lesser time/duration  as compared to other
+    Tools.
 
 This tool is capable of executing matrix based execution
 
 Additional Capabilities:
-    Simple and easy to execute tool.
-    Jira Integration
-    Automated Execution with Jenkins
-    System Health Check and
-    Generating Support Bundle Logs
-    Plug, and play architecture such that additional functionalities may be extended
-    Can be extended with other IO protocols
 
-Components are as following:
+    1. Simple and easy to execute tool.
+    2. Fully configurable S3 and IO workload to support Stress (exponential workload) as well as longevity (constant workload) testing
+    3. Jira Integration
+    4. Automated Execution with Jenkins
+    5. System Health Check and
+    6. Resource Monitoring(CPU and Memory)
+    7. Generating Support Bundle Logs (Periodic and on failure)
+    8. Error injection and failure modes (TBD)
+    9. Plug, and play architecture such that additional functionalities may be extended
+    10.Can be extended with other IO protocols
+
+Tool Components are as following:
 
 Block Diagram ![img.png](Block_Diagram.png)
 
