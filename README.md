@@ -74,31 +74,29 @@ corio.py --help
 
 **Arguments:**
 
-      -h HELP, --help       show this help message and exit
+      -h, --help       show this help message and exit
 
-      -ti TEST_INPUT, --test_input TEST_INPUT
-                            Directory path containing test data input yaml files
-                            or input yaml file path.
+      -ti, --test_input TEST_INPUT
+                    Directory path containing test data input yaml files or input yaml file path.
     
       -v, --VERBOSE, 
-                        log level used verbose(debug). default is info.
+                    log level used verbose(debug), default is info.
     
-      -us USE_SSL, --use_ssl USE_SSL
-                            Use HTTPS/SSL connection for S3 endpoint.
+      -us, --use_ssl USE_SSL
+                    Use HTTPS/SSL connection for S3 endpoint.
     
-      -sd SEED, --seed SEED
-                            seed used to regenerate same workload  execution.
+      -sd, --seed SEED
+                    seed used to regenerate same workload  execution.
     
-      -sk SECRET_KEY, --secret_key SECRET_KEY
-                            s3 secret Key.
+      -sk, --secret_key SECRET_KEY
+                    s3 secret Key.
     
-      -ak ACCESS_KEY, --access_key ACCESS_KEY
-                            s3 access Key.
+      -ak, --access_key ACCESS_KEY
+                    s3 access Key.
     
-      -ep ENDPOINT, --endpoint ENDPOINT
-                            fqdn/ip:port of s3 endpoint for io operations without
-                            http/https.protocol in endpoint is based on use_ssl
-                            flag.
+      -ep, --endpoint ENDPOINT
+                    fqdn/ip:port of s3 endpoint for io operations without http/https.protocol in 
+                    endpoint is based on use_ssl flag.
     
-      -nn NUMBER_OF_NODES, --number_of_nodes NUMBER_OF_NODES
-                            number of nodes in system
+      -nn, --number_of_nodes NUMBER_OF_NODES
+                    number of nodes in system

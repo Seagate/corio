@@ -104,7 +104,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                     else:
                         range_read = random.randrange(
                             self.range_read["start"], self.range_read["end"])
-                    self.log.info("Get object using suggested range read '%s'.", range_read)
+                    self.log.info("Get object with range read '%s' bytes.", range_read)
                     offset = random.randrange(file_size - range_read)
                     self.log.info("Reading chunk bytes=%s-%s", offset, range_read + offset)
                     checksum1 = await self.get_s3object_checksum(
