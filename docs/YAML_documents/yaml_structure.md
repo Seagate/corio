@@ -26,10 +26,10 @@ can have the following keys in it.
 * start
 * end 
 
-Sessions_per_node and sessions is a multiplying factor which is used to calculate number of 
-sessions to be created within a test. Default value is 1. number of nodes param will be used to 
-multiply with sessions per node and that total value will be used to create sessions and in case 
-of sessions, sessions specified in YAML file will be used to create sessions
+sessions_per_node multiplied with number_of_nodes (command line argument '-nn') will be treated 
+as total number of sessions for a test workload. Default value of number_of_nodes is 1.
+
+sessions specified in YAML file will be directly used to create total sessions. 
 
 range_read key is used to perform range read operations in a workload. 
 
