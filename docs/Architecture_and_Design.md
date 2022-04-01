@@ -2,25 +2,28 @@
 ### A tool to check Sustainability of IO Operations for expected longer duration
 
 
-Need for a tool which gives consistent outcome of where do we stand in terms of IO Path stability.
-Hereby needed single aggregator / umbrella tool.
+Need for a tool which gives consistent outcome of where do we stand in terms of IO Path stability under 
+single aggregator/umbrella tool.
 
-1. This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
-2. This can be Integrated for any other product requirements
+1. Fully configurable with IO workload to support Stress (exponential workload) as well as longevity testing.
+2. This tool support S3 IO Operations using full capability of boto APIs.
+3. This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
+4. This tool has capability to have seed based execution for reproducing same scenarios.
+5. This can be Integrated for any other product requirements.
 
 ### This tool is capable of executing matrix based execution as following:
 
 This tool is capable to execute multi-level test suite that can be executed for a prolonged infinite period 
 with increasing difficulty levels for them to Pass these set period, so we know the defects when fixed allows the 
 system to withstand how much period of prolonged IO.
-This tool generates exponential increasing IO sessions.
+
 
 Scheme of  multiple tests suites execution is as following:
 
-1. Start Given Test Suites/Execution, say N in parallel such that first test from 
-each suite will start and will be marked pass once it achieves minimum run_length duration.
-2. Then next set of Tests will start and previous will also continue.
-3. It will increase load on target and, we can check IO sustainability in lesser time/duration  as compared to other
+1. Start given test suites/execution, say N in parallel such that first test from 
+each suite will start and will be marked pass once it achieves minimum duration of execution.
+2. Then next set of tests will start and previous will also continue.
+3. It will increase load(with exponential increasing IO sessions) on target and, IO sustainability can be checked in lesser time/duration  as compared to other
 Tools.
 
 
@@ -37,10 +40,9 @@ Tools.
 ### Additional Capabilities:
 
 1. Simple and easy to execute tool.
-2. Fully configurable S3 and IO workload to support Stress (exponential workload) as well as longevity (constant workload) testing
-3. Error injection and failure modes (TBD).
-4. Plug, and play architecture such that additional functionalities may be extended.
-5. Can be extended with other IO protocols.
+2. Error injection and failure modes (TBD).
+3. Plug, and play architecture such that additional functionalities may be extended.
+4. Can be extended with other IO protocols.
 
 ### Tool components:
 
