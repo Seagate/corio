@@ -28,24 +28,26 @@ import logging
 from os import path
 from logging import handlers
 from config import CORIO_CFG
+from src.commons.constants import FORMATTER
 
 
 class StreamToLogger:
     """logger class for corio."""
 
-    def __init__(self, file_path, logger):
+    def __init__(self, file_path, logger, stream=False):
         """"
         Initialize root logger.
 
         :param file_path: File path of the logger.
         :param logger: logger object from logging.getLogger(__name__).
+        :param stream: To enable/disable stream handler/logging.
         """
         self.file_path = file_path
         self.logger = logger
-        self.formatter = '[%(asctime)s] [%(threadName)-6s] [%(levelname)-6s] ' \
-                         '[%(filename)s: %(lineno)d]: %(message)s'
+        self.formatter = FORMATTER
         self.make_logdir()
-        self.set_stream_logger()
+        if stream:
+            self.set_stream_logger()
         self.set_filehandler_logger()
 
     def make_logdir(self) -> None:
@@ -98,7 +100,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
         :param default_name: name of the base file
         :return: rotated log file name e.g., io_driver-YYYY-MM-DD-1.gz
         """
-        return "{}-{}.gz".format(default_name, str(datetime.date.today()))
+        return f"{default_name}-{str(datetime.date.today())}.gz"
 
     def rotate(self, source, dest):
         """
@@ -111,3 +113,26 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
             with gzip.open(dest, "wb", 9) as df_obj:
                 shutil.copyfileobj(sf_obj, df_obj)
         os.remove(source)
+
+
+def get_logger(level, name) -> object:
+    """
+    Initialize and get the logger object.
+
+    :param level: Set logging level, which is used across execution.
+    :param name: Name of the logger.
+    :returns: logger object.
+    """
+    logger = logging.Logger.manager.loggerDict.get(name)
+    if logger:
+        return logger
+    level = logging.getLevelName(level)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    dir_path = os.path.join(os.getcwd(), "log", "latest")
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+    fpath = os.path.join(dir_path, f"{name}_console.log")
+    StreamToLogger(fpath, logger)
+
+    return logger
