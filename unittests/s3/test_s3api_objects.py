@@ -68,7 +68,8 @@ class S3ObjectTestCase(unittest.TestCase):
             f'INFO:src.libs.s3api.s3_object_ops:Reading size is {1 * MIB}',
             f'DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {offset}',
             f'DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {10 + MIB}',
-            f'DEBUG:src.libs.s3api.s3_object_ops:Reading {10} from starting offset {10 + (MIB * 2)}']
+            f'DEBUG:src.libs.s3api.s3_object_ops:Reading {10} from starting offset {10 + (MIB * 2)}'
+        ]
         mock_getsize.return_value = file_size
         with self.assertLogs('src.libs.s3api.s3_object_ops', level='DEBUG') as logs:
             with mock.patch("builtins.open", mock.mock_open()) as mock_open:
