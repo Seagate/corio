@@ -6,8 +6,10 @@ This Tool can be divided logically in following sections:
     Configurations
     Scripts
     Utils
-Start Here:
+##Start Here:
+
 Note: CORIO is a under development project, Use with Caution and report issues.
+
 brush up Git knowledge if you are coming from other versioning systems
 Follow the link <https://github.com/Seagate/cortx/blob/main/doc/github-process-readme.md> to configure git on your local machine
 Create a GitHub account and get access to Seagate Repositories
@@ -33,7 +35,7 @@ Fork local repository from Seagate's CORIO. Clone CORIO repository from your loc
     git fetch upstream
     git pull upstream --rebase dev
 
-Set up dev environment:
+**Set up dev environment:**
 
     Following steps helps to set up env, where corio runs. These steps assume that you have installed git client and cloned repo.
 
@@ -53,58 +55,48 @@ Steps to Configure test scripts for execution in parallel mode.:
 
     python corio.py -ak <access_key> -sk <secret_key> -ep <s3.seagate.com> -ti config/io
 
-Prerequisite: A S3 account and access key and secret key should be present to carry out execution.
+**Prerequisite:** 
 
-here test input may be either a single yaml file path i.e. config/s3/s3api/bucket_operations.yaml
-
-or
-
-A Directory path containing multiple tests data input yaml files those need to be executed in parallel
-
-i.e. config/s3/s3api or any other customized directory(i.e. config/s3/io) location may be created containing test data input yaml files and can be passed as argument
+    A S3 account and access key and secret key should be present to carry out execution. 
+    here test input may be either a single yaml file path i.e. config/s3/s3api/bucket_operations.yaml
+    or
+    A Directory path containing multiple tests data input yaml files those need to be executed in parallel
+    i.e. config/s3/s3api or any other customized directory(i.e. config/s3/io) location may be created containing test data input yaml files and can be passed as argument
 
 CORIO Runner Help Options:
 
 corio.py --help
 
-usage:
+**Usage:**
 
-corio.py [-h HELP][-ti TEST_INPUT] [-ll LOGGING_LEVEL] [-us USE_SSL] [-sd SEED]
-[-sk SECRET_KEY] [-ak ACCESS_KEY] [-ep ENDPOINT] [-nn NUMBER_OF_NODES]
+    corio.py [-h HELP][-ti TEST_INPUT] [-v, --verbose] [-us USE_SSL] [-sd SEED]
+    [-sk SECRET_KEY] [-ak ACCESS_KEY] [-ep ENDPOINT] [-nn NUMBER_OF_NODES]
 
-arguments:
+**Arguments:**
 
-  -h HELP, --help       show this help message and exit
+      -h, --help       show this help message and exit
 
-  -ti TEST_INPUT, --test_input TEST_INPUT
-                        Directory path containing test data input yaml files
-                        or input yaml file path.
-
-  -ll LOGGING_LEVEL, --logging-level LOGGING_LEVEL
-                        log level value as defined below:
-
-                        CRITICAL=50 
-                        ERROR=40
-                        WARNING=30 
-                        INFO=20 
-                        DEBUG=10
-
-  -us USE_SSL, --use_ssl USE_SSL
-                        Use HTTPS/SSL connection for S3 endpoint.
-
-  -sd SEED, --seed SEED
-                        seed used to regenerate same workload  execution.
-
-  -sk SECRET_KEY, --secret_key SECRET_KEY
-                        s3 secret Key.
-
-  -ak ACCESS_KEY, --access_key ACCESS_KEY
-                        s3 access Key.
-
-  -ep ENDPOINT, --endpoint ENDPOINT
-                        fqdn/ip:port of s3 endpoint for io operations without
-                        http/https.protocol in endpoint is based on use_ssl
-                        flag.
-
-  -nn NUMBER_OF_NODES, --number_of_nodes NUMBER_OF_NODES
-                        number of nodes in system
+      -ti, --test_input TEST_INPUT
+                    Directory path containing test data input yaml files or input yaml file path.
+    
+      -v, --VERBOSE, 
+                    log level used verbose(debug), default is info.
+    
+      -us, --use_ssl USE_SSL
+                    Use HTTPS/SSL connection for S3 endpoint.
+    
+      -sd, --seed SEED
+                    seed used to regenerate same workload  execution.
+    
+      -sk, --secret_key SECRET_KEY
+                    s3 secret Key.
+    
+      -ak, --access_key ACCESS_KEY
+                    s3 access Key.
+    
+      -ep, --endpoint ENDPOINT
+                    fqdn/ip:port of s3 endpoint for io operations without http/https.protocol in 
+                    endpoint is based on use_ssl flag.
+    
+      -nn, --number_of_nodes NUMBER_OF_NODES
+                    number of nodes in system
