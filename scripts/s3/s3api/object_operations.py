@@ -72,7 +72,9 @@ class TestS3Object(S3Bucket, S3Object):
         while True:
             self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
-                if isinstance(self.object_size, dict):
+                if isinstance(self.object_size, list):
+                    file_size = self.object_size[random.randrange(0, len(self.object_size))]
+                elif isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
