@@ -36,6 +36,10 @@ MOUNT_DIR = os.path.join("/root", "nfs_share")
 K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
 CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
 CMD_MOUNT = "mount -t nfs {} {}"
+FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
+            '[%(filename)s: %(lineno)d]: %(message)s'
+ROOT = "corio"
+MIN_DURATION = 20  # Minimum execution duration in seconds.
 
 CMD_YUM_NMON = "yum install -y nmon"
 K8S_WORKER_NODES = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"

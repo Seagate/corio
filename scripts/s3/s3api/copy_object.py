@@ -17,7 +17,6 @@
 #
 """s3 Copy Object workload for io stability."""
 
-import logging
 import os
 import random
 import time
@@ -29,8 +28,7 @@ from botocore.exceptions import ClientError
 from src.commons.utils.corio_utils import create_file
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
-
-LOGGER = logging.getLogger(__name__)
+from src.commons.constants import MIN_DURATION
 
 
 # pylint: disable=too-few-public-methods, too-many-statements
@@ -39,7 +37,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
 
     # pylint: disable=too-many-arguments
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
-                 use_ssl: bool, object_size: Union[int, dict], seed: int,
+                 use_ssl: bool, object_size: Union[int, dict], seed: int, session: str,
                  range_read: Union[int, dict] = None, duration: timedelta = None) -> None:
         """s3 Copy Object init class.
 
@@ -50,15 +48,17 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         :param use_ssl: To use secure connection
         :param object_size: Object size
         :param seed: Seed to be used for random data generator
+        :param session: session name.
         :param duration: Duration timedelta object, if not given will run for 100 days
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl)
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url,
+                         use_ssl=use_ssl, test_id=test_id)
         random.seed(seed)
         self.object_size = object_size
         self.test_id = test_id
+        self.session_id = session
         self.iteration = 1
         self.range_read = range_read
-        self.min_duration = 10  # In seconds
         if duration:
             self.finish_time = datetime.now() + duration
         else:
@@ -72,11 +72,11 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         object1 = f"object-1-{self.test_id}-{time.perf_counter_ns()}".lower()
         object2 = f"object-2-{self.test_id}-{time.perf_counter_ns()}".lower()
         await self.create_bucket(bucket1)
-        LOGGER.info("Created bucket %s", bucket1)
+        self.log.info("Created bucket %s", bucket1)
         await self.create_bucket(bucket2)
-        LOGGER.info("Created bucket %s", bucket2)
+        self.log.info("Created bucket %s", bucket2)
         while True:
-            LOGGER.info("Iteration %s is started for %s...", self.iteration, self.test_id)
+            self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
                 # Put object in bucket1
                 if isinstance(self.object_size, list):
@@ -86,12 +86,12 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 else:
                     file_size = self.object_size
                 create_file(object1, file_size)
-                LOGGER.info("Object1 '%s', object size %s Kib", object1, file_size / 1024)
+                self.log.info("Object1 '%s', object size %s Kib", object1, file_size / 1024)
                 await self.upload_object(bucket1, object1, file_path=object1)
-                LOGGER.info("Objects 's3://%s/%s' uploaded successfully.", object1, bucket1)
+                self.log.info("Objects 's3://%s/%s' uploaded successfully.", object1, bucket1)
                 ret1 = await self.head_object(bucket1, object1)
                 await self.copy_object(bucket1, object1, bucket2, object2)
-                LOGGER.info(
+                self.log.info(
                     "Copied object 's3://%s/%s' to s3://%s/%s in same account successfully.",
                     bucket1, object1, bucket1, bucket2)
                 ret2 = await self.head_object(bucket2, object2)
@@ -104,9 +104,9 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                     else:
                         range_read = random.randrange(
                             self.range_read["start"], self.range_read["end"])
-                    LOGGER.info("Get object using suggested range read '%s'.", range_read)
+                    self.log.info("Get object with range read '%s' bytes.", range_read)
                     offset = random.randrange(file_size - range_read)
-                    LOGGER.info("Reading chunk bytes=%s-%s", offset, range_read + offset)
+                    self.log.info("Reading chunk bytes=%s-%s", offset, range_read + offset)
                     checksum1 = await self.get_s3object_checksum(
                         bucket=bucket1, key=object1, ranges=f'bytes={offset}-{range_read + offset}')
                     checksum2 = await self.get_s3object_checksum(
@@ -115,28 +115,28 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                         f"SHA256 of original range ({checksum1})\nSHA256 of copied range " \
                         f"({checksum2}) are not matching"
                 else:
-                    LOGGER.info("Download source and destination object and compare checksum.")
+                    self.log.info("Download source and destination object and compare checksum.")
                     checksum1 = await self.get_s3object_checksum(bucket1, object1)
                     checksum2 = await self.get_s3object_checksum(bucket2, object2)
                     assert checksum1 == checksum2, \
                         f"SHA256 of original range ({checksum1})\nSHA256 of copied range " \
                         f"({checksum2}) are not matching"
-                LOGGER.info("Delete source object from bucket-1.")
+                self.log.info("Delete source object from bucket-1.")
                 await self.delete_object(bucket1, object1)
-                LOGGER.info("List destination object from bucket-2.")
+                self.log.info("List destination object from bucket-2.")
                 await self.head_object(bucket2, object2)
-                LOGGER.info("Delete destination object from bucket-2.")
+                self.log.info("Delete destination object from bucket-2.")
                 await self.delete_object(bucket2, object2)
                 os.remove(object1)
             except (ClientError, IOError, AssertionError) as err:
-                LOGGER.exception(err)
+                self.log.exception(err)
                 raise err
             timedelta_v = (self.finish_time - datetime.now())
             timedelta_sec = timedelta_v.total_seconds()
-            if timedelta_sec < self.min_duration:
+            if timedelta_sec < MIN_DURATION:
                 for bucket in [bucket1, bucket2]:
-                    LOGGER.info("Delete bucket %s with all objects in it.", bucket)
+                    self.log.info("Delete bucket %s with all objects in it.", bucket)
                     await self.delete_bucket(bucket, True)
                 return True, "Copy Object execution completed successfully."
-            LOGGER.info("Iteration %s is completed of %s...", self.iteration, self.test_id)
+            self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1
