@@ -20,7 +20,8 @@
 """Module to collect resource utilisation utils."""
 
 import logging
-from src.commons.utils import support_bundle_utils as remote_cmd
+from src.commons.utils.support_bundle_utils import execute_remote_command
+from src.commons.utils.corio_utils import run_local_cmd
 from src.commons import constants as cm_cmd
 from config import CLUSTER_CFG
 
@@ -38,33 +39,33 @@ def collect_resource_utilisation(action: str) -> None:
     for node in CLUSTER_CFG["nodes"]:
         if node["node_type"] == "master":
             host, user, passwd = node["hostname"], node["username"], node["password"]
-            resp = remote_cmd.execute_remote_command(cm_cmd.K8S_WORKER_NODES, host, user, passwd)
+            resp = execute_remote_command(cm_cmd.K8S_WORKER_NODES, host, user, passwd)
             LOGGER.debug("response is: %s", str(resp))
             resp = resp[1].read(-1).decode()
             LOGGER.debug("response[1] is: %s", str(resp))
             worker_node = resp.strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", str(worker_node))
     if action == "start":
-        remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, "localhost", user, passwd)
+        resp = run_local_cmd(cm_cmd.CMD_YUM_NMON)
         LOGGER.debug("Local response: %s", str(resp))
-        remote_cmd.execute_remote_command(cm_cmd.CMD_RUN_NMON, "localhost", user, passwd)
+        resp = run_local_cmd(cm_cmd.CMD_RUN_NMON)
+        LOGGER.debug("Local response: %s", str(resp))
+        resp = execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
-        resp = remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = remote_cmd.execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
+        resp = execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         for worker in worker_node:
             host = worker
-            resp = remote_cmd.execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
+            resp = execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
             LOGGER.debug("worker response: %s", str(resp))
-            resp = remote_cmd.execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
+            resp = execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
             LOGGER.debug("worker response: %s", str(resp))
     else:
-        resp = remote_cmd.execute_remote_command(cm_cmd.CMD_KILL_NMON, "localhost", user, passwd)
+        resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
         LOGGER.debug("Local response: %s", str(resp))
-        resp = remote_cmd.execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
+        resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         for worker in worker_node:
             host = worker
-            resp = remote_cmd.execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
+            resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
             LOGGER.debug("worker response: %s", str(resp))

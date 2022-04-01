@@ -39,5 +39,5 @@ CMD_MOUNT = "mount -t nfs {} {}"
 
 CMD_YUM_NMON = "yum install -y nmon"
 K8S_WORKER_NODES = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
-CMD_RUN_NMON = "nmon -f -s 60 -c 10080 -TU"
+CMD_RUN_NMON = "nmon -f -s 60 -TU"
 CMD_KILL_NMON = "kill -USR2 $(ps ax | grep nmon  | grep -v grep | awk '{print $1}')"
