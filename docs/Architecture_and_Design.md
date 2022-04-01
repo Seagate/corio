@@ -1,5 +1,5 @@
 ## CORIO (KOR-I-O)  
-###A tool to check Sustainability of IO Operations for expected longer duration
+### A tool to check Sustainability of IO Operations for expected longer duration
 
 
 Need for a tool which gives consistent outcome of where do we stand in terms of IO Path stability.
@@ -8,7 +8,7 @@ Hereby needed single aggregator / umbrella tool.
 1. This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
 2. This can be Integrated for any other product requirements
 
-###This tool is capable of executing matrix based execution as following:
+### This tool is capable of executing matrix based execution as following:
 
 This tool is capable to execute multi-level test suite that can be executed for a prolonged infinite period 
 with increasing difficulty levels for them to Pass these set period, so we know the defects when fixed allows the 
@@ -24,17 +24,17 @@ each suite will start and will be marked pass once it achieves minimum run_lengt
 Tools.
 
 
-###Integrated for CORTX Requirements:
+### Integrated for CORTX Requirements:
 
 1. Jira Integration.
 2. Automated Execution with Jenkins.
 3. System Health Check.
 4. Resource Monitoring(CPU and Memory).
 5. Generating Support Bundle Logs (Periodic and on failure).
-6. Useful across teams (CICD, DST, Regression, ComponentQA, Dev, CFT).
+6. Useful across teams (CI-CD, DST, Regression, ComponentQA, Dev, CFT).
 
 
-###Additional Capabilities:
+### Additional Capabilities:
 
 1. Simple and easy to execute tool.
 2. Fully configurable S3 and IO workload to support Stress (exponential workload) as well as longevity (constant workload) testing
@@ -42,25 +42,25 @@ Tools.
 4. Plug, and play architecture such that additional functionalities may be extended.
 5. Can be extended with other IO protocols.
 
-###Tool components:
+### Tool components:
 
-####Block Diagram:
+#### Block Diagram:
 
-![](images\BlockDiagram.png)
+![](images/BlockDiagram.png)
 
 * Configurations: This is actual workload specified/created by user.
 * Parser: This section verifies the Test Configurations, Inputs and Structure used by Driver.
 * Library: This sections consists of collection of code logic used by Test Scripts.
 * Scripts: These are actual logic takes structured input from parser and executed by Driver.
 * System Monitoring: This consists of monitoring CPU and Memory usages on client and server.
-* Logging: Logs for individual tests in different files and upload to NFS as needed. This
+* Logging: Logs for individual tests in different files and upload to NFS as needed.
 * Support Bundle: This is a CORTX specific feature where Server Logs are generated periodically and 
 on failure, available for debugging purposes.
 * Health Check: This section check the health of server (Status of Services).
 
-####IO Execution Process Flow:
+#### IO Execution Process Flow:
 
-![](images\Flow_Diagram.png)
+![](images/Flow_Diagram.png)
 
 
 - IO Driver will read tests from TEST Plan.
