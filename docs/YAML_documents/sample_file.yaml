@@ -4,7 +4,7 @@ test_1:
     start: 0Kib
     end: 100Kib
   min_runtime: 0d0h0m0s
-  sessions_per_node: 1
+  sessions_per_node: 1  # total sessions = sessions_per_node * number_of_nodes
   tool: s3api
   operation: bucket
 
@@ -27,7 +27,7 @@ test_3:
       start: 50
       end: 100
   min_runtime: 2h
-  sessions: 5
+  sessions: 5 # total sessions = sessions
   tool: s3api
   operation: multipart
 

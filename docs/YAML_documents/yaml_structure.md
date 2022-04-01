@@ -1,8 +1,8 @@
 YAML parser will receive a test yaml file as an input. 
 
-A test yaml file should have the following parameters:
+A test yaml file should have the following parameters based on workloads to execute:
 
-* test_id
+* TEST_ID
 * object_size
 * part_size
 * range_read
@@ -16,14 +16,20 @@ A test yaml file should have the following parameters:
 
 TEST_ID can be any unique string which can be treated as filtering through execution logs.  
 
-object_size & part_size can be given as range for test workload, so those can have the following 
-keys 
-in it.
+object_size can be given as fixed values, list of values and range of values for test 
+workload, so those can have the following keys in it.
 * start
 * end
 
+part_size can be given as fixed values and range of values for multipart workloads, so  those 
+can have the following keys in it.
+* start
+* end 
+
 Sessions_per_node and sessions is a multiplying factor which is used to calculate number of 
-sessions to be created within a test. Default value is 1.
+sessions to be created within a test. Default value is 1. number of nodes param will be used to 
+multiply with sessions per node and that total value will be used to create sessions and in case 
+of sessions, sessions specified in YAML file will be used to create sessions
 
 range_read key is used to perform range read operations in a workload. 
 
@@ -31,13 +37,13 @@ part_range is range of numbers from which number of parts for multipart workload
 calculated. 
 
 Start and End range parameters are object/part sizes for which test will be executed.
-Sizes can be given from bytes, KB, MB up to TB. We can also use KiB format as well. 
+Sizes can be given from bytes, KB (1000 Bytes), MB (1000 KB) up to TB (1000 GB). We can also use KiB (1024 Bytes) format as well.
 
-Result duration can be specified from seconds up to days. For example: 1d1h, 1h or 2d1h2s.
+min_runtime can be specified from seconds up to days. For example: 1d1h, 1h or 2d1h2s.
 
-Tool can be specified from one of these **s3bench**, **s3api** or **warp**.
+tool can be specified from one of these **s3bench**, **s3api** or **warp**.
 
-Operation should be specified according to type of workload and need to map it in corio.py with 
+operation should be specified according to type of workload and need to map it in corio.py with 
 appropriate test script.
 
 ---
