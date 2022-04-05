@@ -40,3 +40,10 @@ FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(leveln
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"
 MIN_DURATION = 20  # Minimum execution duration in seconds.
+
+CMD_YUM_NMON = "yum install -y nmon"
+K8S_WORKER_NODES = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
+CMD_RUN_NMON = "nmon -f -s 60 -TU"
+CMD_KILL_NMON = "kill -USR2 $(ps ax | grep nmon  | grep -v grep | awk '{print $1}')"
+CMD_NMON_FILE = "find . -name '*.nmon'"
+CMD_RM_NMON = "rm -f {}"
