@@ -6,7 +6,7 @@ test_1:
     part_range:
         start: 20
         end: 25
-    result_duration: 4h
+    min_runtime: 4h
     sessions: 5
     tool: s3api
     operation: multipart_partcopy
@@ -19,7 +19,7 @@ test_2:
     part_range:
         start: 25
         end: 50
-    result_duration: 8h
+    min_runtime: 8h
     sessions: 5
     tool: s3api
     operation: multipart_partcopy
@@ -32,7 +32,7 @@ test_3:
     part_range:
         start: 50
         end: 75
-    result_duration: 4h
+    min_runtime: 4h
     sessions: 10
     tool: s3api
     operation: multipart_partcopy
@@ -45,7 +45,7 @@ test_4:
     part_range:
         start: 75
         end: 100
-    result_duration: 1d
+    min_runtime: 1d
     sessions: 10
     tool: s3api
     operation: multipart_partcopy
@@ -58,7 +58,7 @@ test_5:
     part_range:
         start: 100
         end: 150
-    result_duration: 1d
+    min_runtime: 1d
     sessions: 15
     tool: s3api
     operation: multipart_partcopy
@@ -71,7 +71,7 @@ test_6:
     part_range:
         start: 150
         end: 200
-    result_duration: 2d
+    min_runtime: 2d
     sessions: 15
     tool: s3api
     operation: multipart_partcopy
@@ -84,7 +84,7 @@ test_7:
     part_range:
         start: 200
         end: 250
-    result_duration: 2d
+    min_runtime: 2d
     sessions: 20
     tool: s3api
     operation: multipart_partcopy
@@ -97,7 +97,7 @@ test_8:
     part_range:
         start: 250
         end: 300
-    result_duration: 3d
+    min_runtime: 3d
     sessions: 20
     tool: s3api
     operation: multipart_partcopy
@@ -110,7 +110,7 @@ test_9:
     part_range:
         start: 300
         end: 350
-    result_duration: 3d
+    min_runtime: 3d
     sessions: 25
     tool: s3api
     operation: multipart_partcopy
@@ -123,7 +123,7 @@ test_10:
     part_range:
         start: 350
         end: 400
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 25
     tool: s3api
     operation: multipart_partcopy
@@ -136,7 +136,7 @@ test_11:
     part_range:
         start: 400
         end: 500
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 30
     tool: s3api
     operation: multipart_partcopy
@@ -149,7 +149,7 @@ test_12:
     part_range:
         start: 500
         end: 600
-    result_duration: 7d
+    min_runtime: 7d
     sessions: 30
     tool: s3api
     operation: multipart_partcopy
