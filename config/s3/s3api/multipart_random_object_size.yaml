@@ -6,7 +6,7 @@ test_1:
     part_range:
         start: 50
         end: 100
-    result_duration: 2h
+    min_runtime: 2h
     sessions: 5  # One object per session.
     tool: s3api
     operation: multipart
@@ -19,7 +19,7 @@ test_2:
     part_range:
         start: 100
         end: 200
-    result_duration: 2h
+    min_runtime: 2h
     sessions: 5
     tool: s3api
     operation: multipart
@@ -32,7 +32,7 @@ test_3:
     part_range:
         start: 200
         end: 300
-    result_duration: 20h
+    min_runtime: 20h
     sessions: 10
     tool: s3api
     operation: multipart
@@ -45,7 +45,7 @@ test_4:
     part_range:
         start: 300
         end: 400
-    result_duration: 1d
+    min_runtime: 1d
     sessions: 10
     tool: s3api
     operation: multipart
@@ -58,7 +58,7 @@ test_5:
     part_range:
         start: 400
         end: 500
-    result_duration: 1d
+    min_runtime: 1d
     sessions: 15
     tool: s3api
     operation: multipart
@@ -71,7 +71,7 @@ test_6:
     part_range:
         start: 500
         end: 600
-    result_duration: 2d
+    min_runtime: 2d
     sessions: 15
     tool: s3api
     operation: multipart
@@ -84,7 +84,7 @@ test_7:
     part_range:
         start: 600
         end: 700
-    result_duration: 2d
+    min_runtime: 2d
     sessions: 20
     tool: s3api
     operation: multipart
@@ -97,7 +97,7 @@ test_8:
     part_range:
         start: 700
         end: 800
-    result_duration: 4d
+    min_runtime: 4d
     sessions: 20
     tool: s3api
     operation: multipart
@@ -110,7 +110,7 @@ test_9:
     part_range:
         start: 800
         end: 1600
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 25
     tool: s3api
     operation: multipart
@@ -123,7 +123,7 @@ test_10:
     part_range:
         start: 1600
         end: 3200
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 25
     tool: s3api
     operation: multipart
@@ -136,7 +136,7 @@ test_11:
     part_range:
         start: 3200
         end: 6400
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 30
     tool: s3api
     operation: multipart
@@ -149,7 +149,7 @@ test_12:
     part_range:
         start: 6400
         end: 10000
-    result_duration: 5d
+    min_runtime: 5d
     sessions: 30
     tool: s3api
     operation: multipart
