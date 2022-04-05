@@ -67,7 +67,7 @@ def collect_resource_utilisation(action: str) -> None:
             LOGGER.debug("worker response: %s", str(resp))
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
-        stat_fpath = files = sorted(glob.glob(os.getcwd() + '/*.nmon'), key=os.path.getctime, reverse=True)[-1]
+        stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'), key=os.path.getctime, reverse=True)[-1]
         LOGGER.info(stat_fpath)
         dpath = os.path.join(MOUNT_DIR, "system_stats", "client")
         if not os.path.exists(dpath):
