@@ -20,6 +20,7 @@
 """Module to collect resource utilisation utils."""
 
 import os
+import glob
 import logging
 import shutil
 from src.commons.utils.support_bundle_utils import execute_remote_command
@@ -66,15 +67,12 @@ def collect_resource_utilisation(action: str) -> None:
             LOGGER.debug("worker response: %s", str(resp))
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
-        LOGGER.debug("Local response: %s", str(resp))
-        # resp = run_local_cmd(cm_cmd.CMD_NMON_FILE)
-        # resp = resp[1].read(-1).decode()
-        # filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
-        # LOGGER.info("Filename is: %s", filename)
-        # dest = os.path.join(MOUNT_DIR, "system_stats", "client")
-        # if not os.path.exists(dest):
-        #     os.makedirs(dest)
-        # shutil.move(filename, dest)
+        stat_fpath = files = sorted(glob.glob(os.getcwd() + '/*.nmon'), key=os.path.getctime, reverse=True)[-1]
+        LOGGER.info(stat_fpath)
+        dpath = os.path.join(MOUNT_DIR, "system_stats", "client")
+        if not os.path.exists(dpath):
+            os.makedirs(dpath)
+        os.rename(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
         resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
