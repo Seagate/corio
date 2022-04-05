@@ -19,10 +19,14 @@
 
 """Module to collect resource utilisation utils."""
 
+import os
 import logging
+import shutil
 from src.commons.utils.support_bundle_utils import execute_remote_command
+from src.commons.utils.support_bundle_utils import copy_file_from_remote
 from src.commons.utils.corio_utils import run_local_cmd
 from src.commons import constants as cm_cmd
+from src.commons.constants import MOUNT_DIR
 from config import CLUSTER_CFG
 
 LOGGER = logging.getLogger("corio")
@@ -63,9 +67,36 @@ def collect_resource_utilisation(action: str) -> None:
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
         LOGGER.debug("Local response: %s", str(resp))
+        resp = run_local_cmd(cm_cmd.CMD_NMON_FILE)
+        resp = resp[1].read(-1).decode()
+        filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+        LOGGER.info("Filename is: %s", filename)
+        dest = os.path.join(MOUNT_DIR, "system_stats", "client")
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        shutil.move(filename, dest)
         resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
+        resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
+        resp = resp[1].read(-1).decode()
+        filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+        LOGGER.info("Filename is: %s", filename)
+        client_path = os.path.join(MOUNT_DIR, "system_stats", "server")
+        if not os.path.exists(client_path):
+            os.makedirs(client_path)
+        copy_file_from_remote(host, user, passwd, client_path, f"/root/{filename}")
+        resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
+        LOGGER.debug("file removed: %s", resp)
         for worker in worker_node:
             host = worker
             resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
             LOGGER.debug("worker response: %s", str(resp))
+            resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
+            resp = resp[1].read(-1).decode()
+            filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+            LOGGER.info("Filename is: %s", filename)
+            copy_file_from_remote(host, user, passwd, client_path, f"/root/{filename}")
+            resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
+            LOGGER.debug("file removed: %s", resp)
+
+
