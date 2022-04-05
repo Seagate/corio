@@ -22,7 +22,6 @@
 import os
 import glob
 import logging
-import shutil
 from src.commons.utils.support_bundle_utils import execute_remote_command
 from src.commons.utils.support_bundle_utils import copy_file_from_remote
 from src.commons.utils.corio_utils import run_local_cmd
@@ -34,8 +33,7 @@ LOGGER = logging.getLogger("corio")
 
 
 def collect_resource_utilisation(action: str) -> None:
-    """
-    start/stop collect resource utilisation.
+    """start/stop collect resource utilisation.
 
     :param action: start or stop collection resource_utilisation
     """
@@ -67,7 +65,8 @@ def collect_resource_utilisation(action: str) -> None:
             LOGGER.debug("worker response: %s", str(resp))
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
-        stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'), key=os.path.getctime, reverse=True)[-1]
+        stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'),
+                            key=os.path.getctime, reverse=True)[-1]
         LOGGER.info(stat_fpath)
         dpath = os.path.join(MOUNT_DIR, "system_stats", "client")
         if not os.path.exists(dpath):
@@ -98,5 +97,3 @@ def collect_resource_utilisation(action: str) -> None:
             copy_file_from_remote(host, user, passwd, cl_path, f"/root/{filename}")
             resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
             LOGGER.debug("file removed: %s", resp)
-
-
