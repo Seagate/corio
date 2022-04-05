@@ -1,0 +1,46 @@
+test_1:
+  TEST_ID: unique_string1
+  object_size:
+    start: 0Kib
+    end: 100Kib
+  min_runtime: 0d0h0m0s
+  sessions_per_node: 1  # total sessions = sessions_per_node * number_of_nodes
+  tool: s3api
+  operation: bucket
+
+test_2:
+  TEST_ID: unique_string2
+  object_size:
+    start: 0Kb
+    end: 100Kb
+  min_runtime: 0d0h0m0s
+  sessions_per_node: 2
+  tool: s3api
+  operation: bucket
+
+test_3:
+  TEST_ID: unique_string3
+  object_size:
+      start: 1Gib
+      end: 4Gib
+  part_range:
+      start: 50
+      end: 100
+  min_runtime: 2h
+  sessions: 5 # total sessions = sessions
+  tool: s3api
+  operation: multipart
+
+test_12:
+  TEST_ID: unique_string4
+  object_size: 512Gib
+  part_range:
+      start: 500
+      end: 600
+  min_runtime: 7d
+  sessions: 30
+  range_read:
+      start: 200Mb
+      end: 1Gb
+  tool: s3api
+  operation: multipart_partcopy
