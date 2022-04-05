@@ -143,11 +143,11 @@ def test_parser(yaml_file, number_of_nodes):
                 data["range_read"] = convert_to_bytes(data["range_read"])
         if test == "test_1":
             data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
-            delta_list.append(convert_to_time_delta(data['result_duration']))
+            delta_list.append(convert_to_time_delta(data['min_runtime']))
         else:
             data['start_time'] = delta_list.pop()
-            delta_list.append(data['start_time'] + convert_to_time_delta(data['result_duration']))
-        data['result_duration'] = convert_to_time_delta(data['result_duration'])
+            delta_list.append(data['start_time'] + convert_to_time_delta(data['min_runtime']))
+        data['min_runtime'] = convert_to_time_delta(data['min_runtime'])
         if "part_size" not in data:
             data["part_size"] = {}
             data["part_size"]["start"] = 0
