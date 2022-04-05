@@ -32,8 +32,9 @@ from config import CLUSTER_CFG
 LOGGER = logging.getLogger("corio")
 
 
-def collect_resource_utilisation(action: str) :
-    """start/stop collect resource utilisation.
+def collect_resource_utilisation(action: str):
+    """
+    start/stop collect resource utilisation.
 
     :param action: start/stop collection resource_utilisation
     """
