@@ -21,7 +21,7 @@ test_1:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 2h
+  min_runtime: 2h
   sessions_per_node: 1
   tool: s3api
   operation: copy_object_fix_size
@@ -49,7 +49,7 @@ test_2:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 2h
+  min_runtime: 2h
   sessions_per_node: 2
   tool: s3api
   operation: copy_object_fix_size
@@ -77,7 +77,7 @@ test_3:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 20h
+  min_runtime: 20h
   sessions_per_node: 3
   tool: s3api
   operation: copy_object_fix_size
@@ -105,7 +105,7 @@ test_4:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 1d
+  min_runtime: 1d
   sessions_per_node: 5
   tool: s3api
   operation: copy_object_fix_size
@@ -133,7 +133,7 @@ test_5:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 1d
+  min_runtime: 1d
   sessions_per_node: 8
   tool: s3api
   operation: copy_object_fix_size
@@ -161,7 +161,7 @@ test_6:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 2d
+  min_runtime: 2d
   sessions_per_node: 13
   tool: s3api
   operation: copy_object_fix_size
@@ -189,7 +189,7 @@ test_7:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 2d
+  min_runtime: 2d
   sessions_per_node: 21
   tool: s3api
   operation: copy_object_fix_size
@@ -217,7 +217,7 @@ test_8:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 4d
+  min_runtime: 4d
   sessions_per_node: 34
   tool: s3api
   operation: copy_object_fix_size
@@ -245,7 +245,7 @@ test_9:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 55
   tool: s3api
   operation: copy_object_fix_size
@@ -273,7 +273,7 @@ test_10:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 89
   tool: s3api
   operation: copy_object_fix_size
@@ -301,7 +301,7 @@ test_11:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 144
   tool: s3api
   operation: copy_object_fix_size
@@ -329,7 +329,7 @@ test_12:
     - 512Mb
     - 1Gb
     - 2Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 233
   tool: s3api
   operation: copy_object_fix_size

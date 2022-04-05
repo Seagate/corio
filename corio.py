@@ -230,8 +230,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed:
                 test_start_time = corio_start_time + value1['start_time']
                 if datetime.now() > test_start_time:
                     input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
-                    if datetime.now() > (test_start_time + value1['result_duration']):
-                        pass_time = (test_start_time + value1['result_duration']).strftime(
+                    if datetime.now() > (test_start_time + value1['min_runtime']):
+                        pass_time = (test_start_time + value1['min_runtime']).strftime(
                             date_format)
                         input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
                     else:
@@ -354,8 +354,8 @@ def main(options):
                 if test_value["TEST_ID"] in tests_details:
                     tests_to_execute[test_value["TEST_ID"]] = tests_details[test_value["TEST_ID"]]
                     tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value["start_time"]
-                    tests_to_execute[test_value["TEST_ID"]]["result_duration"] = test_value[
-                        "result_duration"]
+                    tests_to_execute[test_value["TEST_ID"]]["min_runtime"] = test_value[
+                        "min_runtime"]
                 else:
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
