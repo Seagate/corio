@@ -82,9 +82,10 @@ def collect_resource_utilisation(action: str) -> None:
         filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
         client_path = os.path.join(MOUNT_DIR, "system_stats", "server")
+        cl_path = os.path.join(client_path, filename)
         if not os.path.exists(client_path):
             os.makedirs(client_path)
-        copy_file_from_remote(host, user, passwd, client_path, f"/root/{filename}")
+        copy_file_from_remote(host, user, passwd, cl_path, f"/root/{filename}")
         resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
         LOGGER.debug("file removed: %s", resp)
         for worker in worker_node:
@@ -95,7 +96,8 @@ def collect_resource_utilisation(action: str) -> None:
             resp = resp[1].read(-1).decode()
             filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
             LOGGER.info("Filename is: %s", filename)
-            copy_file_from_remote(host, user, passwd, client_path, f"/root/{filename}")
+            cl_path = os.path.join(client_path, filename)
+            copy_file_from_remote(host, user, passwd, cl_path, f"/root/{filename}")
             resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
             LOGGER.debug("file removed: %s", resp)
 
