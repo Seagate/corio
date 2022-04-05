@@ -4,7 +4,7 @@ test_1:
   part_size:
     start: 5Mib
     end: 10Mib
-  result_duration: 2h
+  min_runtime: 2h
   sessions: 5
   tool: s3bench
 
@@ -14,7 +14,7 @@ test_2:
   part_size:
     start: 5Mib
     end: 10Mib
-  result_duration: 2h
+  min_runtime: 2h
   sessions: 5
   tool: s3bench
 
@@ -24,7 +24,7 @@ test_3:
   part_size:
     start: 7Mib
     end: 10Mib
-  result_duration: 20h
+  min_runtime: 20h
   sessions: 10
   tool: s3bench
 
@@ -34,7 +34,7 @@ test_4:
   part_size:
     start: 10Mib
     end: 14Mib
-  result_duration: 1d
+  min_runtime: 1d
   sessions: 10
   tool: s3bench
 
@@ -44,7 +44,7 @@ test_5:
   part_size:
     start: 17Mib
     end: 21Mib
-  result_duration: 1d
+  min_runtime: 1d
   sessions: 15
   tool: s3bench
 
@@ -54,7 +54,7 @@ test_6:
   part_size:
     start: 28Mib
     end: 34Mib
-  result_duration: 2d
+  min_runtime: 2d
   sessions: 15
   tool: s3bench
 
@@ -64,7 +64,7 @@ test_7:
   part_size:
     start: 49Mib
     end: 57Mib
-  result_duration: 2d
+  min_runtime: 2d
   sessions: 20
   tool: s3bench
 
@@ -74,7 +74,7 @@ test_8:
   part_size:
     start: 85Mib
     end: 98Mib
-  result_duration: 4d
+  min_runtime: 4d
   sessions: 20
   tool: s3bench
 
@@ -84,7 +84,7 @@ test_9:
   part_size:
     start: 85Mib
     end: 171Mib
-  result_duration: 5d
+  min_runtime: 5d
   sessions: 25
   tool: s3bench
 
@@ -94,7 +94,7 @@ test_10:
   part_size:
     start: 85Mib
     end: 171Mib
-  result_duration: 5d
+  min_runtime: 5d
   sessions: 25
   tool: s3bench
 
@@ -104,7 +104,7 @@ test_11:
   part_size:
     start: 85Mib
     end: 171Mib
-  result_duration: 5d
+  min_runtime: 5d
   sessions: 30
   tool: s3bench
 
@@ -114,6 +114,6 @@ test_12:
   part_size:
     start: 68Mib
     end: 107Mib
-  result_duration: 5d
+  min_runtime: 5d
   sessions: 30
   tool: s3bench

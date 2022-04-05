@@ -3,7 +3,7 @@ test_1:
   object_size:
     start: 300bytes
     end: 100Kb
-  result_duration: 2h
+  min_runtime: 2h
   sessions_per_node: 1
   range_read: 100bytes
   tool: s3api
@@ -14,7 +14,7 @@ test_2:
   object_size:
     start: 100Kb
     end: 1Mb
-  result_duration: 2h
+  min_runtime: 2h
   sessions_per_node: 2
   range_read: 200bytes
   tool: s3api
@@ -25,7 +25,7 @@ test_3:
   object_size:
     start: 1Mb
     end: 10Mb
-  result_duration: 20h
+  min_runtime: 20h
   sessions_per_node: 3
   range_read: 500bytes
   tool: s3api
@@ -36,7 +36,7 @@ test_4:
   object_size:
     start: 10Mb
     end: 20Mb
-  result_duration: 1d
+  min_runtime: 1d
   sessions_per_node: 5
   range_read: 1000bytes
   tool: s3api
@@ -47,7 +47,7 @@ test_5:
   object_size:
     start: 20Mb
     end: 50Mb
-  result_duration: 1d
+  min_runtime: 1d
   sessions_per_node: 8
   range_read: 10Kb
   tool: s3api
@@ -58,7 +58,7 @@ test_6:
   object_size:
     start: 50Mb
     end: 100Mb
-  result_duration: 2d
+  min_runtime: 2d
   sessions_per_node: 13
   range_read: 100Kb
   tool: s3api
@@ -69,7 +69,7 @@ test_7:
   object_size:
     start: 100Mb
     end: 250Mb
-  result_duration: 2d
+  min_runtime: 2d
   sessions_per_node: 21
   range_read: 1Mb
   tool: s3api
@@ -80,7 +80,7 @@ test_8:
   object_size:
     start: 250Mb
     end: 500Mb
-  result_duration: 4d
+  min_runtime: 4d
   sessions_per_node: 34
   range_read: 10Mb
   tool: s3api
@@ -91,7 +91,7 @@ test_9:
   object_size:
     start: 500Mb
     end: 750Mb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 55
   range_read: 100Mb
   tool: s3api
@@ -102,7 +102,7 @@ test_10:
   object_size:
     start: 750Mb
     end: 1Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 89
   range_read: 150Mb
   tool: s3api
@@ -113,7 +113,7 @@ test_11:
   object_size:
     start: 1Gb
     end: 2Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 144
   range_read: 200Mb
   tool: s3api
@@ -124,7 +124,7 @@ test_12:
   object_size:
     start: 2Gb
     end: 5Gb
-  result_duration: 5d
+  min_runtime: 5d
   sessions_per_node: 233
   range_read: 500Mb
   tool: s3api
