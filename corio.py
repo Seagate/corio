@@ -429,6 +429,7 @@ def main(options):
                     resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
                                                            max_sb=CORIO_CFG['max_no_of_sb'])
                     LOGGER.info("collect support bundles response: %s", resp)
+                collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
