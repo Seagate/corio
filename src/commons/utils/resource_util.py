@@ -67,14 +67,14 @@ def collect_resource_utilisation(action: str) -> None:
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
         LOGGER.debug("Local response: %s", str(resp))
-        resp = run_local_cmd(cm_cmd.CMD_NMON_FILE)
-        resp = resp[1].read(-1).decode()
-        filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
-        LOGGER.info("Filename is: %s", filename)
-        dest = os.path.join(MOUNT_DIR, "system_stats", "client")
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-        shutil.move(filename, dest)
+        # resp = run_local_cmd(cm_cmd.CMD_NMON_FILE)
+        # resp = resp[1].read(-1).decode()
+        # filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+        # LOGGER.info("Filename is: %s", filename)
+        # dest = os.path.join(MOUNT_DIR, "system_stats", "client")
+        # if not os.path.exists(dest):
+        #     os.makedirs(dest)
+        # shutil.move(filename, dest)
         resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
