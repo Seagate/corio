@@ -32,6 +32,7 @@ from config import CLUSTER_CFG
 LOGGER = logging.getLogger("corio")
 
 
+# pylint: disable-msg=too-many-statements
 def collect_resource_utilisation(action: str):
     """
     start/stop collect resource utilisation.
