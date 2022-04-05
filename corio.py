@@ -54,6 +54,7 @@ from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.exception import HealthCheckError
+from src.commons.utils.resource_util import collect_resource_utilisation
 
 LOGGER = logging.getLogger(ROOT)
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
@@ -328,6 +329,8 @@ def main(options):
     tests_to_execute = {}
     jira_obj = None
     jira_flg = options.test_plan
+    # start resource util
+    collect_resource_utilisation(action="start")
     if jira_flg:
         jira_obj = JiraApp()
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan)
@@ -426,6 +429,7 @@ def main(options):
                     resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
                                                            max_sb=CORIO_CFG['max_no_of_sb'])
                     LOGGER.info("collect support bundles response: %s", resp)
+                collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
@@ -440,6 +444,8 @@ def main(options):
                 MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
             LOGGER.info("collect support bundles response: %s", resp)
         # TODO: cleanup object files created
+        # stop resource util
+        collect_resource_utilisation(action="stop")
         sys.exit()
 
 

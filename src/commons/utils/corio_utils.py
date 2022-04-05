@@ -104,7 +104,7 @@ def run_local_cmd(cmd: str) -> tuple:
     LOGGER.debug("Command: %s", cmd)
     proc = None
     try:
-        proc = Popen(cmd, shell=False, stdout=PIPE, stderr=PIPE)
+        proc = Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE)
         output, error = proc.communicate()
         LOGGER.debug("output = %s", str(output))
         LOGGER.debug("error = %s", str(error))
