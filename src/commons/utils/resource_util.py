@@ -61,6 +61,10 @@ def collect_resource_utilisation(action: str):
         LOGGER.debug("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_RUN_NMON)
         LOGGER.debug("Local response: %s", str(resp))
+        if not host:
+            LOGGER.critical("Will not able to collect system stats for cluster as details not "
+                            "provided in cluster config.")
+            return
         resp = execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         resp = execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
@@ -80,6 +84,10 @@ def collect_resource_utilisation(action: str):
         if not os.path.exists(dpath):
             os.makedirs(dpath)
         shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
+        if not host:
+            LOGGER.critical("Will not able to collect system stats for cluster as details not "
+                            "provided in cluster config.")
+            return
         resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
         LOGGER.debug("master response: %s", str(resp))
         resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
