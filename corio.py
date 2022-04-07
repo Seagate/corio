@@ -40,7 +40,7 @@ import schedule
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
-from src.commons.utils import yaml_parser
+from src.commons import yaml_parser
 from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_services import mount_nfs_server
@@ -50,7 +50,7 @@ from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.exception import HealthCheckError
 from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.report import log_status
-from src.commons.workload_script_mapping import function_mapping
+from src.commons.workload_mapping import function_mapping
 
 LOGGER = logging.getLogger(ROOT)
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")

@@ -144,18 +144,21 @@ def convert_size(size_bytes):
 
     :param size_bytes: Size in bytes.
     """
-    size_name_1024 = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
-    size_name_1000 = ("B", "KB", "MB", "GB", "TB", "PB")
-    if (size_bytes % 1024) == 0:
-        check_pow = int(math.floor(math.log(size_bytes, 1024)))
-        power = math.pow(1024, check_pow)
-        size = int(round(size_bytes / power, 2))
-        part_size = f"{size}{size_name_1024[check_pow]}"
-    elif (size_bytes % 1000) == 0:
-        check_pow = int(math.floor(math.log(size_bytes, 1000)))
-        power = math.pow(1000, check_pow)
-        size = int(round(size_bytes / power, 2))
-        part_size = f"{size}{size_name_1000[check_pow]}"
+    if size_bytes:
+        size_name_1024 = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+        size_name_1000 = ("B", "KB", "MB", "GB", "TB", "PB")
+        if (size_bytes % 1024) == 0:
+            check_pow = int(math.floor(math.log(size_bytes, 1024)))
+            power = math.pow(1024, check_pow)
+            size = int(round(size_bytes / power, 2))
+            part_size = f"{size}{size_name_1024[check_pow]}"
+        elif (size_bytes % 1000) == 0:
+            check_pow = int(math.floor(math.log(size_bytes, 1000)))
+            power = math.pow(1000, check_pow)
+            size = int(round(size_bytes / power, 2))
+            part_size = f"{size}{size_name_1000[check_pow]}"
+        else:
+            part_size = f"{size_bytes}B"
     else:
         part_size = f"{size_bytes}B"
 
