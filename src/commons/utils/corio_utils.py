@@ -24,12 +24,14 @@
 import glob
 import logging
 import os
+import math
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
+from src.commons.constants import ROOT
 
 import psutil as ps
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(ROOT)
 
 
 def log_cleanup():
@@ -134,3 +136,27 @@ def create_file(path: str, size: int):
         size -= base
     with open(path, 'ab+') as f_out:
         f_out.write(os.urandom(size))
+
+
+def convert_size(size_bytes):
+    """
+    Convert byte size to KiB, MiB, KB, MB etc.
+
+    :param size_bytes: Size in bytes.
+    """
+    size_name_1024 = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
+    size_name_1000 = ("B", "KB", "MB", "GB", "TB", "PB")
+    if (size_bytes % 1024) == 0:
+        check_pow = int(math.floor(math.log(size_bytes, 1024)))
+        power = math.pow(1024, check_pow)
+        size = int(round(size_bytes / power, 2))
+        part_size = f"{size}{size_name_1024[check_pow]}"
+    elif (size_bytes % 1000) == 0:
+        check_pow = int(math.floor(math.log(size_bytes, 1000)))
+        power = math.pow(1000, check_pow)
+        size = int(round(size_bytes / power, 2))
+        part_size = f"{size}{size_name_1000[check_pow]}"
+    else:
+        part_size = f"{size_bytes}B"
+
+    return part_size
