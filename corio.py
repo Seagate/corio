@@ -25,7 +25,6 @@ import argparse
 import asyncio
 import glob
 import logging
-import math
 import multiprocessing
 import os
 import random
@@ -36,14 +35,9 @@ from distutils.util import strtobool
 from pprint import pformat
 from collections import Counter
 
-import pandas as pd
 import schedule
 
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from scripts.s3.s3api import bucket_operations
-from scripts.s3.s3api import copy_object
-from scripts.s3.s3api import multipart_operations
-from scripts.s3.s3api import object_operations
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
@@ -55,20 +49,11 @@ from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.exception import HealthCheckError
 from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.report import log_status
+from src.commons.workload_script_mapping import function_mapping
 
 LOGGER = logging.getLogger(ROOT)
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-
-function_mapping = {
-    'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
-    'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
-    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload']
-}
 
 
 def initialize_loghandler(opt):
@@ -171,8 +156,8 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     """
     Create event loop for each test plan.
 
-    :param test_plan: YAML file name for specific S3 operation
-    :param test_plan_values: Parsed yaml file values
+    :param test_plan: YAML file name for specific S3 operation.
+    :param test_plan_values: Parsed yaml file values.
     :param common_params: Common arguments to be passed to function.
     """
     process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
@@ -192,72 +177,6 @@ def setup_environment():
     assert ret, "Error while Mounting NFS directory"
 
 
-# pylint: disable-msg=too-many-branches
-def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str,
-               terminated_tests: list = None):
-    """
-    Log execution status into log file.
-
-    :param parsed_input: Dict for all the input yaml files
-    :param corio_start_time: Start time for main process
-    :param test_failed: Reason for failure is any
-    :param terminated_tests: terminated tests from workload..
-    """
-    status_fpath = os.path.join(os.getcwd(), "reports", f"corio_summary_{DT_STRING}.report")
-    LOGGER.info("Logging current status to %s", status_fpath)
-    with open(status_fpath, 'w', encoding="utf-8") as status_file:
-        status_file.write(f"\nLogging Status at {datetime.now()}")
-        if test_failed == 'KeyboardInterrupt':
-            status_file.write("\nTest Execution stopped due to Keyboard interrupt")
-        elif test_failed is None:
-            status_file.write('\nTest Execution still in progress')
-        else:
-            status_file.write(f'\nTest Execution terminated due to error in {test_failed}')
-        status_file.write(f'\nTotal Execution Duration : {datetime.now() - corio_start_time}')
-        status_file.write("\nTestWise Execution Details:")
-        date_format = '%Y-%m-%d %H:%M:%S'
-        for key, value in parsed_input.items():
-            dataframe = pd.DataFrame()
-            for key1, value1 in value.items():
-                input_dict = {"TEST_NO": key1,
-                              "TEST_ID": value1['TEST_ID'],
-                              "SESSIONS": int(value1['sessions'])}
-                if isinstance(value1['object_size'], list):
-                    input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value1['object_size']]
-                else:
-                    input_dict.update({
-                        "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
-                        "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
-                test_start_time = corio_start_time + value1['start_time']
-                if datetime.now() > test_start_time:
-                    input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
-                    if datetime.now() > (test_start_time + value1['min_runtime']):
-                        pass_time = (test_start_time + value1['min_runtime']).strftime(
-                            date_format)
-                        input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
-                    else:
-                        # Report In Progress, Fail, Aborted and update status.
-                        if terminated_tests and input_dict["TEST_ID"] in terminated_tests:
-                            LOGGER.error("Test execution terminated due to error in %s.",
-                                         input_dict["TEST_ID"])
-                            input_dict["RESULT_UPDATE"] = "Fail"
-                        elif test_failed:
-                            input_dict["RESULT_UPDATE"] = "Aborted"
-                        else:
-                            input_dict["RESULT_UPDATE"] = "In Progress"
-                    input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
-                else:
-                    input_dict[
-                        "START_TIME"] = f"Scheduled at {test_start_time.strftime(date_format)}"
-                    input_dict["RESULT_UPDATE"] = "Not Triggered"
-                    input_dict["TOTAL_TEST_EXECUTION"] = "NA"
-                dataframe = dataframe.append(input_dict, ignore_index=True)
-            # Convert sessions into integer.
-            dataframe = dataframe.astype({"SESSIONS": 'int'})
-            status_file.write(f"\n\nTEST YAML FILE : {key}")
-            status_file.write(f'\n{dataframe}')
-
-
 def terminate_processes(process_list):
     """
     Terminate Process on failure.
@@ -267,21 +186,6 @@ def terminate_processes(process_list):
     for process in process_list:
         process.terminate()
         process.join()
-
-
-def convert_size(size_bytes):
-    """
-    Convert size to KiB, MiB etc.
-
-    :param size_bytes: Size in bytes
-    """
-    if size_bytes == 0:
-        return "0B"
-    size_name = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
-    check_pow = int(math.floor(math.log(size_bytes, 1024)))
-    power = math.pow(1024, check_pow)
-    size = round(size_bytes / power, 2)
-    return f"{size} {size_name[check_pow]}"
 
 
 def support_bundle_process(interval, sb_identifier):
