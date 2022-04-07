@@ -28,11 +28,13 @@ from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
 
 
+# mapping_dict = {operation_name_from_workload: [script.class, function_name],}
 function_mapping = {
     'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
     'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
+    'multipart_partcopy': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
