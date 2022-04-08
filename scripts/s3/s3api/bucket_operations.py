@@ -82,11 +82,11 @@ class TestBucketOps(S3Object, S3Bucket):
                 for _ in range(0, self.object_per_iter):
                     file_name = f'object-bucket-op-{time.perf_counter_ns()}'
                     self.log.info("Object '%s', object size %s Kib", file_name, file_size / 1024)
-                    create_file(file_name, file_size)
-                    await self.upload_object(bucket_name, file_name, file_path=file_name)
+                    file_path = create_file(file_name, file_size)
+                    await self.upload_object(bucket_name, file_name, file_path=file_path)
                     self.log.info("'s3://%s/%s' uploaded successfully.", bucket_name, file_name)
                     self.log.info("Delete generated file")
-                    os.remove(file_name)
+                    os.remove(file_path)
                 self.log.info("List all buckets")
                 await self.list_buckets()
                 self.log.info("List objects of created %s bucket", bucket_name)

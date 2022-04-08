@@ -28,6 +28,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 
 import psutil as ps
+from src.commons.constants import DATA_DIR
 
 LOGGER = logging.getLogger(__name__)
 
@@ -127,10 +128,12 @@ def create_file(path: str, size: int):
     :param size: Size in bytes
     :param path: File name with path
     """
+    data_path = os.path.join(os.path.join(DATA_DIR, path))
     base = 1024 * 1024
     while size > base:
-        with open(path, 'ab+') as f_out:
+        with open(data_path, 'ab+') as f_out:
             f_out.write(os.urandom(base))
         size -= base
-    with open(path, 'ab+') as f_out:
+    with open(data_path, 'ab+') as f_out:
         f_out.write(os.urandom(size))
+    return data_path

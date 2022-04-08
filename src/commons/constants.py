@@ -26,6 +26,7 @@ import os
 
 SCRIPT_HOME = os.getcwd()  # Fetches you CWD of the runner.
 CONFIG_DIR = 'config'
+DATA_DIR = 'data'
 
 CLUSTER_CFG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
 S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
