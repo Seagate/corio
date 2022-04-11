@@ -27,9 +27,8 @@ import os
 import math
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
-from src.commons.constants import ROOT
-
 import psutil as ps
+from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
 

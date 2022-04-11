@@ -23,8 +23,9 @@
 import datetime
 import logging
 import yaml
+from src.commons.constants import ROOT
 
-logger = logging.getLogger()
+LOGGER = logging.getLogger(ROOT)
 
 
 def yaml_parser(yaml_file) -> dict:

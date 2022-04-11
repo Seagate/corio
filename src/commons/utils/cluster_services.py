@@ -27,8 +27,9 @@ import shutil
 from config import CORIO_CFG, CLUSTER_CFG
 from src.commons.constants import CMD_MOUNT
 from src.commons.utils import support_bundle_utils as sb
+from src.commons.constants import ROOT
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(ROOT)
 NODES = CLUSTER_CFG["nodes"]
 
 
