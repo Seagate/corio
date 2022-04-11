@@ -73,7 +73,7 @@ class S3MultiParts(S3RestApi):
         :param object_name: Name of the object.
         :return: Response of list parts.
         """
-        parts = list()
+        parts = []
         async with self.get_client() as client:
             paginator = client.get_paginator('list_parts')
             async for result in paginator.paginate(
@@ -113,7 +113,7 @@ class S3MultiParts(S3RestApi):
         :param bucket_name: Name of the bucket.
         :return: response of list multipart uploads.
         """
-        uploads = list()
+        uploads = []
         async with self.get_client() as client:
             paginator = client.get_paginator('list_multipart_uploads')
             async for result in paginator.paginate(Bucket=bucket_name):
@@ -176,7 +176,7 @@ class S3MultiParts(S3RestApi):
         :param multipart_obj_path: Path of object file.
         :return: (Boolean, List of uploaded parts).
         """
-        parts = list()
+        parts = []
         uploaded_bytes = 0
         if not os.path.exists(multipart_obj_path):
             raise IOError(f"File path '{multipart_obj_path}' does not exists.")

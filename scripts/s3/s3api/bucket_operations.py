@@ -33,7 +33,8 @@ from src.commons.constants import MIN_DURATION
 
 # pylint: disable=too-few-public-methods, too-many-statements
 class TestBucketOps(S3Object, S3Bucket):
-    """S3 Bucket Operations class for executing given io stability workload"""
+    """
+    S3 Bucket Operations class for executing given io stability workload."""
 
     # pylint: disable=too-many-arguments, too-many-locals, too-many-instance-attributes
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
