@@ -35,7 +35,7 @@ def yaml_parser(yaml_file) -> dict:
     :return python dict containing file contents.
     """
     logger.debug("YAML file selected for parse: %s", yaml_file)
-    yaml_dict = dict()
+    yaml_dict = {}
     with open(yaml_file) as obj:
         data = yaml.safe_load(obj)
         yaml_dict.update(data)
@@ -109,7 +109,7 @@ def test_parser(yaml_file, number_of_nodes):
     """
     size_types = ["object_size", "part_size"]
     s3_io_test = yaml_parser(yaml_file)
-    delta_list = list()
+    delta_list = []
     for test, data in s3_io_test.items():
         if "object_size" not in data:
             logger.error("Object size is compulsory")
