@@ -19,4 +19,4 @@
 #
 #
 
-"""Unit tests package."""
+"""Unit tests."""
