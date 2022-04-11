@@ -33,7 +33,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def get_config_yaml(fpath: str) -> dict:
-    """Reads the config and decrypts the passwords
+    """Read the config and decrypts the passwords.
 
     :param fpath: configuration file path
     :return [type]: dictionary containing config data

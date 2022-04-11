@@ -85,7 +85,7 @@ class JiraApp:
             [{'id': 123270, 'status': 'PASS', 'key': 'TEST-19537', 'rank': 1},
             {'id': 184244, 'status': 'TODO', 'key': 'TEST-19526', 'rank': 2},]
         """
-        tests_info = list()
+        tests_info = []
         try:
             te_response = requests.get(f"{self.jira_base_url}api/testexec/{test_exe_id}/test",
                                        auth=self.auth)
@@ -125,7 +125,7 @@ class JiraApp:
         "testIssues":{"success": [{"id":"328135","key":"TEST-19537",
         "self":"https://jts.seagate.com/rest/api/2/issue/328135"}]},"infoMessages":[]}
         """
-        state = dict()
+        state = {}
         status = dict()
         state["testExecutionKey"] = test_exe_id
         status["testKey"] = test_id
@@ -181,7 +181,7 @@ class JiraApp:
         :return: Dictionary of tests from test execution ticket.
 
         """
-        tests_dict = dict()
+        tests_dict = {}
         te_details = self.get_te_details_from_test_plan(tp_id)
         for texe in te_details:
             tests_details = self.get_tests_details_from_te(texe['key'])
