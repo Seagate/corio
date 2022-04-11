@@ -43,17 +43,17 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
     try:
         if not os.path.exists(mnt_dir):
             os.makedirs(mnt_dir)
-            LOGGER.info("Created directory: %s", mnt_dir)
+            LOGGER.debug("Created directory: %s", mnt_dir)
         if host_dir:
             if not os.path.ismount(mnt_dir):
                 resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
                 if resp:
                     raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
-                LOGGER.info("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
+                LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
             else:
-                LOGGER.info("NFS Server already mounted.")
+                LOGGER.debug("NFS Server already mounted.")
             return os.path.ismount(mnt_dir)
-        LOGGER.info("NFS Server not provided, Storing logs locally at %s", mnt_dir)
+        LOGGER.debug("NFS Server not provided, Storing logs locally at %s", mnt_dir)
         return os.path.isdir(mnt_dir)
     except OSError as error:
         LOGGER.error(error)
@@ -65,7 +65,7 @@ def collect_support_bundle():
     try:
         bundle_dir = os.path.join(os.getcwd(), "support_bundle")
         if os.path.exists(bundle_dir):
-            LOGGER.info("Removing existing directory %s", bundle_dir)
+            LOGGER.debug("Removing existing directory %s", bundle_dir)
             shutil.rmtree(bundle_dir)
         os.mkdir(bundle_dir)
         if CLUSTER_CFG["product_family"] == "LC":
@@ -93,16 +93,16 @@ def rotate_logs(dpath: str, max_count: int = 0):
     if not os.path.exists(dpath):
         raise IOError(f"Directory '{dpath}' path does not exists.")
     files = sorted(glob.glob(dpath + '/**'), key=os.path.getctime, reverse=True)
-    LOGGER.info(files)
+    LOGGER.debug(files)
     if len(files) > max_count:
         for fpath in files[max_count:]:
             if os.path.exists(fpath):
                 if os.path.isfile(fpath):
                     os.remove(fpath)
-                    LOGGER.info("Removed: Old log file: %s", fpath)
+                    LOGGER.debug("Removed: Old log file: %s", fpath)
                 if os.path.isdir(fpath):
                     shutil.rmtree(fpath)
-                    LOGGER.info("Removed: Old log directory: %s", fpath)
+                    LOGGER.debug("Removed: Old log directory: %s", fpath)
 
     if len(os.listdir(dpath)) > max_count:
         raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
@@ -117,14 +117,16 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
     :param max_sb: maximum sb count to keep on nfs server.
     """
     try:
+        sb_files = []
         sb_dir = os.path.join(mount_path, "CorIO-Execution", str(run_id), "Support_Bundles")
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
         status, fpath = collect_support_bundle()
-        shutil.copy2(fpath, sb_dir)
-        rotate_logs(sb_dir, max_sb)
-        sb_files = os.listdir(sb_dir)
-        LOGGER.info("SB list: %s", sb_files)
+        if status and os.path.exists(fpath):
+            shutil.copy2(fpath, sb_dir)
+            rotate_logs(sb_dir, max_sb)
+            sb_files = os.listdir(sb_dir)
+            LOGGER.debug("SB list: %s", sb_files)
     except IOError as error:
         LOGGER.error(error)
         return False, error

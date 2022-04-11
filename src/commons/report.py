@@ -22,7 +22,6 @@
 
 import os
 import logging
-import datetime
 from datetime import datetime
 import pandas as pd
 from src.commons.constants import ROOT
@@ -45,7 +44,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime, test_failed: str,
     terminated_tests = kwargs.get("terminated_tests", None)
     status_fpath = os.path.join(
         os.getcwd(), "reports",
-        f"corio_summary_{corio_start_time.strftime('%Y-%m-%d %H:%M:%S')}.report")
+        f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w', encoding="utf-8") as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")

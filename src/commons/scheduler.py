@@ -56,16 +56,16 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
     tasks = []
     for _, each in test_plan_value.items():
-        params = {'test_id': each['TEST_ID'], 'object_size': each['object_size']}
-        if 'part_range' in each.keys():
-            params['part_range'] = each['part_range']
-        if 'range_read' in each.keys():
-            params['range_read'] = each['range_read']
+        params = {"test_id": each["TEST_ID"], "object_size": each["object_size"]}
+        if "part_range" in each.keys():
+            params["part_range"] = each["part_range"]
+        if "range_read" in each.keys():
+            params["range_read"] = each["range_read"]
         params.update(common_params)
-        for i in range(1, int(each['sessions']) + 1):
+        for i in range(1, int(each["sessions"]) + 1):
             params["session"] = f"{each['TEST_ID']}_session{i}"
-            tasks.append(create_session(funct=each['operation'],
-                                        start_time=each['start_time'].total_seconds(), **params))
+            tasks.append(create_session(funct=each["operation"],
+                                        start_time=each["start_time"].total_seconds(), **params))
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     LOGGER.info("Completed task %s", done)
     for task in pending:
@@ -92,3 +92,15 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.info("%s Loop interrupted", process_name)
         loop.stop()
     LOGGER.info("%s terminating", process_name)
+
+
+def terminate_processes(process_list):
+    """
+    Terminate Process on failure.
+
+    :param process_list: Terminate the given list of process
+    """
+    LOGGER.debug("Process lists to terminate: %s", process_list)
+    for process in process_list:
+        process.terminate()
+        process.join()

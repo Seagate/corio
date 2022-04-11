@@ -39,9 +39,10 @@ import schedule
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
-from src.commons import yaml_parser
+from src.commons.yaml_parser import test_parser
 from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
+from src.commons.constants import DT_STRING
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
@@ -51,9 +52,9 @@ from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.report import log_status
 from src.commons.workload_mapping import function_mapping
 from src.commons.scheduler import schedule_test_plan
+from src.commons.scheduler import terminate_processes
 
 LOGGER = logging.getLogger(ROOT)
-DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
 
 def initialize_loghandler(opt):
@@ -62,12 +63,12 @@ def initialize_loghandler(opt):
 
     param opt: logging level used in CorIO tool.
     """
-    # If  log level provided then it will use DEBUG else will use default INFO.
+    # If log level provided then it will use DEBUG else will use default INFO.
     if opt.verbose:
         level = logging.getLevelName(logging.DEBUG)
     else:
         level = logging.getLevelName(logging.INFO)
-    os.environ['log_level'] = level
+    os.environ["log_level"] = level
     LOGGER.setLevel(level)
     dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
     if not os.path.exists(dir_path):
@@ -108,19 +109,8 @@ def parse_args():
 
 def setup_environment():
     """Tool installations for test execution."""
-    ret = mount_nfs_server(CORIO_CFG['nfs_server'], MOUNT_DIR)
+    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
-
-
-def terminate_processes(process_list):
-    """
-    Terminate Process on failure.
-
-    :param process_list: Terminate the given list of process
-    """
-    for process in process_list:
-        process.terminate()
-        process.join()
 
 
 def support_bundle_process(interval, sb_identifier):
@@ -132,7 +122,7 @@ def support_bundle_process(interval, sb_identifier):
     while True:
         time.sleep(interval)
         resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                               max_sb=CORIO_CFG['max_no_of_sb'])
+                                               max_sb=CORIO_CFG["max_no_of_sb"])
         if not resp[0]:
             return resp
 
@@ -159,11 +149,11 @@ def main(options):
     """
     LOGGER.info("Setting up environment!!")
     setup_environment()
-    commons_params = {'access_key': S3_CFG.access_key,
-                      'secret_key': S3_CFG.secret_key,
-                      'endpoint_url': S3_CFG.endpoint,
-                      'use_ssl': S3_CFG["use_ssl"],
-                      'seed': options.seed}
+    commons_params = {"access_key": S3_CFG.access_key,
+                      "secret_key": S3_CFG.secret_key,
+                      "endpoint_url": S3_CFG.endpoint,
+                      "use_ssl": S3_CFG["use_ssl"],
+                      "seed": options.seed}
     tests_details = {}
     tests_to_execute = {}
     jira_obj = None
@@ -182,15 +172,15 @@ def main(options):
     LOGGER.info("Test YAML Files to be executed : %s", file_list)
     parsed_input = {}
     for each in file_list:
-        parsed_input[each] = yaml_parser.test_parser(each, options.number_of_nodes)
+        parsed_input[each] = test_parser(each, options.number_of_nodes)
     test_ids, missing_jira_ids = [], []
     for key, value in parsed_input.items():
         LOGGER.info("Test Values : %s", value)
         for test_key, test_value in value.items():
             test_ids.append(test_value["TEST_ID"])
-            if 'operation' in test_value.keys():
-                test_value['operation'] = function_mapping[
-                    test_value['operation']]
+            if "operation" in test_value.keys():
+                test_value["operation"] = function_mapping[
+                    test_value["operation"]]
                 value[test_key] = test_value
             if jira_flg:
                 if test_value["TEST_ID"] in tests_details:
@@ -217,20 +207,26 @@ def main(options):
                                           args=(test_plan, test_plan_value, commons_params))
         processes[test_plan] = process
     LOGGER.info(processes)
-    sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING if options.support_bundle \
+    sb_identifier = CLUSTER_CFG["nodes"][0]["hostname"] + DT_STRING if options.support_bundle \
         else DT_STRING
     if options.support_bundle:
         process = multiprocessing.Process(target=support_bundle_process, name="support_bundle",
-                                          args=(CORIO_CFG['sb_interval_mins'] * 60, sb_identifier))
+                                          args=(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier))
         processes["support_bundle"] = process
+        LOGGER.info("Support bundle collection scheduled for every %s minutes",
+                    CORIO_CFG["sb_interval_mins"] * 60)
     if options.health_check:
         process = multiprocessing.Process(target=health_check_process, name="health_check",
-                                          args=(CORIO_CFG['hc_interval_mins'] * 60,))
+                                          args=(CORIO_CFG["hc_interval_mins"] * 60,))
         processes["health_check"] = process
+        LOGGER.info("Health check scheduled for every %s minutes",
+                    CORIO_CFG["hc_interval_mins"] * 60)
     sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", 30)
     try:
         for process in processes.values():
+            LOGGER.info("Process started: %s", process)
             process.start()
         test_ids = []
         while True:
@@ -266,21 +262,21 @@ def main(options):
                 schedule.cancel_job(sched_job)
                 if options.support_bundle:
                     resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                                           max_sb=CORIO_CFG['max_no_of_sb'])
+                                                           max_sb=CORIO_CFG["max_no_of_sb"])
                     LOGGER.info("collect support bundles response: %s", resp)
                 collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminate_processes(processes.values())
-        log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
+        log_status(parsed_input, corio_start_time, "KeyboardInterrupt")
         if jira_flg:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         if options.support_bundle:
             resp = collect_upload_sb_to_nfs_server(
-                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
+                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG["max_no_of_sb"])
             LOGGER.info("collect support bundles response: %s", resp)
         # TODO: cleanup object files created
         # stop resource util
