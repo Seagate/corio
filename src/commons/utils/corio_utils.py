@@ -96,6 +96,7 @@ def cpu_memory_details():
 def run_local_cmd(cmd: str) -> tuple:
     """
     Execute any given command on local machine(Windows, Linux).
+
     :param cmd: command to be executed.
     :return: bool, response.
     """
@@ -121,7 +122,7 @@ def run_local_cmd(cmd: str) -> tuple:
 
 def create_file(path: str, size: int):
     """
-    Create file with random data
+    Create file with random data.
 
     :param size: Size in bytes
     :param path: File name with path
