@@ -33,15 +33,15 @@ WARP_CONF = S3_TOOLS_CFG["s3bench"]
 
 
 class Warp:
-    """Warp class for executing given Warp workload"""
+    """Warp class for executing given Warp workload."""
 
     # pylint: disable=too-many-arguments,too-many-locals
     def __init__(self, operation: str, access: str, secret: str, host: str, test_id: str,
                  concurrent: int, objects: int, size_high: int, random_size: bool = True,
                  duration: timedelta = None) -> None:
-        """Log file generated name = log_file.csv.zst file in current directory
-        operations can be one of the get, put, stat
+        """Log file generated name = log_file.csv.zst file in current directory.
 
+        operations can be one of the get, put, stat
         :param operation: Operation e.g. get, put, stat
         :param access: Access key
         :param secret: Secret key
@@ -70,7 +70,7 @@ class Warp:
 
     @staticmethod
     def install_warp() -> bool:
-        """Install Warp if not present"""
+        """Install Warp if not present."""
         if os.system("warp -v"):
             LOGGER.error("ERROR: warp is not installed. Installing warp tool.")
             if os.system(f"yum install -y {WARP_CONF['version']}"):
@@ -83,12 +83,12 @@ class Warp:
 
     @staticmethod
     def execute_command(cmd) -> subprocess.CompletedProcess:
-        """Execute Command"""
+        """Execute Command."""
         LOGGER.info("Starting: %s", cmd)
         return subprocess.run(cmd, shell=True, capture_output=True, text=True)
 
     def execute_workload(self) -> [bool, Any]:
-        """Execute Warp command"""
+        """Execute Warp command."""
         self.cmd = f"warp {self.operation} --host {self.host} --access-key {self.access_key} " \
                    f"--secret-key {self.secret_key} --duration {self.duration.seconds}s " \
                    f"--objects {self.objects} --concurrent {self.concurrent} " \
@@ -100,7 +100,7 @@ class Warp:
         return self.check_errors()
 
     def check_errors(self) -> [bool, Any]:
-        """Check errors in Warp log file
+        """Check errors in Warp log file.
 
         e.g. return: True, {"PUT": 5, "GET":3, "STAT":0, "DELETE": 0}
         """

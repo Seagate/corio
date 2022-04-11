@@ -18,7 +18,7 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 #
-""" Logger for CorIO tool."""
+"""Logger for CorIO tool."""
 
 import os
 import gzip
@@ -35,8 +35,7 @@ class StreamToLogger:
     """logger class for corio."""
 
     def __init__(self, file_path, logger, stream=False):
-        """"
-        Initialize root logger.
+        """Initialize root logger.
 
         :param file_path: File path of the logger.
         :param logger: logger object from logging.getLogger(__name__).
@@ -84,7 +83,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
 
     def __init__(self, filename, maxbyte, backupcount):
         """
-        Initialization for cortx rotating file handler.
+        Initialize for cortx rotating file handler.
 
         :param filename: Filename of the log.
         :param maxbyte: Rollover occurs whenever the current log file is nearly maxBytes in
@@ -95,7 +94,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
 
     def rotation_filename(self, default_name):
         """
-        Method to form log file name for rotation internally called by rotation_filename method.
+        Form log file name for rotation internally called by rotation_filename method.
 
         :param default_name: name of the base file
         :return: rotated log file name e.g., io_driver-YYYY-MM-DD-1.gz
@@ -104,7 +103,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
 
     def rotate(self, source, dest):
         """
-        Method to compress and rotate the current log when size limit is reached.
+        Compress and rotate the current log when size limit is reached.
 
         :param source: current log file path.
         :param dest: destination path for rotated file.

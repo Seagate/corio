@@ -33,7 +33,7 @@ from src.commons.constants import MIN_DURATION
 
 # pylint: disable=too-few-public-methods, too-many-statements
 class TestS3CopyObjects(S3Object, S3Bucket):
-    """S3 Copy Object class for executing given io stability workload"""
+    """S3 Copy Object class for executing given io stability workload."""
 
     # pylint: disable=too-many-arguments
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
