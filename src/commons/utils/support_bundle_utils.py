@@ -25,7 +25,9 @@ import os
 import paramiko
 
 from config import CLUSTER_CFG
-from src.commons.constants import CLSTR_LOGS_CMD, K8S_SCRIPTS_PATH
+
+from src.commons.constants import CLSTR_LOGS_CMD
+from src.commons.constants import K8S_SCRIPTS_PATH
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -42,9 +44,10 @@ def execute_remote_command(command, host, user, passwd, timeout=20 * 60):
     """
     host_obj = paramiko.SSHClient()
     host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    LOGGER.info("Connecting to host: %s", host)
+    LOGGER.debug("Connecting to host: %s", host)
     host_obj.connect(hostname=host, username=user, password=passwd, timeout=timeout)
     _, stdout, _ = host_obj.exec_command(command, timeout=timeout)
+    LOGGER.debug(stdout)
     exit_status = stdout.channel.recv_exit_status()
     return exit_status, stdout
 
@@ -96,6 +99,9 @@ def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRI
         if node["node_type"] == "master":
             host, user, passwd = node["hostname"], node["username"], node["password"]
             break
+    if not host:
+        return False, f"Incorrect host '{host}' detail."
+    LOGGER.info("Support bundle collection is started.")
     resp = execute_remote_command(CLSTR_LOGS_CMD.format(scripts_path), host, user, passwd)
     for line in resp[1]:
         if ".tar" in line:
@@ -108,5 +114,5 @@ def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRI
             remove_remote_file(host, user, passwd, remote_path)
             LOGGER.info("Support bundle %s generated and copied to %s path.", file, local_dir_path)
             return True, local_path
-    LOGGER.info("Support Bundle not generated; response: %s", resp)
+    LOGGER.error("Support Bundle not generated; response: %s", resp)
     return False, f"Support bundles not generated. Response: {resp}"
