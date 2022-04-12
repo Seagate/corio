@@ -5,7 +5,7 @@ test_1:
         start: 50
         end: 100
     min_runtime: 2h
-    sessions: 5  # One object per session.
+    sessions: 5
     range_read:
         start: 1byte
         end: 100byte
