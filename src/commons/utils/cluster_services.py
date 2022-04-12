@@ -122,7 +122,7 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
         status, fpath = collect_support_bundle()
-        if status and os.path.exists(fpath):
+        if status:
             shutil.copy2(fpath, sb_dir)
             rotate_logs(sb_dir, max_sb)
             sb_files = os.listdir(sb_dir)
