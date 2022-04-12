@@ -67,6 +67,23 @@ def copy_file_from_remote(host, user, passwd, local_path, remote_path):
     host_obj.close()
 
 
+def remove_remote_file(host, user, passwd, remote_path):
+    """Remove file from remote host.
+
+    :param host: Hostname
+    :param user: Username
+    :param passwd: Password
+    :param remote_path: Remote path of the file
+    """
+    host_obj = paramiko.SSHClient()
+    host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    host_obj.connect(hostname=host, username=user, password=passwd)
+    sftp = host_obj.open_sftp()
+    sftp.remove(remote_path)
+    sftp.close()
+    host_obj.close()
+
+
 def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRIPTS_PATH):
     """Utility function to get the support bundle created with services script and copied to client.
 
@@ -88,6 +105,7 @@ def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRI
             remote_path = os.path.join(scripts_path, file)
             local_path = os.path.join(local_dir_path, file)
             copy_file_from_remote(host, user, passwd, local_path, remote_path)
+
             LOGGER.info("Support bundle %s generated and copied to %s path.", file, local_dir_path)
             return True, local_path
     LOGGER.info("Support Bundle not generated; response: %s", resp)
