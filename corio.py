@@ -47,7 +47,7 @@ from scripts.s3.s3api import object_operations
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.utils import yaml_parser
-from src.commons.constants import MOUNT_DIR, DATA_DIR
+from src.commons.constants import MOUNT_DIR, DATA_DIR_PATH
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
@@ -190,8 +190,8 @@ def setup_environment():
     """Tool installations for test execution."""
     ret = mount_nfs_server(CORIO_CFG['nfs_server'], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR, exist_ok=True)
+    if not os.path.exists(DATA_DIR_PATH):
+        os.makedirs(DATA_DIR_PATH, exist_ok=True)
 
 
 # pylint: disable-msg=too-many-branches
@@ -445,10 +445,14 @@ def main(options):
             resp = collect_upload_sb_to_nfs_server(
                 MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
             LOGGER.info("collect support bundles response: %s", resp)
-        # TODO: cleanup object files created
+
         # stop resource util
         collect_resource_utilisation(action="stop")
         sys.exit()
+    finally:
+        LOGGER.info("Cleaning up TestData")
+        if os.path.exists(DATA_DIR_PATH):
+            os.removedirs(DATA_DIR_PATH)
 
 
 if __name__ == "__main__":

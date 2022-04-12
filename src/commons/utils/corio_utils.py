@@ -28,7 +28,7 @@ from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 
 import psutil as ps
-from src.commons.constants import DATA_DIR
+from src.commons.constants import DATA_DIR_PATH
 
 LOGGER = logging.getLogger(__name__)
 
@@ -121,19 +121,19 @@ def run_local_cmd(cmd: str) -> tuple:
             proc.terminate()
 
 
-def create_file(path: str, size: int):
+def create_file(file_name: str, size: int):
     """
     Create file with random data.
 
     :param size: Size in bytes
-    :param path: File name with path
+    :param file_name: File name
     """
-    data_path = os.path.join(os.path.join(DATA_DIR, path))
+    file_path = os.path.join(DATA_DIR_PATH, file_name)
     base = 1024 * 1024
     while size > base:
-        with open(data_path, 'ab+') as f_out:
+        with open(file_path, 'ab+') as f_out:
             f_out.write(os.urandom(base))
         size -= base
-    with open(data_path, 'ab+') as f_out:
+    with open(file_path, 'ab+') as f_out:
         f_out.write(os.urandom(size))
-    return data_path
+    return file_path
