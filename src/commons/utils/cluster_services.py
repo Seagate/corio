@@ -124,6 +124,7 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
         status, fpath = collect_support_bundle()
         if status:
             shutil.copy2(fpath, sb_dir)
+            LOGGER.info("Support bundle path: %s", os.path.join(sb_dir, os.path.basename(fpath)))
             rotate_logs(sb_dir, max_sb)
             sb_files = os.listdir(sb_dir)
             LOGGER.debug("SB list: %s", sb_files)

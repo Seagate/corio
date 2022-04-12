@@ -107,12 +107,11 @@ def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRI
         if ".tar" in line:
             out = line.split()[1]
             file = out.strip('\"')
-            LOGGER.info("Support bundle generated: %s", file)
             remote_path = os.path.join(scripts_path, file)
             local_path = os.path.join(local_dir_path, file)
             copy_file_from_remote(host, user, passwd, local_path, remote_path)
             remove_remote_file(host, user, passwd, remote_path)
-            LOGGER.info("Support bundle %s generated and copied to %s path.", file, local_dir_path)
+            LOGGER.info("Support bundle '%s' generated.", file)
             return True, local_path
     LOGGER.error("Support Bundle not generated; response: %s", resp)
     return False, f"Support bundles not generated. Response: {resp}"
