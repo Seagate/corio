@@ -214,13 +214,12 @@ def main(options):
                                           args=(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier))
         processes["support_bundle"] = process
         LOGGER.info("Support bundle collection scheduled for every %s minutes",
-                    CORIO_CFG["sb_interval_mins"] * 60)
+                    CORIO_CFG["sb_interval_mins"])
     if options.health_check:
         process = multiprocessing.Process(target=health_check_process, name="health_check",
                                           args=(CORIO_CFG["hc_interval_mins"] * 60,))
         processes["health_check"] = process
-        LOGGER.info("Health check scheduled for every %s minutes",
-                    CORIO_CFG["hc_interval_mins"] * 60)
+        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG["hc_interval_mins"])
     sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
     LOGGER.info("Report status update scheduled for every %s minutes", 30)
