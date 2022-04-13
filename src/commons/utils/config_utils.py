@@ -26,10 +26,11 @@ import os
 from configparser import ConfigParser
 from configparser import MissingSectionHeaderError
 from configparser import NoSectionError
-
 import yaml
 
-LOGGER = logging.getLogger(__name__)
+from src.commons.constants import ROOT
+
+LOGGER = logging.getLogger(ROOT)
 
 
 def get_config_yaml(fpath: str) -> dict:
