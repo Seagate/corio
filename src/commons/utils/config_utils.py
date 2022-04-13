@@ -26,7 +26,6 @@ import os
 from configparser import ConfigParser
 from configparser import MissingSectionHeaderError
 from configparser import NoSectionError
-
 import yaml
 
 from src.commons.constants import ROOT
