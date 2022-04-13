@@ -26,8 +26,9 @@ import paramiko
 
 from config import CLUSTER_CFG
 from src.commons.constants import CLSTR_LOGS_CMD, K8S_SCRIPTS_PATH
+from src.commons.constants import ROOT
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(ROOT)
 
 
 def execute_remote_command(command, host, user, passwd, timeout=20 * 60):
