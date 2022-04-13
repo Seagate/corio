@@ -1,59 +1,42 @@
-## CORIO (KOR-I-O)  
-### A tool to check Sustainability of IO Operations for expected longer duration
+## CORIO
+
+### WHY CORIO:
+
+Needed a single aggregator / umbrella tool which does following:
+- Checks Sustainability of IO Operations for long duration and updates results based on expected execution runtime
+- Support Stress (exponential workload) as well as longevity testing.
+- Supports S3 IO operations using full capability of boto APIs.
+- Benefits from unique capabilities of multiple IO tools (S3bench, WARP, etc.
+- Supports failure mode testing over long runs.
+- Supports plug-n-play for other protocols (NFS, SMB, Block-IO, etc).
+- Supports easy deployment and enables various usage scenario across teams.
+
+### CURRENT CAPABILITIES:
+
+- Matrix Based Test Execution:
+  - Parallel test execution from multiple test suites, 
+    - for e.g. first test from each suite will start and will be marked pass once it achieves ETA duration of execution.
+  - Then next set of tests will start and previously “pass” marked tests will also continue to run for background load generation.
+- Seed based execution for easy reproduction of failure scenarios.
+- Customized for CORTX requirements:
+  - Automated execution using Jenkins framework.
+  - Results update in Jira.
+  - Periodic system health checks.
+  - Resource monitoring (CPU, Memory, etc.).
+  - Capture support bundle logs (periodic and on failure).
 
 
-Need for a tool which gives consistent outcome of where do we stand in terms of IO Path stability under 
-single aggregator/umbrella tool.
 
-1. Fully configurable with IO workload to support Stress (exponential workload) as well as longevity testing.
-2. This tool support S3 IO Operations using full capability of boto APIs.
-3. This tool has capability to embed multiple IO tools (S3bench, WARP, etc.) and benefits from their specific capabilities.
-4. This tool has capability to have seed based execution for reproducing same scenarios.
-5. This can be Integrated for any other product requirements.
-
-### This tool is capable of executing matrix based execution as following:
-
-This tool is capable to execute multi-level test suite that can be executed for a prolonged infinite period 
-with increasing difficulty levels for them to Pass these set period, so we know the defects when fixed allows the 
-system to withstand how much period of prolonged IO.
-
-
-Scheme of  multiple tests suites execution is as following:
-
-1. Start given test suites/execution, say N in parallel such that first test from 
-each suite will start and will be marked pass once it achieves minimum duration of execution.
-2. Then next set of tests will start and previous will also continue.
-3. It will increase load(with exponential increasing IO sessions) on target and, IO sustainability can be checked in lesser time/duration  as compared to other
-Tools.
-
-
-### Integrated for CORTX Requirements:
-
-1. Jira Integration.
-2. Automated Execution with Jenkins.
-3. System Health Check.
-4. Resource Monitoring(CPU and Memory).
-5. Generating Support Bundle Logs (Periodic and on failure).
-6. Useful across teams (CI-CD, DST, Regression, ComponentQA, Dev, CFT).
-
-
-### Additional Capabilities:
-
-1. Simple and easy to execute tool.
-2. Error injection and failure modes (TBD).
-3. Plug, and play architecture such that additional functionalities may be extended.
-4. Can be extended with other IO protocols.
-
-### Tool components:
+### OVERVIEW:
 
 #### Block Diagram:
 
 ![](images/BlockDiagram.png)
 
-* Configurations: This is actual workload specified/created by user.
+* Test Configurations: This is actual workload specified/created by user.
 * Parser: This section verifies the Test Configurations, Inputs and Structure used by Driver.
 * Library: This sections consists of collection of code logic used by Test Scripts.
-* Scripts: These are actual logic takes structured input from parser and executed by Driver.
+* Test Scripts: These are actual logic takes structured input from parser and executed by Driver.
 * System Monitoring: This consists of monitoring CPU and Memory usages on client and server.
 * Logging: Logs for individual tests in different files and upload to NFS as needed.
 * Support Bundle: This is a CORTX specific feature where Server Logs are generated periodically and 
