@@ -18,6 +18,7 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 #
+
 """Module to map script with workload."""
 
 from scripts.s3.mixs3io import mix_object_operations
@@ -29,7 +30,7 @@ from scripts.s3.s3api import object_operations
 
 
 # mapping_dict = {operation_name_from_workload: [script.class, function_name],}
-SCRIPT_MAPPING = {
+function_mapping = {
     'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
