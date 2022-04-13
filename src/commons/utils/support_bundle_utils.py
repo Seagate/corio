@@ -25,7 +25,9 @@ import os
 import paramiko
 
 from config import CLUSTER_CFG
-from src.commons.constants import CLSTR_LOGS_CMD, K8S_SCRIPTS_PATH
+
+from src.commons.constants import CLSTR_LOGS_CMD
+from src.commons.constants import K8S_SCRIPTS_PATH
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -42,9 +44,10 @@ def execute_remote_command(command, host, user, passwd, timeout=20 * 60):
     """
     host_obj = paramiko.SSHClient()
     host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    LOGGER.info("Connecting to host: %s", host)
+    LOGGER.debug("Connecting to host: %s", host)
     host_obj.connect(hostname=host, username=user, password=passwd, timeout=timeout)
     _, stdout, _ = host_obj.exec_command(command, timeout=timeout)
+    LOGGER.debug(stdout)
     exit_status = stdout.channel.recv_exit_status()
     return exit_status, stdout
 
@@ -67,6 +70,23 @@ def copy_file_from_remote(host, user, passwd, local_path, remote_path):
     host_obj.close()
 
 
+def remove_remote_file(host, user, passwd, remote_path):
+    """Remove file from remote host.
+
+    :param host: Hostname
+    :param user: Username
+    :param passwd: Password
+    :param remote_path: Remote path of the file
+    """
+    host_obj = paramiko.SSHClient()
+    host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    host_obj.connect(hostname=host, username=user, password=passwd)
+    sftp = host_obj.open_sftp()
+    sftp.remove(remote_path)
+    sftp.close()
+    host_obj.close()
+
+
 def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRIPTS_PATH):
     """Utility function to get the support bundle created with services script and copied to client.
 
@@ -79,16 +99,19 @@ def collect_support_bundle_k8s(local_dir_path: str, scripts_path: str = K8S_SCRI
         if node["node_type"] == "master":
             host, user, passwd = node["hostname"], node["username"], node["password"]
             break
+    if not host:
+        return False, f"Incorrect host '{host}' detail."
+    LOGGER.info("Support bundle collection is started.")
     resp = execute_remote_command(CLSTR_LOGS_CMD.format(scripts_path), host, user, passwd)
     for line in resp[1]:
         if ".tar" in line:
             out = line.split()[1]
             file = out.strip('\"')
-            LOGGER.info("Support bundle generated: %s", file)
             remote_path = os.path.join(scripts_path, file)
             local_path = os.path.join(local_dir_path, file)
             copy_file_from_remote(host, user, passwd, local_path, remote_path)
-            LOGGER.info("Support bundle %s generated and copied to %s path.", file, local_dir_path)
+            remove_remote_file(host, user, passwd, remote_path)
+            LOGGER.info("Support bundle '%s' generated.", file)
             return True, local_path
-    LOGGER.info("Support Bundle not generated; response: %s", resp)
+    LOGGER.error("Support Bundle not generated; response: %s", resp)
     return False, f"Support bundles not generated. Response: {resp}"
