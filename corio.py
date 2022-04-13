@@ -22,10 +22,8 @@
 """Perform parallel S3 operations as per the given test input YAML using Asyncio."""
 
 import argparse
-import asyncio
 import glob
 import logging
-import math
 import multiprocessing
 import os
 import random
@@ -36,39 +34,27 @@ from distutils.util import strtobool
 from pprint import pformat
 from collections import Counter
 
-import pandas as pd
 import schedule
 
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from scripts.s3.s3api import bucket_operations
-from scripts.s3.s3api import copy_object
-from scripts.s3.s3api import multipart_operations
-from scripts.s3.s3api import object_operations
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
-from src.commons.utils import yaml_parser
+from src.commons.yaml_parser import test_parser
 from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
+from src.commons.constants import DT_STRING
 from src.commons.utils.cluster_services import mount_nfs_server
 from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.exception import HealthCheckError
 from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.report import log_status
+from src.commons.workload_mapping import function_mapping
+from src.commons.scheduler import schedule_test_plan
+from src.commons.scheduler import terminate_processes
 
 LOGGER = logging.getLogger(ROOT)
-DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
-
-function_mapping = {
-    'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
-    'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
-    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload']
-}
 
 
 def initialize_loghandler(opt):
@@ -77,12 +63,12 @@ def initialize_loghandler(opt):
 
     param opt: logging level used in CorIO tool.
     """
-    # If  log level provided then it will use DEBUG else will use default INFO.
+    # If log level provided then it will use DEBUG else will use default INFO.
     if opt.verbose:
         level = logging.getLevelName(logging.DEBUG)
     else:
         level = logging.getLevelName(logging.INFO)
-    os.environ['log_level'] = level
+    os.environ["log_level"] = level
     LOGGER.setLevel(level)
     dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
     if not os.path.exists(dir_path):
@@ -121,167 +107,10 @@ def parse_args():
     return parser.parse_args()
 
 
-async def create_session(funct: list, start_time: float, **kwargs) -> None:
-    """
-    Execute the test function in sessions.
-
-    :param funct: List of class name and method name to be called.
-    :param start_time: Start time for session.
-    :param kwargs: session name from each test and test parameters.
-    """
-    await asyncio.sleep(start_time)
-    LOGGER.info("Starting Session %s, PID - %s", kwargs.get("session"), os.getpid())
-    LOGGER.info("kwargs : %s", kwargs)
-    func = getattr(funct[0](**kwargs), funct[1])
-    await func()
-    LOGGER.info("Ended Session %s, PID - %s", kwargs.get("session"), os.getpid())
-
-
-async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
-    """
-    Create and Schedule specified number of sessions for each test in test_plan.
-
-    :param test_plan: YAML file name for specific S3 operation
-    :param test_plan_value: Parsed test_plan values
-    :param common_params: Common arguments to be sent to function
-    """
-    process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
-    tasks = []
-    for _, each in test_plan_value.items():
-        params = {'test_id': each['TEST_ID'], 'object_size': each['object_size']}
-        if 'part_range' in each.keys():
-            params['part_range'] = each['part_range']
-        if 'range_read' in each.keys():
-            params['range_read'] = each['range_read']
-        params.update(common_params)
-        for i in range(1, int(each['sessions']) + 1):
-            params["session"] = f"{each['TEST_ID']}_session{i}"
-            tasks.append(create_session(funct=each['operation'],
-                                        start_time=each['start_time'].total_seconds(), **params))
-    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-    LOGGER.info("Completed task %s", done)
-    for task in pending:
-        task.cancel()
-    for task in done:
-        task.result()
-    LOGGER.info("%s terminating", process_name)
-
-
-def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
-    """
-    Create event loop for each test plan.
-
-    :param test_plan: YAML file name for specific S3 operation
-    :param test_plan_values: Parsed yaml file values
-    :param common_params: Common arguments to be passed to function.
-    """
-    process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
-    LOGGER.info("%s Started ", process_name)
-    loop = asyncio.get_event_loop()
-    try:
-        loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
-    except KeyboardInterrupt:
-        LOGGER.info("%s Loop interrupted", process_name)
-        loop.stop()
-    LOGGER.info("%s terminating", process_name)
-
-
 def setup_environment():
     """Tool installations for test execution."""
-    ret = mount_nfs_server(CORIO_CFG['nfs_server'], MOUNT_DIR)
+    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
-
-
-# pylint: disable-msg=too-many-branches
-def log_status(parsed_input: dict, corio_start_time: datetime.time, test_failed: str,
-               terminated_tests: list = None):
-    """
-    Log execution status into log file.
-
-    :param parsed_input: Dict for all the input yaml files
-    :param corio_start_time: Start time for main process
-    :param test_failed: Reason for failure is any
-    :param terminated_tests: terminated tests from workload..
-    """
-    status_fpath = os.path.join(os.getcwd(), "reports", f"corio_summary_{DT_STRING}.report")
-    LOGGER.info("Logging current status to %s", status_fpath)
-    with open(status_fpath, 'w', encoding="utf-8") as status_file:
-        status_file.write(f"\nLogging Status at {datetime.now()}")
-        if test_failed == 'KeyboardInterrupt':
-            status_file.write("\nTest Execution stopped due to Keyboard interrupt")
-        elif test_failed is None:
-            status_file.write('\nTest Execution still in progress')
-        else:
-            status_file.write(f'\nTest Execution terminated due to error in {test_failed}')
-        status_file.write(f'\nTotal Execution Duration : {datetime.now() - corio_start_time}')
-        status_file.write("\nTestWise Execution Details:")
-        date_format = '%Y-%m-%d %H:%M:%S'
-        for key, value in parsed_input.items():
-            dataframe = pd.DataFrame()
-            for key1, value1 in value.items():
-                input_dict = {"TEST_NO": key1,
-                              "TEST_ID": value1['TEST_ID'],
-                              "SESSIONS": int(value1['sessions'])}
-                if isinstance(value1['object_size'], list):
-                    input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value1['object_size']]
-                else:
-                    input_dict.update({
-                        "OBJECT_SIZE_START": convert_size(value1['object_size']['start']),
-                        "OBJECT_SIZE_END": convert_size(value1['object_size']['end'])})
-                test_start_time = corio_start_time + value1['start_time']
-                if datetime.now() > test_start_time:
-                    input_dict["START_TIME"] = f"Started at {test_start_time.strftime(date_format)}"
-                    if datetime.now() > (test_start_time + value1['min_runtime']):
-                        pass_time = (test_start_time + value1['min_runtime']).strftime(
-                            date_format)
-                        input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
-                    else:
-                        # Report In Progress, Fail, Aborted and update status.
-                        if terminated_tests and input_dict["TEST_ID"] in terminated_tests:
-                            LOGGER.error("Test execution terminated due to error in %s.",
-                                         input_dict["TEST_ID"])
-                            input_dict["RESULT_UPDATE"] = "Fail"
-                        elif test_failed:
-                            input_dict["RESULT_UPDATE"] = "Aborted"
-                        else:
-                            input_dict["RESULT_UPDATE"] = "In Progress"
-                    input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
-                else:
-                    input_dict[
-                        "START_TIME"] = f"Scheduled at {test_start_time.strftime(date_format)}"
-                    input_dict["RESULT_UPDATE"] = "Not Triggered"
-                    input_dict["TOTAL_TEST_EXECUTION"] = "NA"
-                dataframe = dataframe.append(input_dict, ignore_index=True)
-            # Convert sessions into integer.
-            dataframe = dataframe.astype({"SESSIONS": 'int'})
-            status_file.write(f"\n\nTEST YAML FILE : {key}")
-            status_file.write(f'\n{dataframe}')
-
-
-def terminate_processes(process_list):
-    """
-    Terminate Process on failure.
-
-    :param process_list: Terminate the given list of process
-    """
-    for process in process_list:
-        process.terminate()
-        process.join()
-
-
-def convert_size(size_bytes):
-    """
-    Convert size to KiB, MiB etc.
-
-    :param size_bytes: Size in bytes
-    """
-    if size_bytes == 0:
-        return "0B"
-    size_name = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
-    check_pow = int(math.floor(math.log(size_bytes, 1024)))
-    power = math.pow(1024, check_pow)
-    size = round(size_bytes / power, 2)
-    return f"{size} {size_name[check_pow]}"
 
 
 def support_bundle_process(interval, sb_identifier):
@@ -293,7 +122,7 @@ def support_bundle_process(interval, sb_identifier):
     while True:
         time.sleep(interval)
         resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                               max_sb=CORIO_CFG['max_no_of_sb'])
+                                               max_sb=CORIO_CFG["max_no_of_sb"])
         if not resp[0]:
             return resp
 
@@ -320,11 +149,11 @@ def main(options):
     """
     LOGGER.info("Setting up environment!!")
     setup_environment()
-    commons_params = {'access_key': S3_CFG.access_key,
-                      'secret_key': S3_CFG.secret_key,
-                      'endpoint_url': S3_CFG.endpoint,
-                      'use_ssl': S3_CFG["use_ssl"],
-                      'seed': options.seed}
+    commons_params = {"access_key": S3_CFG.access_key,
+                      "secret_key": S3_CFG.secret_key,
+                      "endpoint_url": S3_CFG.endpoint,
+                      "use_ssl": S3_CFG["use_ssl"],
+                      "seed": options.seed}
     tests_details = {}
     tests_to_execute = {}
     jira_obj = None
@@ -343,15 +172,15 @@ def main(options):
     LOGGER.info("Test YAML Files to be executed : %s", file_list)
     parsed_input = {}
     for each in file_list:
-        parsed_input[each] = yaml_parser.test_parser(each, options.number_of_nodes)
+        parsed_input[each] = test_parser(each, options.number_of_nodes)
     test_ids, missing_jira_ids = [], []
     for key, value in parsed_input.items():
         LOGGER.info("Test Values : %s", value)
         for test_key, test_value in value.items():
             test_ids.append(test_value["TEST_ID"])
-            if 'operation' in test_value.keys():
-                test_value['operation'] = function_mapping[
-                    test_value['operation']]
+            if "operation" in test_value.keys():
+                test_value["operation"] = function_mapping[
+                    test_value["operation"]]
                 value[test_key] = test_value
             if jira_flg:
                 if test_value["TEST_ID"] in tests_details:
@@ -378,20 +207,26 @@ def main(options):
                                           args=(test_plan, test_plan_value, commons_params))
         processes[test_plan] = process
     LOGGER.info(processes)
-    sb_identifier = CLUSTER_CFG['nodes'][0]['hostname'] + DT_STRING if options.support_bundle \
+    sb_identifier = CLUSTER_CFG["nodes"][0]["hostname"] + DT_STRING if options.support_bundle \
         else DT_STRING
     if options.support_bundle:
         process = multiprocessing.Process(target=support_bundle_process, name="support_bundle",
-                                          args=(CORIO_CFG['sb_interval_mins'] * 60, sb_identifier))
+                                          args=(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier))
         processes["support_bundle"] = process
+        LOGGER.info("Support bundle collection scheduled for every %s minutes",
+                    CORIO_CFG["sb_interval_mins"] * 60)
     if options.health_check:
         process = multiprocessing.Process(target=health_check_process, name="health_check",
-                                          args=(CORIO_CFG['hc_interval_mins'] * 60,))
+                                          args=(CORIO_CFG["hc_interval_mins"] * 60,))
         processes["health_check"] = process
+        LOGGER.info("Health check scheduled for every %s minutes",
+                    CORIO_CFG["hc_interval_mins"] * 60)
     sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", 30)
     try:
         for process in processes.values():
+            LOGGER.info("Process started: %s", process)
             process.start()
         test_ids = []
         while True:
@@ -427,21 +262,21 @@ def main(options):
                 schedule.cancel_job(sched_job)
                 if options.support_bundle:
                     resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                                           max_sb=CORIO_CFG['max_no_of_sb'])
+                                                           max_sb=CORIO_CFG["max_no_of_sb"])
                     LOGGER.info("collect support bundles response: %s", resp)
                 collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminate_processes(processes.values())
-        log_status(parsed_input, corio_start_time, 'KeyboardInterrupt')
+        log_status(parsed_input, corio_start_time, "KeyboardInterrupt")
         if jira_flg:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         if options.support_bundle:
             resp = collect_upload_sb_to_nfs_server(
-                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG['max_no_of_sb'])
+                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG["max_no_of_sb"])
             LOGGER.info("collect support bundles response: %s", resp)
         # TODO: cleanup object files created
         # stop resource util

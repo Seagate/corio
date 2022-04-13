@@ -21,10 +21,9 @@
 
 """Scheduler module."""
 
-import asyncio
-import logging
 import os
-
+import logging
+import asyncio
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -62,20 +61,18 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["part_range"] = each["part_range"]
         if "range_read" in each.keys():
             params["range_read"] = each["range_read"]
-        if "part_copy" in each.keys():
-            params["part_copy"] = each["part_copy"]
         params.update(common_params)
         for i in range(1, int(each["sessions"]) + 1):
             params["session"] = f"{each['TEST_ID']}_session{i}"
             tasks.append(create_session(funct=each["operation"],
                                         start_time=each["start_time"].total_seconds(), **params))
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-    LOGGER.critical("Terminating process & pending task: %s", process_name)
+    LOGGER.info("Completed task %s", done)
     for task in pending:
         task.cancel()
-    LOGGER.error(done)
     for task in done:
         task.result()
+    LOGGER.info("%s terminating", process_name)
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
@@ -95,3 +92,15 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.info("%s Loop interrupted", process_name)
         loop.stop()
     LOGGER.info("%s terminating", process_name)
+
+
+def terminate_processes(process_list):
+    """
+    Terminate Process on failure.
+
+    :param process_list: Terminate the given list of process
+    """
+    LOGGER.debug("Process lists to terminate: %s", process_list)
+    for process in process_list:
+        process.terminate()
+        process.join()

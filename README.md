@@ -1,4 +1,4 @@
-# CORIO (KOR-I-O)
+# CORIO
 CORIO (Pronounced as KOR-IO) is an open source tool to exercise long run IO to check IO stability.
 This is a protocol agnostic tool hence any other IO protocol can be plugged in and exercised as and when needed.
 This Tool can be divided logically in following sections:
