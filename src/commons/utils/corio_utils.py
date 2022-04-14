@@ -27,6 +27,7 @@ import os
 import math
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
+import paramiko
 import psutil as ps
 from src.commons.constants import KB
 from src.commons.constants import KIB
@@ -36,7 +37,7 @@ from src.commons.constants import DATA_DIR_PATH
 LOGGER = logging.getLogger(ROOT)
 
 
-def log_cleanup():
+def log_cleanup() -> None:
     """
     Create backup of log/latest & reports.
 
@@ -76,7 +77,7 @@ def log_cleanup():
         os.makedirs(reports_dir)
 
 
-def cpu_memory_details():
+def cpu_memory_details() -> None:
     """Cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
     LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
@@ -113,14 +114,14 @@ def run_local_cmd(cmd: str) -> tuple:
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
             if proc.returncode != 0:
-                return False, str(error)
-        return True, str(output)
+                return False, error
+        return True, output
     except (CalledProcessError, OSError) as error:
         LOGGER.error(error)
         return False, error
 
 
-def create_file(file_name: str, size: int):
+def create_file(file_name: str, size: int) -> None:
     """
     Create file with random data.
 
@@ -138,7 +139,7 @@ def create_file(file_name: str, size: int):
     return file_path
 
 
-def convert_size(size_bytes):
+def convert_size(size_bytes) -> str:
     """
     Convert byte size to KiB, MiB, KB, MB etc.
 
@@ -163,3 +164,82 @@ def convert_size(size_bytes):
         part_size = f"{size_bytes}B"
 
     return part_size
+
+
+class RemoteHost:
+    """Class for execution of commands on remote machine."""
+
+    def __init__(self, host: str, user: str, password: str, timeout: int = 120) -> None:
+        """Initialize parameters."""
+        self.host = host
+        self.user = user
+        self.password = password
+        self.timeout = timeout
+        self.host_obj = paramiko.SSHClient()
+        self.host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.sftp_obj = None
+
+    def connect(self) -> None:
+        """connect to remote machine."""
+        self.host_obj.connect(
+            hostname=self.host,
+            username=self.user,
+            password=self.password,
+            timeout=self.timeout)
+        self.sftp_obj = self.host_obj.open_sftp()
+        LOGGER.info("connected to %s", self.host)
+
+    def disconnect(self) -> None:
+        """close remote machine connection."""
+        self.sftp_obj.close()
+        self.host_obj.close()
+        LOGGER.info("disconnected %s", self.host)
+
+    def execute_command(self, command: str, read_lines: bool = False) -> tuple:
+        """
+        Execute command on remote machine and return output/error response.
+
+        :param command: command to be executed on remote machine.
+        :param read_lines: read lines if set to True else read as a single string.
+        """
+        self.connect()
+        LOGGER.info("Command: %s", command)
+        _, stdout, stderr = self.host_obj.exec_command(command, timeout=self.timeout)
+        error = list(map(lambda x: x.decode("utf-8"), stderr.readlines())
+                     ) if read_lines else stderr.read().decode("utf-8")
+        output = list(map(lambda x: x.decode("utf-8"), stdout.readlines())
+                      ) if read_lines else stdout.read().decode("utf-8")
+        LOGGER.debug(output)
+        LOGGER.debug(error)
+        exit_status = stdout.channel.recv_exit_status()
+        LOGGER.info("Execution status %s", exit_status)
+        response = output if exit_status else error
+        self.disconnect()
+
+        return exit_status, response
+
+    def download_file(self, local_path: str, remote_path: str) -> None:
+        """
+        Download remote file to local path.
+
+        :param local_path: Local file path.
+        :param remote_path: remote file path.
+        """
+        self.connect()
+        self.sftp_obj.get(remote_path, local_path)
+        if not os.path.exists(local_path):
+            raise IOError(f"Failed to download '{remote_path}' file")
+        LOGGER.info("Remote file %s downloaded to %s successfully.", remote_path, local_path)
+        self.disconnect()
+
+    def delete_file(self, remote_path: str) -> None:
+        """
+        Delete remote file.
+
+        :param remote_path: Remote file path.
+        """
+        self.connect()
+        self.sftp_obj.get(remote_path)
+        self.sftp_obj.remove(remote_path)
+        LOGGER.info("Removed file %s", remote_path)
+        self.disconnect()
