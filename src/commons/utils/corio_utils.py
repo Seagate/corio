@@ -25,10 +25,12 @@ import glob
 import logging
 import os
 import math
+import shutil
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 import paramiko
 import psutil as ps
+from config import CORIO_CFG
 from src.commons.constants import KB
 from src.commons.constants import KIB
 from src.commons.constants import ROOT
@@ -164,6 +166,32 @@ def convert_size(size_bytes) -> str:
         part_size = f"{size_bytes}B"
 
     return part_size
+
+
+def rotate_logs(dpath: str, max_count: int = 0):
+    """
+    Remove old logs based on creation time and keep as per max log count, default is 5.
+
+    :param: dpath: Directory path of log files.
+    :param: max_count: Maximum count of log files to keep.
+    """
+    max_count = max_count if max_count else CORIO_CFG.get("max_sb", 5)
+    if not os.path.exists(dpath):
+        raise IOError(f"Directory '{dpath}' path does not exists.")
+    files = sorted(glob.glob(dpath + '/**'), key=os.path.getctime, reverse=True)
+    LOGGER.debug(files)
+    if len(files) > max_count:
+        for fpath in files[max_count:]:
+            if os.path.exists(fpath):
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+                    LOGGER.debug("Removed: Old log file: %s", fpath)
+                if os.path.isdir(fpath):
+                    shutil.rmtree(fpath)
+                    LOGGER.debug("Removed: Old log directory: %s", fpath)
+
+    if len(os.listdir(dpath)) > max_count:
+        raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
 
 
 class RemoteHost:
