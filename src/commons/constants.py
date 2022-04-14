@@ -37,8 +37,12 @@ MOUNT_DIR = os.path.join("/root", "nfs_share")
 DATA_DIR_PATH = os.path.join(CORIO_ROOT, DATA_DIR)
 
 
+# k8s constant for cortx.
+POD_NAME_PREFIX = "cortx-server"
+HAX_CONTAINER_NAME = "cortx-hax"
+NAMESPACE = "default"
+
 K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
-CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
 CMD_MOUNT = "mount -t nfs {} {}"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
