@@ -9,30 +9,31 @@ This Tool can be divided logically in following sections:
     Scripts
     Utils
 
-### WHY CORIO:
+## WHY CORIO
 
 Needed a single aggregator / umbrella tool which does following:
-- Checks Sustainability of IO Operations for long duration and updates results based on expected execution runtime
-- Support Stress (exponential workload) as well as longevity testing.
-- Supports S3 IO operations using full capability of boto APIs.
-- Benefits from unique capabilities of multiple IO tools (S3bench, WARP, etc.
-- Supports failure mode testing over long runs.
-- Supports plug-n-play for other protocols (NFS, SMB, Block-IO, etc).
-- Supports easy deployment and enables various usage scenario across teams.
+-   Checks Sustainability of IO Operations for long duration and updates results based on expected execution runtime
+-   Support Stress (exponential workload) as well as longevity testing.
+-   Supports S3 IO operations using full capability of boto APIs.
+-   Benefits from unique capabilities of multiple IO tools (S3bench, WARP, etc.
+-   Supports failure mode testing over long runs.
+-   Supports plug-n-play for other protocols (NFS, SMB, Block-IO, etc).
+-   Supports easy deployment and enables various usage scenario across teams.
 
-### CURRENT CAPABILITIES:
+## CURRENT CAPABILITIES
 
 - Matrix Based Test Execution:
-  - Parallel test execution from multiple test suites, 
-    - for e.g. first test from each suite will start and will be marked pass once it achieves ETA duration of execution.
-  - Then next set of tests will start and previously “pass” marked tests will also continue to run for background load generation.
+  -   Parallel test execution from multiple test suites, 
+  -   for e.g. first test from each suite will start and will be marked pass once it achieves ETA duration of execution.
+  -   Then next set of tests will start and previously “pass” marked tests will also continue to run for background load generation.
+
 - Seed based execution for easy reproduction of failure scenarios.
 - Customized for CORTX requirements:
-  - Automated execution using Jenkins framework.
-  - Results update in Jira.
-  - Periodic system health checks.
-  - Resource monitoring (CPU, Memory, etc.).
-  - Capture support bundle logs (periodic and on failure).
+  -   Automated execution using Jenkins framework.
+  -   Results update in Jira.
+  -   Periodic system health checks.
+  -   Resource monitoring (CPU, Memory, etc.).
+  -   Capture support bundle logs (periodic and on failure).
   
 Refer [Architecture and Design documents](docs/Architecture_and_Design.md)
 
@@ -69,7 +70,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
     git pull upstream --rebase dev # Resolve if any conflict and continue rebase.
     git push origin <branch>
 
-### Environment Setup:
+### Environment Setup
 
     Following steps help to set up env, where CORIO runs. These steps assume that you have installed git client and cloned the repo.
 
@@ -83,7 +84,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
     6. Use following command to install python packages.
             `pip install --ignore-installed -r requirements.txt`
 
-### Prerequisites:
+### Prerequisites
 
 -   S3 account and access key and secret key should be present to carry out execution
 

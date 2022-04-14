@@ -110,7 +110,7 @@ class S3Object(S3RestApi):
 
         return response
 
-    async def get_object(self, bucket: str, key: str, ranges: str = "") -> dict:
+    async def get_object(self, bucket: str, key: str, ranges: str = None) -> dict:
         """
         Getting object or byte range of the object.
 
@@ -120,7 +120,10 @@ class S3Object(S3RestApi):
         :return: response.
         """
         async with self.get_client() as s3client:
-            response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+            if ranges:
+                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+            else:
+                response = await s3client.get_object(Bucket=bucket, Key=key)
             self.log.info("get_object s3://%s/%s Response: %s", bucket, key, response)
 
         return response
@@ -173,7 +176,7 @@ class S3Object(S3RestApi):
         return response
 
     async def get_s3object_checksum(self, bucket: str, key: str, chunk_size: int = 1024,
-                                    ranges: str = '') -> str:
+                                    ranges: str = None) -> str:
         """
         Read object in chunk and calculate md5sum.
 
@@ -184,7 +187,10 @@ class S3Object(S3RestApi):
         :param ranges: number of bytes to be read
         """
         async with self.get_client() as s3client:
-            response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+            if ranges:
+                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+            else:
+                response = await s3client.get_object(Bucket=bucket, Key=key)
             self.log.info("get_s3object_checksum s3://%s/%s Response %s", bucket, key, response)
             async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
