@@ -31,6 +31,8 @@ from subprocess import Popen, PIPE, CalledProcessError
 import paramiko
 import psutil as ps
 from config import CORIO_CFG
+from src.commons.commands import CMD_MOUNT
+from src.commons.constants import MOUNT_DIR
 from src.commons.constants import KB
 from src.commons.constants import KIB
 from src.commons.constants import ROOT
@@ -194,6 +196,55 @@ def rotate_logs(dpath: str, max_count: int = 0):
         raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
 
 
+def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
+    """
+    Mount nfs server on mount directory.
+
+    :param: host_dir: Link of NFS server with path.
+    :param: mnt_dir: Path of directory to be mounted.
+    """
+    try:
+        if not os.path.exists(mnt_dir):
+            os.makedirs(mnt_dir)
+            LOGGER.debug("Created directory: %s", mnt_dir)
+        if host_dir:
+            if not os.path.ismount(mnt_dir):
+                resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
+                if resp:
+                    raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
+                LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
+            else:
+                LOGGER.debug("NFS Server already mounted.")
+            return os.path.ismount(mnt_dir)
+        LOGGER.debug("NFS Server not provided, Storing logs locally at %s", mnt_dir)
+        return os.path.isdir(mnt_dir)
+    except OSError as error:
+        LOGGER.error(error)
+        return False
+
+
+def decode_bytes_to_string(text):
+    """Convert byte to string."""
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
+    else:
+        if isinstance(text, list):
+            text_list = []
+            for byt in text:
+                if isinstance(byt, bytes):
+                    text_list.append(byt.decode("utf-8"))
+                else:
+                    text_list.append(byt)
+            return text_list
+    return text
+
+
+def setup_environment():
+    """Environment setup for test execution."""
+    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
+    assert ret, "Error while Mounting NFS directory"
+
+
 class RemoteHost:
     """Class for execution of commands on remote machine."""
 
@@ -209,11 +260,8 @@ class RemoteHost:
 
     def connect(self) -> None:
         """connect to remote machine."""
-        self.host_obj.connect(
-            hostname=self.host,
-            username=self.user,
-            password=self.password,
-            timeout=self.timeout)
+        self.host_obj.connect(hostname=self.host, username=self.user, password=self.password,
+                              timeout=self.timeout)
         self.sftp_obj = self.host_obj.open_sftp()
         LOGGER.info("connected to %s", self.host)
 
@@ -223,6 +271,11 @@ class RemoteHost:
         self.host_obj.close()
         LOGGER.info("disconnected %s", self.host)
 
+    def __del__(self):
+        """Delete the connection object."""
+        del self.sftp_obj
+        del self.host_obj
+
     def execute_command(self, command: str, read_lines: bool = False) -> tuple:
         """
         Execute command on remote machine and return output/error response.
@@ -231,20 +284,17 @@ class RemoteHost:
         :param read_lines: read lines if set to True else read as a single string.
         """
         self.connect()
-        LOGGER.info("Command: %s", command)
+        LOGGER.info("Executing command: %s", command)
         _, stdout, stderr = self.host_obj.exec_command(command, timeout=self.timeout)
-        error = list(map(lambda x: x.decode("utf-8"), stderr.readlines())
-                     ) if read_lines else stderr.read().decode("utf-8")
-        output = list(map(lambda x: x.decode("utf-8"), stdout.readlines())
-                      ) if read_lines else stdout.read().decode("utf-8")
+        error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
+        output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
+        exit_status = stdout.channel.recv_exit_status()
+        LOGGER.debug("Execution status %s", exit_status)
         LOGGER.debug(output)
         LOGGER.debug(error)
-        exit_status = stdout.channel.recv_exit_status()
-        LOGGER.info("Execution status %s", exit_status)
-        response = output if exit_status else error
+        response = output if exit_status == 0 else error
         self.disconnect()
-
-        return exit_status, response
+        return exit_status == 0, response
 
     def download_file(self, local_path: str, remote_path: str) -> None:
         """

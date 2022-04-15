@@ -43,7 +43,6 @@ HAX_CONTAINER_NAME = "cortx-hax"
 NAMESPACE = "default"
 
 K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
-CMD_MOUNT = "mount -t nfs {} {}"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.
