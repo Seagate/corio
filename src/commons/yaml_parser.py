@@ -23,8 +23,11 @@
 import datetime
 import logging
 import yaml
+from src.commons.constants import KB
+from src.commons.constants import KIB
+from src.commons.constants import ROOT
 
-logger = logging.getLogger()
+LOGGER = logging.getLogger(ROOT)
 
 
 def yaml_parser(yaml_file) -> dict:
@@ -34,12 +37,12 @@ def yaml_parser(yaml_file) -> dict:
     :param yaml_file: yaml file to parse.
     :return python dict containing file contents.
     """
-    logger.debug("YAML file selected for parse: %s", yaml_file)
+    LOGGER.debug("YAML file selected for parse: %s", yaml_file)
     yaml_dict = {}
-    with open(yaml_file) as obj:
+    with open(yaml_file, "r", encoding="utf-8") as obj:
         data = yaml.safe_load(obj)
         yaml_dict.update(data)
-    logger.debug("YAML file data: %s", yaml_dict)
+    LOGGER.debug("YAML file data: %s", yaml_dict)
     return yaml_dict
 
 
@@ -51,28 +54,28 @@ def convert_to_bytes(size):
     can be provided as byte(s), kb, kib, mb, mib, gb, gib, tb, tib
     :return equivalent bytes value for object size.
     """
-    kb = 1000
-    kib = 1024
     size = size.lower()
+    size_bytes = 0
     if 'bytes' in size or 'byte' in size:
-        return int(size.split('byte')[0])
+        size_bytes = int(size.split('byte')[0])
     if 'kb' in size:
-        return int(size.split('kb')[0]) * kb
+        size_bytes = int(size.split('kb')[0]) * KB
     if 'kib' in size:
-        return int(size.split('kib')[0]) * kib
+        size_bytes = int(size.split('kib')[0]) * KIB
     if 'mb' in size:
-        return int(size.split('mb')[0]) * kb * kb
+        size_bytes = int(size.split('mb')[0]) * KB * KB
     if 'mib' in size:
-        return int(size.split('mib')[0]) * kib * kib
+        size_bytes = int(size.split('mib')[0]) * KIB * KIB
     if 'gb' in size:
-        return int(size.split('gb')[0]) * kb * kb * kb
+        size_bytes = int(size.split('gb')[0]) * KB * KB * KB
     if 'gib' in size:
-        return int(size.split('gib')[0]) * kib * kib * kib
+        size_bytes = int(size.split('gib')[0]) * KIB * KIB * KIB
     if 'tb' in size:
-        return int(size.split('tb')[0]) * kb * kb * kb * kb
+        size_bytes = int(size.split('tb')[0]) * KB * KB * KB * KB
     if 'tib' in size:
-        return int(size.split('tib')[0]) * kib * kib * kib * kib
-    return 0
+        size_bytes = int(size.split('tib')[0]) * KIB * KIB * KIB * KIB
+    LOGGER.debug(size_bytes)
+    return size_bytes
 
 
 def convert_to_time_delta(time):
@@ -99,6 +102,7 @@ def convert_to_time_delta(time):
     return datetime_obj
 
 
+# pylint: disable-msg=too-many-branches
 def test_parser(yaml_file, number_of_nodes):
     """
     parse a test yaml file.
@@ -112,13 +116,13 @@ def test_parser(yaml_file, number_of_nodes):
     delta_list = []
     for test, data in s3_io_test.items():
         if "object_size" not in data:
-            logger.error("Object size is compulsory")
+            LOGGER.error("Object size is compulsory")
             return False
         for size_type in size_types:
             if size_type in data:
                 if isinstance(data[size_type], dict):
                     if "start" not in data[size_type] or "end" not in data[size_type]:
-                        logger.error("Please define range using start and end keys")
+                        LOGGER.error("Please define range using start and end keys")
                         return False
                     data[size_type]["start"] = convert_to_bytes(data[size_type]["start"])
                     data[size_type]["end"] = convert_to_bytes(data[size_type]["end"])
@@ -135,7 +139,7 @@ def test_parser(yaml_file, number_of_nodes):
         if "range_read" in data:
             if isinstance(data["range_read"], dict):
                 if "start" not in data["range_read"] or "end" not in data["range_read"]:
-                    logger.error("Please define range using start and end keys")
+                    LOGGER.error("Please define range using start and end keys")
                     return False
                 data["range_read"]["start"] = convert_to_bytes(data["range_read"]["start"])
                 data["range_read"]["end"] = convert_to_bytes(data["range_read"]["end"])
@@ -154,6 +158,6 @@ def test_parser(yaml_file, number_of_nodes):
             data["part_size"]["end"] = 0
         if 'sessions_per_node' in data.keys():
             data['sessions'] = data['sessions_per_node'] * number_of_nodes
-    logger.debug("test object %s: ", s3_io_test)
+    LOGGER.debug("test object %s: ", s3_io_test)
 
     return s3_io_test

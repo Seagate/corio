@@ -34,8 +34,9 @@ from jira import JIRAError
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 from requests.packages.urllib3.util.retry import Retry
+from src.commons.constants import ROOT
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger(ROOT)
 
 
 class JiraApp:
