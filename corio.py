@@ -29,6 +29,7 @@ import os
 import random
 import sys
 import time
+import shutil
 from datetime import datetime
 from distutils.util import strtobool
 from pprint import pformat
@@ -41,8 +42,10 @@ from src.commons.logger import StreamToLogger
 from src.commons.yaml_parser import test_parser
 from src.commons.constants import DATA_DIR_PATH
 from src.commons.constants import ROOT
+from src.commons.constants import MOUNT_DIR
 from src.commons.constants import DT_STRING
 from src.commons.support_bundle import support_bundle_process
+from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.cluster_health import health_check_process, check_cluster_health
 from src.commons.exception import HealthCheckError
 from src.commons.utils.jira_utils import JiraApp
@@ -231,7 +234,7 @@ def main(options):
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
                 if options.support_bundle:
-                    support_bundle_process(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier)
+                    collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
                 collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
@@ -243,14 +246,14 @@ def main(options):
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         if options.support_bundle:
-            support_bundle_process(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier)
+            collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
         # stop resource util
         collect_resource_utilisation(action="stop")
         sys.exit()
     finally:
         LOGGER.info("Cleaning up TestData")
         if os.path.exists(DATA_DIR_PATH):
-            os.removedirs(DATA_DIR_PATH)
+            shutil.rmtree(DATA_DIR_PATH)
 
 
 if __name__ == "__main__":

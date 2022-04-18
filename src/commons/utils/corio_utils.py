@@ -125,7 +125,7 @@ def run_local_cmd(cmd: str) -> tuple:
         return False, error
 
 
-def create_file(file_name: str, size: int) -> None:
+def create_file(file_name: str, size: int) -> str:
     """
     Create file with random data.
 
@@ -243,12 +243,15 @@ def setup_environment():
     """Environment setup for test execution."""
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
+    if os.path.exists(DATA_DIR_PATH):
+        shutil.rmtree(DATA_DIR_PATH)
+    os.makedirs(DATA_DIR_PATH, exist_ok=True)
 
 
 class RemoteHost:
     """Class for execution of commands on remote machine."""
 
-    def __init__(self, host: str, user: str, password: str, timeout: int = 120) -> None:
+    def __init__(self, host: str, user: str, password: str, timeout: int = 20 * 60) -> None:
         """Initialize parameters."""
         self.host = host
         self.user = user
@@ -259,17 +262,17 @@ class RemoteHost:
         self.sftp_obj = None
 
     def connect(self) -> None:
-        """connect to remote machine."""
+        """Connect to remote machine."""
         self.host_obj.connect(hostname=self.host, username=self.user, password=self.password,
                               timeout=self.timeout)
         self.sftp_obj = self.host_obj.open_sftp()
-        LOGGER.info("connected to %s", self.host)
+        LOGGER.debug("connected to %s", self.host)
 
     def disconnect(self) -> None:
-        """close remote machine connection."""
+        """Close remote machine connection."""
         self.sftp_obj.close()
         self.host_obj.close()
-        LOGGER.info("disconnected %s", self.host)
+        LOGGER.debug("disconnected %s", self.host)
 
     def __del__(self):
         """Delete the connection object."""
@@ -285,11 +288,11 @@ class RemoteHost:
         """
         self.connect()
         LOGGER.info("Executing command: %s", command)
-        _, stdout, stderr = self.host_obj.exec_command(command, timeout=self.timeout)
+        _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
         error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
         output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
         exit_status = stdout.channel.recv_exit_status()
-        LOGGER.debug("Execution status %s", exit_status)
+        LOGGER.debug("Execution status %s", exit_status == 0)
         LOGGER.debug(output)
         LOGGER.debug(error)
         response = output if exit_status == 0 else error
@@ -317,7 +320,6 @@ class RemoteHost:
         :param remote_path: Remote file path.
         """
         self.connect()
-        self.sftp_obj.get(remote_path)
         self.sftp_obj.remove(remote_path)
         LOGGER.info("Removed file %s", remote_path)
         self.disconnect()

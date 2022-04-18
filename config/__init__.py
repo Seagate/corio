@@ -31,7 +31,7 @@ from src.commons.utils import config_utils
 
 
 def split_args(sys_cmd: List):
-    """split args and make it compliant."""
+    """Split args and make it compliant."""
     _args = []
     for item in sys_cmd:
         if item.find('=') != -1:

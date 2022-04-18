@@ -16,7 +16,8 @@
 #
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
-
+#
+#
 """Module to generate support bundle."""
 
 import logging
@@ -33,17 +34,16 @@ from src.commons.constants import ROOT
 LOGGER = logging.getLogger(ROOT)
 
 
-def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 0) -> tuple:
-    """
-    Collect support bundle log and copy to NFS/LOCAL server and keep SB logs as per max_sb count.
+def collect_upload_rotate_support_bundles(mount_path: str, run_id: str, max_sb: int = 0) -> tuple:
+    """Collect support bundle log and copy to NFS/LOCAL server and keep SB logs as per max_sb count.
 
     :param mount_path: Path of mounted directory.
     :param run_id: Unique id for each run.
     :param max_sb: maximum sb count to keep on nfs server.
-    :param interval: Time interval to wait to generate next support bundle.
     """
     try:
         sb_dir = os.path.join(mount_path, "CorIO-Execution", str(run_id), "Support_Bundles")
+        max_sb = max_sb if max_sb else CORIO_CFG["max_no_of_sb"]
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
         nodes = CLUSTER_CFG["nodes"]
@@ -59,7 +59,8 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
                 "Failed to collect support bundles as cluster details are missing: %s", nodes)
             return False, f"Failed to collect support bundles for {nodes}."
         cluster_obj = ClusterServices(host, user, password)
-        cluster_obj.collect_support_bundles(sb_dir)
+        status, response = cluster_obj.collect_support_bundles(sb_dir)
+        assert status, IOError("Failed to generate support bundles. Response: %s", response)
         rotate_logs(sb_dir, max_sb)
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
@@ -70,13 +71,14 @@ def collect_upload_sb_to_nfs_server(mount_path: str, run_id: str, max_sb: int = 
 
 
 def support_bundle_process(interval, sb_identifier):
-    """Support bundle wrapper.
+    """
+    Support bundle wrapper.
 
     :param interval: Interval in Seconds.
     :param sb_identifier: Support Bundle Identifier.
     """
     while True:
         time.sleep(interval)
-        resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                               max_sb=CORIO_CFG["max_no_of_sb"])
+        resp = collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier,
+                                                     max_sb=CORIO_CFG["max_no_of_sb"])
         LOGGER.debug(resp)

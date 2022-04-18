@@ -98,14 +98,13 @@ class ClusterServices(RemoteHost):
         return False, "Failed to get cluster storage stat."
 
     def collect_support_bundles(self, dir_path: str) -> tuple:
-        """
-        Collect support bundles from various components using support bundle cmd.
+        """Collect support bundles from various components using support bundle cmd.
 
         :param dir_path: local directory path to copy support bundles.
         """
         LOGGER.info("Support bundle collection is started.")
         status, response = self.exec_k8s_command(cmd.CMD_GENERATE_CLSTR_LOGS.format(
-            const.K8S_SCRIPTS_PATH))
+            const.K8S_SCRIPTS_PATH), read_lines=True)
         if status:
             LOGGER.debug(response)
             for line in response:
