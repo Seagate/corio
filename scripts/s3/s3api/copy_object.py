@@ -85,9 +85,9 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
-                create_file(object1, file_size)
+                file_path = create_file(object1, file_size)
                 self.log.info("Object1 '%s', object size %s Kib", object1, file_size / 1024)
-                await self.upload_object(bucket1, object1, file_path=object1)
+                await self.upload_object(bucket1, object1, file_path=file_path)
                 self.log.info("Objects 's3://%s/%s' uploaded successfully.", object1, bucket1)
                 ret1 = await self.head_object(bucket1, object1)
                 await self.copy_object(bucket1, object1, bucket2, object2)
@@ -127,7 +127,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 await self.head_object(bucket2, object2)
                 self.log.info("Delete destination object from bucket-2.")
                 await self.delete_object(bucket2, object2)
-                os.remove(object1)
+                os.remove(file_path)
             except (ClientError, IOError, AssertionError) as err:
                 self.log.exception(err)
                 raise err
