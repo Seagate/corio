@@ -83,10 +83,10 @@ class TestS3Object(S3Bucket, S3Object):
                 else:
                     range_read = self.range_read
                 file_name = f'object-bucket-op-{time.perf_counter_ns()}'
-                create_file(file_name, file_size)
-                checksum_in = self.checksum_file(file_name)
+                file_path = create_file(file_name, file_size)
+                checksum_in = self.checksum_file(file_path)
                 self.log.debug("Checksum IN = %s", checksum_in)
-                await self.upload_object(bucket, file_name, file_path=file_name)
+                await self.upload_object(bucket, file_name, file_path=file_path)
                 self.log.info("s3://%s/%s uploaded successfully.", bucket, file_name)
                 if range_read:
                     part = int(file_size / self.parts)
@@ -111,7 +111,7 @@ class TestS3Object(S3Bucket, S3Object):
                     self.log.debug("Checksum Out = %s", checksum_out)
                     self.log.info("Delete object")
                     await self.delete_object(bucket, file_name)
-                    os.remove(file_name)
+                    os.remove(file_path)
             except Exception as err:
                 self.log.exception(err)
                 raise err

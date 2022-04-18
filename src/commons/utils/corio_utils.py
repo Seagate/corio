@@ -31,6 +31,7 @@ import psutil as ps
 from src.commons.constants import KB
 from src.commons.constants import KIB
 from src.commons.constants import ROOT
+from src.commons.constants import DATA_DIR_PATH
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -119,20 +120,22 @@ def run_local_cmd(cmd: str) -> tuple:
         return False, error
 
 
-def create_file(path: str, size: int):
+def create_file(file_name: str, size: int):
     """
     Create file with random data.
 
     :param size: Size in bytes
-    :param path: File name with path
+    :param file_name: File name
     """
     base = KIB * KIB
+    file_path = os.path.join(DATA_DIR_PATH, file_name)
     while size > base:
-        with open(path, 'ab+') as f_out:
+        with open(file_path, 'ab+') as f_out:
             f_out.write(os.urandom(base))
         size -= base
-    with open(path, 'ab+') as f_out:
+    with open(file_path, 'ab+') as f_out:
         f_out.write(os.urandom(size))
+    return file_path
 
 
 def convert_size(size_bytes):
