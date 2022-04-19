@@ -97,7 +97,7 @@ class TestS3Object(S3Bucket, S3Object):
                         byte_range = f"{loc}-{loc + range_read - 1}"
                         checksum_out = await self.get_s3object_checksum(
                             bucket, file_name, ranges=f'bytes={byte_range}')
-                        checksum_in = self.checksum_part_file(file_name, loc, range_read)
+                        checksum_in = self.checksum_part_file(file_path, loc, range_read)
                         assert checksum_out == checksum_in, \
                             f"Checksum of downloaded part for range ({byte_range}) does not " \
                             f"match for s3://{bucket}/{file_name}. Uploaded Checksum = " \

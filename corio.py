@@ -29,6 +29,7 @@ import os
 import random
 import sys
 import time
+import shutil
 from datetime import datetime
 from distutils.util import strtobool
 from pprint import pformat
@@ -37,17 +38,20 @@ from collections import Counter
 import schedule
 
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from src.commons.utils.corio_utils import log_cleanup
 from src.commons.logger import StreamToLogger
 from src.commons.yaml_parser import test_parser
-from src.commons.constants import MOUNT_DIR, DATA_DIR_PATH
+from src.commons.constants import DATA_DIR_PATH
 from src.commons.constants import ROOT
+from src.commons.constants import MOUNT_DIR
 from src.commons.constants import DT_STRING
-from src.commons.utils.cluster_services import mount_nfs_server
-from src.commons.utils.cluster_services import collect_upload_sb_to_nfs_server
-from src.commons.utils.jira_utils import JiraApp
-from src.commons.utils.corio_utils import cpu_memory_details
+from src.commons.support_bundle import support_bundle_process
+from src.commons.support_bundle import collect_upload_rotate_support_bundles
+from src.commons.cluster_health import health_check_process, check_cluster_health
 from src.commons.exception import HealthCheckError
+from src.commons.utils.jira_utils import JiraApp
+from src.commons.utils.corio_utils import log_cleanup
+from src.commons.utils.corio_utils import setup_environment
+from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.report import log_status
 from src.commons.workload_mapping import function_mapping
@@ -107,41 +111,6 @@ def parse_args():
     return parser.parse_args()
 
 
-def setup_environment():
-    """Tool installations for test execution."""
-    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
-    assert ret, "Error while Mounting NFS directory"
-    if not os.path.exists(DATA_DIR_PATH):
-        os.makedirs(DATA_DIR_PATH, exist_ok=True)
-
-
-def support_bundle_process(interval, sb_identifier):
-    """Support bundle wrapper.
-
-    :param interval: Interval in Seconds
-    :param sb_identifier: Support Bundle Identifier
-    """
-    while True:
-        time.sleep(interval)
-        resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                               max_sb=CORIO_CFG["max_no_of_sb"])
-        if not resp[0]:
-            return resp
-
-
-def health_check_process(interval):
-    """Health check wrapper.
-
-    :param interval: Interval in Seconds
-    """
-    while True:
-        time.sleep(interval)
-        # ToDo: Enable once health check is added
-        # resp = check_cluster_services()
-        # if not resp[0]:
-        #     return resp
-
-
 # pylint: disable-msg=too-many-branches,too-many-locals, too-many-statements
 def main(options):
     """
@@ -150,6 +119,9 @@ def main(options):
     :param options: Parsed Arguments
     """
     LOGGER.info("Setting up environment!!")
+    # Check cluster is healthy to start execution.
+    if options.health_check:
+        check_cluster_health()
     setup_environment()
     commons_params = {"access_key": S3_CFG.access_key,
                       "secret_key": S3_CFG.secret_key,
@@ -262,9 +234,7 @@ def main(options):
                                                 terminated_tests=test_ids)
                 schedule.cancel_job(sched_job)
                 if options.support_bundle:
-                    resp = collect_upload_sb_to_nfs_server(MOUNT_DIR, sb_identifier,
-                                                           max_sb=CORIO_CFG["max_no_of_sb"])
-                    LOGGER.info("collect support bundles response: %s", resp)
+                    collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
                 collect_resource_utilisation(action="stop")
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
@@ -276,17 +246,14 @@ def main(options):
                                         tests_details=tests_to_execute, aborted=True)
         schedule.cancel_job(sched_job)
         if options.support_bundle:
-            resp = collect_upload_sb_to_nfs_server(
-                MOUNT_DIR, sb_identifier, max_sb=CORIO_CFG["max_no_of_sb"])
-            LOGGER.info("collect support bundles response: %s", resp)
-
+            collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
         # stop resource util
         collect_resource_utilisation(action="stop")
         sys.exit()
     finally:
         LOGGER.info("Cleaning up TestData")
         if os.path.exists(DATA_DIR_PATH):
-            os.removedirs(DATA_DIR_PATH)
+            shutil.rmtree(DATA_DIR_PATH)
 
 
 if __name__ == "__main__":
