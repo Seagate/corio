@@ -23,9 +23,8 @@ import os
 import shutil
 import glob
 import logging
-from src.commons.utils.support_bundle_utils import execute_remote_command
-from src.commons.utils.support_bundle_utils import copy_file_from_remote
 from src.commons.utils.corio_utils import run_local_cmd
+from src.commons.utils.cluster_utils import RemoteHost
 from src.commons import constants as cm_cmd
 from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
@@ -41,6 +40,7 @@ def collect_resource_utilisation(action: str):
 
     :param action: start/stop collection resource_utilisation
     """
+    cluster_obj = None
     host, user, passwd = None, None, None
     worker_node = []
     for node in CLUSTER_CFG["nodes"]:
@@ -50,29 +50,29 @@ def collect_resource_utilisation(action: str):
                                 " stats for cluster. Nodes: '%s'", CLUSTER_CFG["nodes"])
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
-            resp = execute_remote_command(cm_cmd.K8S_WORKER_NODES, host, user, passwd)
+            cluster_obj = RemoteHost(host, user, passwd)
+            resp = cluster_obj.execute_command(cm_cmd.K8S_WORKER_NODES)
             LOGGER.debug("response is: %s", str(resp))
-            resp = resp[1].read(-1).decode()
-            LOGGER.debug("response[1] is: %s", str(resp))
-            worker_node = resp.strip().split("\n")[1:]
+            worker_node = resp[1].strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", str(worker_node))
     if action == "start":
         resp = run_local_cmd(cm_cmd.CMD_YUM_NMON)
         LOGGER.debug("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_RUN_NMON)
         LOGGER.debug("Local response: %s", str(resp))
-        if not host:
+        if not cluster_obj:
             LOGGER.critical("Will not able to collect system stats for cluster as details not "
                             "provided in cluster config.")
             return
-        resp = execute_remote_command(cm_cmd.CMD_YUM_NMON, host, user, passwd)
+        resp = cluster_obj.execute_command(cm_cmd.CMD_YUM_NMON)
         LOGGER.debug("master response: %s", str(resp))
-        resp = execute_remote_command(cm_cmd.CMD_RUN_NMON, host, user, passwd)
+        resp = cluster_obj.execute_command(cm_cmd.CMD_RUN_NMON)
         LOGGER.debug("master response: %s", str(resp))
         for worker in worker_node:
-            resp = execute_remote_command(cm_cmd.CMD_YUM_NMON, worker, user, passwd)
+            worker_obj = RemoteHost(worker, user, passwd)
+            resp = worker_obj.execute_command(cm_cmd.CMD_YUM_NMON)
             LOGGER.debug("worker response: %s", str(resp))
-            resp = execute_remote_command(cm_cmd.CMD_RUN_NMON, worker, user, passwd)
+            resp = worker_obj.execute_command(cm_cmd.CMD_RUN_NMON)
             LOGGER.debug("worker response: %s", str(resp))
     else:
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
@@ -84,31 +84,30 @@ def collect_resource_utilisation(action: str):
         if not os.path.exists(dpath):
             os.makedirs(dpath)
         shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
-        if not host:
+        if not cluster_obj:
             LOGGER.critical("Will not able to collect system stats for cluster as details not "
                             "provided in cluster config.")
             return
-        resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, host, user, passwd)
+        resp = cluster_obj.execute_command(cm_cmd.CMD_KILL_NMON)
         LOGGER.debug("master response: %s", str(resp))
-        resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, host, user, passwd)
-        resp = resp[1].read(-1).decode()
-        filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+        resp = cluster_obj.execute_command(cm_cmd.CMD_NMON_FILE)
+        filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
         client_path = os.path.join(MOUNT_DIR, "system_stats", "server")
         cl_path = os.path.join(client_path, filename)
         if not os.path.exists(client_path):
             os.makedirs(client_path)
-        copy_file_from_remote(host, user, passwd, cl_path, f"/root/{filename}")
-        resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), host, user, passwd)
+        cluster_obj.download_file(cl_path, f"/root/{filename}")
+        resp = cluster_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
         LOGGER.debug("file removed: %s", resp)
         for worker in worker_node:
-            resp = execute_remote_command(cm_cmd.CMD_KILL_NMON, worker, user, passwd)
+            worker_obj = RemoteHost(worker, user, passwd)
+            resp = worker_obj.execute_command(cm_cmd.CMD_KILL_NMON)
             LOGGER.debug("worker response: %s", str(resp))
-            resp = execute_remote_command(cm_cmd.CMD_NMON_FILE, worker, user, passwd)
-            resp = resp[1].read(-1).decode()
-            filename = str([x.strip("./") for x in resp.strip().split("\n")][0])
+            resp = worker_obj.execute_command(cm_cmd.CMD_NMON_FILE)
+            filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
             LOGGER.info("Filename is: %s", filename)
             cl_path = os.path.join(client_path, filename)
-            copy_file_from_remote(worker, user, passwd, cl_path, f"/root/{filename}")
-            resp = execute_remote_command(cm_cmd.CMD_RM_NMON.format(filename), worker, user, passwd)
+            worker_obj.download_file(cl_path, f"/root/{filename}")
+            resp = worker_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
             LOGGER.debug("file removed: %s", resp)

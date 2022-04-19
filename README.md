@@ -100,7 +100,6 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
     python corio.py -ak <access_key> -sk <secret_key> -ep <s3.seagate.com> -ti <workload_directory_path>
 
-
 #### Usage
 
     corio.py [-h HELP][-ti TEST_INPUT] [-v, --verbose] [-us USE_SSL] [-sd SEED]
