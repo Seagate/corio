@@ -58,3 +58,11 @@ CMD_RM_NMON = "rm -f {}"
 # Supported type of object size.
 KB = 1000
 KIB = 1024
+# nimon installation
+YUM_UNZIP = "yum install unzip"
+CMD_WGET_NIMON = "wget http://sourceforge.net/projects/nmon/files/njmon_linux_binaries_v78.zip --no-check-certificate"
+UNZIP_NIMON = "unzip njmon_linux_binaries_v78.zip"
+CMD_CHMOD = "chmod 655 ninstall"
+CMD_NINSTALL = "./ninstall"
+CMD_RUN_NIMON = "nimon -s 30 -k -i ssc-vm-g4-rhev4-0125.colo.seagate.com -p 8086 -x njmon -W"
+CMD_KILL_NIMON = "kill -USR2 $(ps ax | grep nimon  | grep -v grep | awk '{print $1}')"

@@ -323,3 +323,16 @@ class RemoteHost:
         self.sftp_obj.remove(remote_path)
         LOGGER.info("Removed file %s", remote_path)
         self.disconnect()
+
+    def is_package_installed(self, package_name):
+        """
+        check package is installed or not.
+        :param package_name: package name to check
+        """
+        self.connect()
+        resp = self.execute_command("rpm -qa | grep {}".format(package_name))
+        LOGGER.info("resp: ", resp)
+        if not resp[0]:
+            resp = self.execute_command("{} -h".format(package_name))
+            LOGGER.info("resp: ", resp)
+        return resp
