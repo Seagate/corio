@@ -25,9 +25,14 @@ import glob
 import logging
 import os
 import math
+import shutil
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
+import paramiko
 import psutil as ps
+from config import CORIO_CFG
+from src.commons.commands import CMD_MOUNT
+from src.commons.constants import MOUNT_DIR
 from src.commons.constants import KB
 from src.commons.constants import KIB
 from src.commons.constants import ROOT
@@ -36,7 +41,7 @@ from src.commons.constants import DATA_DIR_PATH
 LOGGER = logging.getLogger(ROOT)
 
 
-def log_cleanup():
+def log_cleanup() -> None:
     """
     Create backup of log/latest & reports.
 
@@ -76,7 +81,7 @@ def log_cleanup():
         os.makedirs(reports_dir)
 
 
-def cpu_memory_details():
+def cpu_memory_details() -> None:
     """Cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
     LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
@@ -113,14 +118,14 @@ def run_local_cmd(cmd: str) -> tuple:
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
             if proc.returncode != 0:
-                return False, str(error)
-        return True, str(output)
+                return False, error
+        return True, output
     except (CalledProcessError, OSError) as error:
         LOGGER.error(error)
         return False, error
 
 
-def create_file(file_name: str, size: int):
+def create_file(file_name: str, size: int) -> str:
     """
     Create file with random data.
 
@@ -138,7 +143,7 @@ def create_file(file_name: str, size: int):
     return file_path
 
 
-def convert_size(size_bytes):
+def convert_size(size_bytes) -> str:
     """
     Convert byte size to KiB, MiB, KB, MB etc.
 
@@ -163,3 +168,158 @@ def convert_size(size_bytes):
         part_size = f"{size_bytes}B"
 
     return part_size
+
+
+def rotate_logs(dpath: str, max_count: int = 0):
+    """
+    Remove old logs based on creation time and keep as per max log count, default is 5.
+
+    :param: dpath: Directory path of log files.
+    :param: max_count: Maximum count of log files to keep.
+    """
+    max_count = max_count if max_count else CORIO_CFG.get("max_sb", 5)
+    if not os.path.exists(dpath):
+        raise IOError(f"Directory '{dpath}' path does not exists.")
+    files = sorted(glob.glob(dpath + '/**'), key=os.path.getctime, reverse=True)
+    LOGGER.debug(files)
+    if len(files) > max_count:
+        for fpath in files[max_count:]:
+            if os.path.exists(fpath):
+                if os.path.isfile(fpath):
+                    os.remove(fpath)
+                    LOGGER.debug("Removed: Old log file: %s", fpath)
+                if os.path.isdir(fpath):
+                    shutil.rmtree(fpath)
+                    LOGGER.debug("Removed: Old log directory: %s", fpath)
+
+    if len(os.listdir(dpath)) > max_count:
+        raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
+
+
+def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
+    """
+    Mount nfs server on mount directory.
+
+    :param: host_dir: Link of NFS server with path.
+    :param: mnt_dir: Path of directory to be mounted.
+    """
+    try:
+        if not os.path.exists(mnt_dir):
+            os.makedirs(mnt_dir)
+            LOGGER.debug("Created directory: %s", mnt_dir)
+        if host_dir:
+            if not os.path.ismount(mnt_dir):
+                resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
+                if resp:
+                    raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
+                LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
+            else:
+                LOGGER.debug("NFS Server already mounted.")
+            return os.path.ismount(mnt_dir)
+        LOGGER.debug("NFS Server not provided, Storing logs locally at %s", mnt_dir)
+        return os.path.isdir(mnt_dir)
+    except OSError as error:
+        LOGGER.error(error)
+        return False
+
+
+def decode_bytes_to_string(text):
+    """Convert byte to string."""
+    if isinstance(text, bytes):
+        text = text.decode("utf-8")
+    else:
+        if isinstance(text, list):
+            text_list = []
+            for byt in text:
+                if isinstance(byt, bytes):
+                    text_list.append(byt.decode("utf-8"))
+                else:
+                    text_list.append(byt)
+            return text_list
+    return text
+
+
+def setup_environment():
+    """Environment setup for test execution."""
+    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
+    assert ret, "Error while Mounting NFS directory"
+    if os.path.exists(DATA_DIR_PATH):
+        shutil.rmtree(DATA_DIR_PATH)
+    os.makedirs(DATA_DIR_PATH, exist_ok=True)
+
+
+class RemoteHost:
+    """Class for execution of commands on remote machine."""
+
+    def __init__(self, host: str, user: str, password: str, timeout: int = 20 * 60) -> None:
+        """Initialize parameters."""
+        self.host = host
+        self.user = user
+        self.password = password
+        self.timeout = timeout
+        self.host_obj = paramiko.SSHClient()
+        self.host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        self.sftp_obj = None
+
+    def connect(self) -> None:
+        """Connect to remote machine."""
+        self.host_obj.connect(hostname=self.host, username=self.user, password=self.password,
+                              timeout=self.timeout)
+        self.sftp_obj = self.host_obj.open_sftp()
+        LOGGER.debug("connected to %s", self.host)
+
+    def disconnect(self) -> None:
+        """Close remote machine connection."""
+        self.sftp_obj.close()
+        self.host_obj.close()
+        LOGGER.debug("disconnected %s", self.host)
+
+    def __del__(self):
+        """Delete the connection object."""
+        del self.sftp_obj
+        del self.host_obj
+
+    def execute_command(self, command: str, read_lines: bool = False) -> tuple:
+        """
+        Execute command on remote machine and return output/error response.
+
+        :param command: command to be executed on remote machine.
+        :param read_lines: read lines if set to True else read as a single string.
+        """
+        self.connect()
+        LOGGER.info("Executing command: %s", command)
+        _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
+        error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
+        output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
+        exit_status = stdout.channel.recv_exit_status()
+        LOGGER.debug("Execution status %s", exit_status == 0)
+        LOGGER.debug(output)
+        LOGGER.debug(error)
+        response = output if exit_status == 0 else error
+        self.disconnect()
+        return exit_status == 0, response
+
+    def download_file(self, local_path: str, remote_path: str) -> None:
+        """
+        Download remote file to local path.
+
+        :param local_path: Local file path.
+        :param remote_path: remote file path.
+        """
+        self.connect()
+        self.sftp_obj.get(remote_path, local_path)
+        if not os.path.exists(local_path):
+            raise IOError(f"Failed to download '{remote_path}' file")
+        LOGGER.info("Remote file %s downloaded to %s successfully.", remote_path, local_path)
+        self.disconnect()
+
+    def delete_file(self, remote_path: str) -> None:
+        """
+        Delete remote file.
+
+        :param remote_path: Remote file path.
+        """
+        self.connect()
+        self.sftp_obj.remove(remote_path)
+        LOGGER.info("Removed file %s", remote_path)
+        self.disconnect()

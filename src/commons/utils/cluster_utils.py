@@ -19,15 +19,15 @@
 
 """IO cluster services module."""
 
-import json
 import logging
 import os
+import json
 
 from src.commons import commands as cmd
 from src.commons import constants as const
-from src.commons.constants import ROOT
 from src.commons.utils.corio_utils import RemoteHost
 from src.commons.utils.corio_utils import convert_size
+from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
 
