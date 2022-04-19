@@ -104,6 +104,11 @@ def parse_args():
                         default=False, help="Health Check.")
     parser.add_argument("-tp", "--test_plan", type=str, default=None,
                         help="jira xray test plan id")
+    parser.add_argument("-dm", "--degraded-mode",type=str, default=False,
+                        help="Degraded Mode")
+    parser.add_argument("-dp", "--degraded-pods",type=str, default=0,
+                        help="Number of Pods or logical nodes need tp be degraded")
+
     return parser.parse_args()
 
 
