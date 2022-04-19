@@ -59,7 +59,7 @@ CMD_RM_NMON = "rm -f {}"
 KB = 1000
 KIB = 1024
 # nimon installation
-YUM_UNZIP = "yum install unzip"
+YUM_UNZIP = "yum install -y unzip"
 CMD_WGET_NIMON = "wget http://sourceforge.net/projects/nmon/files/njmon_linux_binaries_v78.zip --no-check-certificate"
 UNZIP_NIMON = "unzip njmon_linux_binaries_v78.zip"
 CMD_CHMOD = "chmod 655 ninstall"
