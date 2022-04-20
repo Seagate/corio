@@ -24,6 +24,7 @@ import shutil
 import glob
 import logging
 from src.commons.utils.corio_utils import run_local_cmd
+from src.commons.utils.corio_utils import is_package_installed_local
 from src.commons.utils.cluster_utils import RemoteHost
 from src.commons import constants as cm_cmd
 from src.commons.constants import MOUNT_DIR
@@ -58,29 +59,38 @@ def collect_resource_utilisation(action: str):
             LOGGER.info("worker nodes: %s", str(worker_node))
             server_nodes.extend(worker_node)
     if action == "start":
-        resp = run_local_cmd(cm_cmd.YUM_UNZIP)
-        LOGGER.debug("Local response: %s", str(resp))
-        resp = run_local_cmd(cm_cmd.CMD_WGET_NIMON)
-        LOGGER.debug("Local response: %s", str(resp))
+        resp = is_package_installed_local("unzip")
+        LOGGER.info("Local response: %s", str(resp))
+        if not resp[0]:
+            resp = run_local_cmd(cm_cmd.YUM_UNZIP)
+            LOGGER.info("Local response: %s", str(resp))
+        resp = is_package_installed_local("nimon")
+        LOGGER.info("Local response: %s", str(resp))
+        if not resp[0]:
+            resp = run_local_cmd(cm_cmd.CMD_WGET_NIMON)
+            LOGGER.info("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.UNZIP_NIMON)
-        LOGGER.debug("Local response: %s", str(resp))
+        LOGGER.info("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_CHMOD)
-        LOGGER.debug("Local response: %s", str(resp))
+        LOGGER.info("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_NINSTALL)
-        LOGGER.debug("Local response: %s", str(resp))
+        LOGGER.info("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_RUN_NIMON)
-        # resp = run_local_cmd(cm_cmd.CMD_RUN_NMON)
-        LOGGER.debug("Local response: %s", str(resp))
+        LOGGER.info("Local response: %s", str(resp))
         if not cluster_obj:
             LOGGER.critical("Will not able to collect system stats for cluster as details not "
                             "provided in cluster config.")
             return
         for server in server_nodes:
             worker_obj = RemoteHost(server, user, passwd)
-            resp = worker_obj.execute_command(cm_cmd.YUM_UNZIP)
-            LOGGER.debug("worker response: %s", str(resp))
-            resp = worker_obj.execute_command(cm_cmd.CMD_WGET_NIMON)
-            LOGGER.debug("worker response: %s", str(resp))
+            resp = worker_obj.is_package_installed("unzip")
+            if not resp[0]:
+                resp = worker_obj.execute_command(cm_cmd.YUM_UNZIP)
+                LOGGER.info("worker response: %s", str(resp))
+            resp = worker_obj.is_package_installed("nimon")
+            if not resp[0]:
+                resp = worker_obj.execute_command(cm_cmd.CMD_WGET_NIMON)
+                LOGGER.info("worker response: %s", str(resp))
             resp = worker_obj.execute_command(cm_cmd.UNZIP_NIMON)
             LOGGER.debug("worker response: %s", str(resp))
             resp = worker_obj.execute_command(cm_cmd.CMD_CHMOD)
