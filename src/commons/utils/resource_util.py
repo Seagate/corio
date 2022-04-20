@@ -43,7 +43,7 @@ def collect_resource_utilisation(action: str):
     """
     cluster_obj = None
     host, user, passwd = None, None, None
-    worker_node = []
+    server_nodes = []
     for node in CLUSTER_CFG["nodes"]:
         if node["node_type"] == "master":
             if not node.get("hostname", None):
@@ -51,11 +51,13 @@ def collect_resource_utilisation(action: str):
                                 " stats for cluster. Nodes: '%s'", CLUSTER_CFG["nodes"])
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
+            server_nodes.extend(host)
             cluster_obj = RemoteHost(host, user, passwd)
             resp = cluster_obj.execute_command(cm_cmd.K8S_WORKER_NODES)
             LOGGER.debug("response is: %s", str(resp))
             worker_node = resp[1].strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", str(worker_node))
+            server_nodes.extend(worker_node)
     if action == "start":
         resp = run_local_cmd(cm_cmd.YUM_UNZIP)
         LOGGER.debug("Local response: %s", str(resp))
@@ -74,20 +76,8 @@ def collect_resource_utilisation(action: str):
             LOGGER.critical("Will not able to collect system stats for cluster as details not "
                             "provided in cluster config.")
             return
-        resp = cluster_obj.execute_command(cm_cmd.YUM_UNZIP)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_WGET_NIMON)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.UNZIP_NIMON)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_CHMOD)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_NINSTALL)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_RUN_NIMON)
-        LOGGER.debug("master response: %s", str(resp))
-        for worker in worker_node:
-            worker_obj = RemoteHost(worker, user, passwd)
+        for server in server_nodes:
+            worker_obj = RemoteHost(server, user, passwd)
             resp = worker_obj.execute_command(cm_cmd.YUM_UNZIP)
             LOGGER.debug("worker response: %s", str(resp))
             resp = worker_obj.execute_command(cm_cmd.CMD_WGET_NIMON)
@@ -101,41 +91,9 @@ def collect_resource_utilisation(action: str):
             resp = worker_obj.execute_command(cm_cmd.CMD_RUN_NIMON)
             LOGGER.debug("worker response: %s", str(resp))
     else:
-        resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
-        LOGGER.debug(resp)
         resp = run_local_cmd(cm_cmd.CMD_KILL_NIMON)
         LOGGER.debug(resp)
-        stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'),
-                            key=os.path.getctime, reverse=True)[-1]
-        LOGGER.info(stat_fpath)
-        dpath = os.path.join(MOUNT_DIR, "system_stats", "client")
-        if not os.path.exists(dpath):
-            os.makedirs(dpath)
-        shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
-        if not cluster_obj:
-            LOGGER.critical("Will not able to collect system stats for cluster as details not "
-                            "provided in cluster config.")
-            return
-        resp = cluster_obj.execute_command(cm_cmd.CMD_KILL_NIMON)
-        LOGGER.debug("master response: %s", str(resp))
-        # resp = cluster_obj.execute_command(cm_cmd.CMD_NMON_FILE)
-        # filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
-        # LOGGER.info("Filename is: %s", filename)
-        # client_path = os.path.join(MOUNT_DIR, "system_stats", "server")
-        # cl_path = os.path.join(client_path, filename)
-        # if not os.path.exists(client_path):
-        #     os.makedirs(client_path)
-        # cluster_obj.download_file(cl_path, f"/root/{filename}")
-        # resp = cluster_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
-        # LOGGER.debug("file removed: %s", resp)
-        for worker in worker_node:
-            worker_obj = RemoteHost(worker, user, passwd)
+        for server in server_nodes:
+            worker_obj = RemoteHost(server, user, passwd)
             resp = worker_obj.execute_command(cm_cmd.CMD_KILL_NIMON)
             LOGGER.debug("worker response: %s", str(resp))
-            # resp = worker_obj.execute_command(cm_cmd.CMD_NMON_FILE)
-            # filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
-            # LOGGER.info("Filename is: %s", filename)
-            # cl_path = os.path.join(client_path, filename)
-            # worker_obj.download_file(cl_path, f"/root/{filename}")
-            # resp = worker_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
-            # LOGGER.debug("file removed: %s", resp)
