@@ -60,12 +60,12 @@ def collect_resource_utilisation(action: str):
             server_nodes.extend(worker_node)
     if action == "start":
         resp = is_package_installed_local("unzip")
-        LOGGER.info("Local response: %s", str(resp))
+        LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             resp = run_local_cmd(cm_cmd.YUM_UNZIP)
             LOGGER.info("Local response: %s", str(resp))
         resp = is_package_installed_local("nimon")
-        LOGGER.info("Local response: %s", str(resp))
+        LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             resp = run_local_cmd(cm_cmd.CMD_WGET_NIMON)
             LOGGER.info("Local response: %s", str(resp))
