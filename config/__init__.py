@@ -24,9 +24,9 @@ from typing import List
 
 import munch
 
+from src.commons.constants import CLUSTER_CFG
 from src.commons.constants import CORIO_CFG_PATH
 from src.commons.constants import S3_CONFIG, S3_TOOL_PATH
-from src.commons.constants import CLUSTER_CFG
 from src.commons.utils import config_utils
 
 
@@ -38,7 +38,6 @@ def split_args(sys_cmd: List):
             _args.extend(item.split('='))
         else:
             _args.extend([item])
-
     return _args
 
 
@@ -48,30 +47,33 @@ CLUSTER_CFG = config_utils.get_config_yaml(fpath=CLUSTER_CFG)
 S3_TOOLS_CFG = config_utils.get_config_yaml(fpath=S3_TOOL_PATH)
 
 
-io_driver_args = split_args(sys.argv)
-_use_ssl = '-us' if '-us' in io_driver_args else '--use_ssl' if '--use_ssl' in io_driver_args\
+IO_DRIVER_ARGS = split_args(sys.argv)
+_USE_SSL = '-us' if '-us' in IO_DRIVER_ARGS else '--use_ssl' if '--use_ssl' in IO_DRIVER_ARGS\
     else None
-ssl_flg = io_driver_args[io_driver_args.index(_use_ssl) + 1] if _use_ssl else True
-_endpoint = '-ep' if '-ep' in io_driver_args else '--endpoint' if '--endpoint' in io_driver_args\
+SSL_FLG = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_USE_SSL) + 1] if _USE_SSL else True
+_ENDPOINT = '-ep' if '-ep' in IO_DRIVER_ARGS else '--endpoint' if '--endpoint' in IO_DRIVER_ARGS\
     else None
-s3_url = io_driver_args[io_driver_args.index(_endpoint) + 1] if _endpoint else "s3.seagate.com"
-_access_key = "-ak" if '-ak' in io_driver_args else '--access_key' if '--access_key' in\
-                                                                      io_driver_args else None
-access_key = io_driver_args[io_driver_args.index(_access_key) + 1] if _access_key else None
-_secret_key = "-sk" if '-sk' in io_driver_args else '--secret_key' if '--secret_key' in\
-                                                                      io_driver_args else None
-secret_key = io_driver_args[io_driver_args.index(_secret_key) + 1] if _secret_key else None
-use_ssl = ast.literal_eval(str(ssl_flg).title())
-s3_endpoint = f"{'https' if use_ssl else 'http'}://{s3_url}"
+S3_URL = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ENDPOINT) + 1] if _ENDPOINT else "s3.seagate.com"
+_ACCESS_KEY = "-ak" if '-ak' in IO_DRIVER_ARGS else '--access_key' if '--access_key' in\
+                                                                      IO_DRIVER_ARGS else None
+ACCESS_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ACCESS_KEY) + 1] if _ACCESS_KEY else None
+_SECRT_KEY = "-sk" if '-sk' in IO_DRIVER_ARGS else '--secret_key' if '--secret_key' in\
+                                                                      IO_DRIVER_ARGS else None
+SECRT_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_SECRT_KEY) + 1] if _SECRT_KEY else None
+USE_SSL = ast.literal_eval(str(SSL_FLG).title())
+S3_ENDPOINT = f"{'https' if USE_SSL else 'http'}://{S3_URL}"
 
-local_access_key, local_secret_key = config_utils.get_local_aws_keys(
-    S3_CFG["aws_path"], S3_CFG["aws_cred_section"])
+LOCAL_ACC_KEY, LOCAL_SEC_KEY = config_utils.get_local_aws_keys(S3_CFG["aws_path"],
+                                                               S3_CFG["aws_cred_section"])
 
-S3_CFG["access_key"] = access_key if access_key else local_access_key
-S3_CFG["secret_key"] = secret_key if secret_key else local_secret_key
-S3_CFG["use_ssl"] = use_ssl
-S3_CFG["endpoint"] = s3_endpoint
+S3_CFG["access_key"] = ACCESS_KEY if ACCESS_KEY else LOCAL_ACC_KEY
+S3_CFG["secret_key"] = SECRT_KEY if SECRT_KEY else LOCAL_SEC_KEY
+S3_CFG["use_ssl"] = USE_SSL
+S3_CFG["endpoint"] = S3_ENDPOINT
 S3_CFG["s3api_retry"] = 5
 
 # Munched configs. These can be used by dot "." operator.
 S3_CFG = munch.munchify(S3_CFG)
+CORIO_CFG = munch.munchify(CORIO_CFG)
+CLUSTER_CFG = munch.munchify(CLUSTER_CFG)
+S3_TOOLS_CFG = munch.munchify(S3_TOOLS_CFG)

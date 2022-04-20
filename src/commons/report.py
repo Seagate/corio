@@ -20,10 +20,12 @@
 
 """Report module to generate the execution details."""
 
-import os
 import logging
+import os
 from datetime import datetime
+
 import pandas as pd
+
 from src.commons.constants import ROOT
 from src.commons.utils.corio_utils import convert_size
 

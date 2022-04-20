@@ -21,8 +21,6 @@
 
 """Python Library to perform multipart operations using aiobotocore module."""
 
-import os
-
 from src.libs.s3api.s3_restapi import S3RestApi
 
 
@@ -162,42 +160,3 @@ class S3MultiParts(S3RestApi):
                           bucket_name, object_name, response)
 
         return response
-
-    # pylint: disable=too-many-arguments
-    async def upload_parts(self, mpu_id: int, bucket_name: str, object_name: str,
-                           multipart_obj_path: str, total_parts: int) -> list:
-        """
-        Upload parts for a specific multipart upload ID.
-
-        :param mpu_id: Multipart Upload ID.
-        :param bucket_name: Name of the bucket.
-        :param object_name: Name of the object.
-        :param total_parts: No. of parts to be uploaded.
-        :param multipart_obj_path: Path of object file.
-        :return: (Boolean, List of uploaded parts).
-        """
-        parts = []
-        uploaded_bytes = 0
-        if not os.path.exists(multipart_obj_path):
-            raise IOError(f"File path '{multipart_obj_path}' does not exists.")
-        multipart_obj_size = os.stat(multipart_obj_path).st_size
-        single_part_size = multipart_obj_size // int(total_parts)
-        async with open(multipart_obj_path, "rb") as file_pointer:
-            i = 1
-            while True:
-                data = file_pointer.read(single_part_size)
-                self.log.info("data_len %s", str(len(data)))
-                if not data:
-                    break
-                part = await self.upload_part(
-                    data, bucket_name, object_name, upload_id=mpu_id, part_number=i)
-                self.log.info("Part : %s", str(part))
-                parts.append({"PartNumber": i, "ETag": part["ETag"]})
-                uploaded_bytes += len(data)
-                self.log.debug("{0} of {1} uploaded ({2:.2f}%)".format(
-                    uploaded_bytes, multipart_obj_size * 1048576,
-                    (float(uploaded_bytes) / float(multipart_obj_size * 1048576) * 100.0)))
-                i += 1
-        self.log.info("upload_parts: %s/%s, Parts: %s", bucket_name, object_name, parts)
-
-        return parts
