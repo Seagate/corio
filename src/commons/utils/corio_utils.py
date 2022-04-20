@@ -269,6 +269,19 @@ def setup_environment():
     LOGGER.info("environment setup completed.")
 
 
+def is_package_installed_local(package_name):
+    """
+    check package is installed or not.
+    :param package_name: package name to check
+    """
+    resp = run_local_cmd("rpm -qa | grep {}".format(package_name))
+    LOGGER.info("resp: ", resp)
+    if not resp[0]:
+        resp = run_local_cmd("{} -h".format(package_name))
+        LOGGER.info("resp: ", resp)
+    return resp
+
+
 class RemoteHost:
     """Class for execution of commands on remote machine."""
 
