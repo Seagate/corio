@@ -64,9 +64,10 @@ class TestS3Object(S3Bucket, S3Object):
 
     async def execute_object_workload(self):
         """Execute object workload with given parameters."""
-        bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
-        self.log.info("Create bucket %s", bucket)
-        await self.create_bucket(bucket)
+        if not os.environ.get("options").get("degraded_mode"):
+            bucket = f'object-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
+            self.log.info("Create bucket %s", bucket)
+            await self.create_bucket(bucket)
         while True:
             self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
