@@ -70,12 +70,12 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             tasks.append(create_session(funct=each["operation"],
                                         start_time=each["start_time"].total_seconds(), **params))
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-    LOGGER.info("Completed task %s", done)
+    LOGGER.critical("Terminating process & pending task: %s", process_name)
     for task in pending:
         task.cancel()
+    LOGGER.error(done)
     for task in done:
         task.result()
-    LOGGER.info("%s terminating", process_name)
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
