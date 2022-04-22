@@ -23,20 +23,24 @@
 
 import glob
 import logging
-import os
 import math
+import os
 import shutil
+from base64 import b64encode
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
+from typing import Union
+
 import paramiko
 import psutil as ps
+
 from config import CORIO_CFG
 from src.commons.commands import CMD_MOUNT
-from src.commons.constants import MOUNT_DIR
+from src.commons.constants import DATA_DIR_PATH
 from src.commons.constants import KB
 from src.commons.constants import KIB
+from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
-from src.commons.constants import DATA_DIR_PATH
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -125,21 +129,34 @@ def run_local_cmd(cmd: str) -> tuple:
         return False, error
 
 
-def create_file(file_name: str, size: int) -> str:
+def create_file(file_name: str, size: int, data_type: Union[str, bytes] = bytes) -> str:
     """
-    Create file with random data.
+    Create file with random data(string/bytes), default is bytes.
 
-    :param size: Size in bytes
-    :param file_name: File name
+    :param size: Size in bytes.
+    :param file_name: File name or file path.
+    :param data_type: supported data type string(str)/byte(bytes) while create file.
     """
     base = KIB * KIB
-    file_path = os.path.join(DATA_DIR_PATH, file_name)
+    if os.path.isdir(os.path.split(file_name)[0]):
+        file_path = file_name
+    else:
+        file_path = os.path.join(DATA_DIR_PATH, file_name)
     while size > base:
-        with open(file_path, 'ab+') as f_out:
-            f_out.write(os.urandom(base))
+        if issubclass(data_type, bytes):
+            with open(file_path, 'ab+') as bf_out:
+                bf_out.write(os.urandom(base))
+        else:
+            with open(file_path, 'a+', encoding="utf-8") as sf_out:
+                sf_out.write(b64encode(os.urandom(base)).decode("utf-8")[:base])
         size -= base
-    with open(file_path, 'ab+') as f_out:
-        f_out.write(os.urandom(size))
+    if issubclass(data_type, bytes):
+        with open(file_path, 'ab+') as bf_out:
+            bf_out.write(os.urandom(size))
+    else:
+        with open(file_path, 'a+', encoding="utf-8") as sf_out:
+            sf_out.write(b64encode(os.urandom(size)).decode("utf-8")[:size])
+    LOGGER.debug("File path: %s", file_path)
     return file_path
 
 
