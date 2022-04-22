@@ -27,36 +27,36 @@ import logging
 import multiprocessing
 import os
 import random
+import shutil
 import sys
 import time
-import shutil
+from collections import Counter
 from datetime import datetime
 from distutils.util import strtobool
 from pprint import pformat
-from collections import Counter
 
 import schedule
 
 from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from src.commons.logger import StreamToLogger
-from src.commons.yaml_parser import test_parser
-from src.commons.constants import DATA_DIR_PATH
-from src.commons.constants import ROOT
-from src.commons.constants import MOUNT_DIR
-from src.commons.constants import DT_STRING
-from src.commons.support_bundle import support_bundle_process
-from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.cluster_health import health_check_process, check_cluster_health
+from src.commons.constants import DATA_DIR_PATH
+from src.commons.constants import DT_STRING
+from src.commons.constants import MOUNT_DIR
+from src.commons.constants import ROOT
 from src.commons.exception import HealthCheckError
-from src.commons.utils.jira_utils import JiraApp
-from src.commons.utils.corio_utils import log_cleanup
-from src.commons.utils.corio_utils import setup_environment
-from src.commons.utils.corio_utils import cpu_memory_details
-from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.logger import StreamToLogger
 from src.commons.report import log_status
-from src.commons.workload_mapping import function_mapping
 from src.commons.scheduler import schedule_test_plan
 from src.commons.scheduler import terminate_processes
+from src.commons.support_bundle import collect_upload_rotate_support_bundles
+from src.commons.support_bundle import support_bundle_process
+from src.commons.utils.corio_utils import cpu_memory_details
+from src.commons.utils.corio_utils import log_cleanup
+from src.commons.utils.corio_utils import setup_environment
+from src.commons.utils.jira_utils import JiraApp
+from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.workload_mapping import function_mapping
+from src.commons.yaml_parser import test_parser
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -153,6 +153,8 @@ def main(options):
         for test_key, test_value in value.items():
             test_ids.append(test_value["TEST_ID"])
             if "operation" in test_value.keys():
+                if "partcopy" in test_value["operation"].lower():
+                    test_value["part_copy"] = True
                 test_value["operation"] = function_mapping[
                     test_value["operation"]]
                 value[test_key] = test_value

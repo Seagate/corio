@@ -21,9 +21,10 @@
 
 """Scheduler module."""
 
-import os
-import logging
 import asyncio
+import logging
+import os
+
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -61,6 +62,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["part_range"] = each["part_range"]
         if "range_read" in each.keys():
             params["range_read"] = each["range_read"]
+        if "part_copy" in each.keys():
+            params["part_copy"] = each["part_copy"]
         params.update(common_params)
         for i in range(1, int(each["sessions"]) + 1):
             params["session"] = f"{each['TEST_ID']}_session{i}"
