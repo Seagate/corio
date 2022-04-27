@@ -57,7 +57,7 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG["use_ssl"])
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG["endpoint"])
-        self.config = AioConfig(retries={"max_attempts": S3_CFG["s3api_retry"]})
+        self.config = AioConfig(connect_timeout=300, read_timeout=300, retries={"max_attempts": S3_CFG["s3api_retry"]})
         self.log = get_logger(os.environ.get("log_level", logging.INFO), self.test_id)
 
     def get_client(self):
