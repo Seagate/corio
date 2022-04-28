@@ -136,7 +136,7 @@ def main(options):
     collect_resource_utilisation(action="start")
     if jira_flg:
         jira_obj = JiraApp()
-        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan)
+        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
     if os.path.isdir(options.test_input):
         file_list = glob.glob(options.test_input + "/*")
     elif os.path.isfile(options.test_input):
