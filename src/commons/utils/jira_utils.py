@@ -33,6 +33,7 @@ from jira import JIRAError
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
 from requests.packages.urllib3.util.retry import Retry
+
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -124,8 +125,7 @@ class JiraApp:
         "testIssues":{"success": [{"id":"328135","key":"TEST-19537",
         "self":"https://jts.seagate.com/rest/api/2/issue/328135"}]},"infoMessages":[]}
         """
-        state = {}
-        status = dict()
+        state, status = {}, {}
         state["testExecutionKey"] = test_exe_id
         status["testKey"] = test_id
         if test_status.upper() == 'EXECUTING':
@@ -172,13 +172,13 @@ class JiraApp:
             LOGGER.exception("Error code: %s, error test: %s", err.status_code, err.text)
             return err
 
-    def get_all_tests_details_from_tp(self, tp_id: str) -> dict:
+    def get_all_tests_details_from_tp(self, tp_id: str, reset_status: bool = False) -> dict:
         """
         Get all tests execution details from test plan.
 
         :param tp_id: ID of the test plan.
+        :param reset_status: Reset jira status to 'TODO' to reuse existing TP.
         :return: Dictionary of tests from test execution ticket.
-
         """
         tests_dict = {}
         te_details = self.get_te_details_from_test_plan(tp_id)
@@ -190,6 +190,13 @@ class JiraApp:
                                     f" TE '{texe['key']}'")
                 tests_dict[test['key']] = test
                 tests_dict[test['key']]["te"] = texe
+                if reset_status:
+                    # Reset jira test status to start new execution.
+                    if test["status"].upper() != "TODO":
+                        self.update_test_jira_status(test['te']['key'], test['key'], "TODO")
+                        LOGGER.debug("%s: status '%s' reset to '%s'", test['key'],
+                                     test['status'], 'TODO')
+                        test["status"] = "TODO"
         LOGGER.info(tests_dict)
 
         return tests_dict
