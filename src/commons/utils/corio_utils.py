@@ -94,7 +94,6 @@ def cpu_memory_details() -> None:
             LOGGER.critical("Client: CPU usages are greater then %s, hence tool may stop execution",
                             cpu_usages)
     memory_usages = ps.virtual_memory().percent
-    LOGGER.debug("Client: Real Time memory usages are: %s", memory_usages)
     if memory_usages > 85.0:
         LOGGER.warning("Client: Memory usages are: %s", memory_usages)
         available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
@@ -103,8 +102,7 @@ def cpu_memory_details() -> None:
             LOGGER.critical("Client: Memory usages greater then %s, hence tool may stop execution",
                             memory_usages)
             raise MemoryError(memory_usages)
-        top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
-        LOGGER.info(top_processes)
+        run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
 
 
 def run_local_cmd(cmd: str) -> tuple:
