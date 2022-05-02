@@ -60,24 +60,24 @@ class S3ObjectTestCase(unittest.TestCase):
     @patch('os.path.getsize')
     def test_checksum_part_file_positive_more_1mib(self, mock_getsize):
         """Calculate check of more than 1 MB chunk."""
-        file_size = 10 * MIB
-        offset = 10
-        read_size = (2 * MIB) + 10
-        data = os.urandom(file_size)
-        expected_logs = [
+        _file_size = 10 * MIB
+        _offset = 10
+        _read_size = (2 * MIB) + 10
+        _data = os.urandom(_file_size)
+        _expected_logs = [
             f'INFO:src.libs.s3api.s3_object_ops:Reading size is {1 * MIB}',
-            f'DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {offset}',
+            f'DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {_offset}',
             f'DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {10 + MIB}',
             f'DEBUG:src.libs.s3api.s3_object_ops:Reading {10} from starting offset {10 + (MIB * 2)}'
         ]
-        mock_getsize.return_value = file_size
+        mock_getsize.return_value = _file_size
         with self.assertLogs('src.libs.s3api.s3_object_ops', level='DEBUG') as logs:
             with mock.patch("builtins.open", mock.mock_open()) as mock_open:
-                mock_open.side_effect = [BytesIO(data)]
-                ret = S3Object.checksum_part_file("file_path", offset, read_size)
-                file_hash = hashlib.sha256(self.read_part(data, offset, read_size))
+                mock_open.side_effect = [BytesIO(_data)]
+                ret = S3Object.checksum_part_file("file_path", _offset, _read_size)
+                file_hash = hashlib.sha256(self.read_part(_data, _offset, _read_size))
                 self.assertEqual(ret, file_hash.hexdigest())
-            self.assertEqual(logs.output, expected_logs)
+            self.assertEqual(logs.output, _expected_logs)
 
     @patch('os.path.getsize')
     def test_checksum_part_file_negative_1(self, mock_getsize):
