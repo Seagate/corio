@@ -19,8 +19,9 @@
 
 """Module to check cluster health and storage."""
 
-import time
 import logging
+import time
+
 from config import CLUSTER_CFG
 from src.commons.constants import ROOT
 from src.commons.exception import HealthCheckError
@@ -29,18 +30,15 @@ from src.commons.utils.cluster_utils import ClusterServices
 LOGGER = logging.getLogger(ROOT)
 
 
-def check_cluster_health():
+def check_health():
     """K8s based health check."""
-    nodes = CLUSTER_CFG["nodes"]
     host, user, password = None, None, None
-    for node in nodes:
+    for node in CLUSTER_CFG.nodes:
         if node["node_type"] == "master":
-            host = node["hostname"]
-            user = node["username"]
-            password = node["password"]
+            host, user, password = node["hostname"], node["username"], node["password"]
             break
     if not host:
-        raise HealthCheckError(f"Incorrect master details: {CLUSTER_CFG['nodes'][0]} ")
+        raise HealthCheckError(f"Incorrect master details: {CLUSTER_CFG.nodes[0]} ")
     cluster_obj = ClusterServices(host, user, password)
     status, response = cluster_obj.check_cluster_health()
     if not status:
@@ -59,4 +57,4 @@ def health_check_process(interval):
     """
     while True:
         time.sleep(interval)
-        check_cluster_health()
+        check_health()
