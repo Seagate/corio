@@ -257,12 +257,16 @@ def decode_bytes_to_string(text):
 
 
 def setup_environment():
-    """Environment setup for test execution."""
+    """Prepare client for workload execution with CORIO."""
+    LOGGER.info("Setting up environment to start execution!!")
+    # backup old execution logs.
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
     if os.path.exists(DATA_DIR_PATH):
         shutil.rmtree(DATA_DIR_PATH)
     os.makedirs(DATA_DIR_PATH, exist_ok=True)
+    LOGGER.debug("Data directory path created: %s", DATA_DIR_PATH)
+    LOGGER.info("environment setup completed.")
 
 
 class RemoteHost:
@@ -306,15 +310,15 @@ class RemoteHost:
         self.connect()
         LOGGER.info("Executing command: %s", command)
         _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
+        exit_status = stdout.channel.recv_exit_status() == 0
         error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
         output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
-        exit_status = stdout.channel.recv_exit_status()
-        LOGGER.debug("Execution status %s", exit_status == 0)
+        LOGGER.debug("Execution status %s", exit_status)
         LOGGER.debug(output)
         LOGGER.debug(error)
-        response = output if exit_status == 0 else error
+        response = output if exit_status else error
         self.disconnect()
-        return exit_status == 0, response
+        return exit_status, response
 
     def download_file(self, local_path: str, remote_path: str) -> None:
         """
