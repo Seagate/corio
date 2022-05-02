@@ -275,10 +275,10 @@ def is_package_installed_local(package_name):
     :param package_name: package name to check
     """
     resp = run_local_cmd("rpm -qa | grep {}".format(package_name))
-    LOGGER.info("resp: ", resp)
+    LOGGER.info("resp: %s", str(resp))
     if not resp[0]:
         resp = run_local_cmd("{} -h".format(package_name))
-        LOGGER.info("resp: ", resp)
+        LOGGER.info("resp: %s", str(resp))
     return resp
 
 
@@ -365,8 +365,8 @@ class RemoteHost:
         """
         self.connect()
         resp = self.execute_command("rpm -qa | grep {}".format(package_name))
-        LOGGER.info("resp: ", resp)
+        LOGGER.info("resp: %s", str(resp))
         if not resp[0]:
             resp = self.execute_command("{} -h".format(package_name))
-            LOGGER.info("resp: ", resp)
+            LOGGER.info("resp: %s", str(resp))
         return resp
