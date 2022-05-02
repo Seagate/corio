@@ -24,6 +24,7 @@
 # K8s commands for cortx.
 # Parameters: pod_name, container_name, command.
 KUBECTL_CMD = "kubectl {} {} -n {} {}"
+KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
 CMD_K8S_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker|awk '{print $1}'"
 CMD_POD_STATUS = "kubectl get pods"
 KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep '{}'"
