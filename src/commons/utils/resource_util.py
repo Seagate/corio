@@ -38,6 +38,7 @@ LOGGER = logging.getLogger(ROOT)
 def collect_resource_utilisation(action: str):
     """
     start/stop collect resource utilisation.
+
     :param action: start/stop collection resource_utilisation
     """
     cluster_obj = None
@@ -111,4 +112,3 @@ def collect_resource_utilisation(action: str):
             worker_obj.download_file(cl_path, f"/root/{filename}")
             resp = worker_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
             LOGGER.debug("file removed: %s", resp)
-            
