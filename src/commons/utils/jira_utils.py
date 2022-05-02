@@ -48,9 +48,8 @@ class JiraApp:
         self.auth = (self.get_jira_credential())
         self.headers = {'content-type': "application/json", 'accept': "application/json"}
         self.retry_strategy = Retry(
-            total=10, backoff_factor=2, status_forcelist=[
-                429, 500, 502, 503, 504, 400, 404, 408], method_whitelist=[
-                "HEAD", "GET", "OPTIONS"])
+            total=10, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504, 400, 404, 408],
+            method_whitelist=["HEAD", "GET", "OPTIONS"])
         self.adapter = HTTPAdapter(max_retries=self.retry_strategy)
         self.http = requests.Session()
         self.http.mount("https://", self.adapter)
@@ -105,7 +104,7 @@ class JiraApp:
                         except JIRAError as err:
                             LOGGER.error('Exception in GET tests details from te, error: %s', err)
                         else:
-                            page_cnt = 0 if len(data) == 0 else page_cnt + 1
+                            page_cnt = page_cnt + 1 if data else 0
                 else:
                     tests_info.extend(te_response.json())
         except (RequestException, ValueError, JIRAError) as err:

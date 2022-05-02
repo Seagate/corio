@@ -27,9 +27,9 @@ import time
 from config import CLUSTER_CFG
 from config import CORIO_CFG
 from src.commons.constants import MOUNT_DIR
-from src.commons.utils.corio_utils import rotate_logs
-from src.commons.utils.cluster_utils import ClusterServices
 from src.commons.constants import ROOT
+from src.commons.utils.cluster_utils import ClusterServices
+from src.commons.utils.corio_utils import rotate_logs
 
 LOGGER = logging.getLogger(ROOT)
 

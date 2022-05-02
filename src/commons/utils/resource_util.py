@@ -19,16 +19,17 @@
 
 """Module to collect resource utilisation utils."""
 
-import os
-import shutil
 import glob
 import logging
-from src.commons.utils.corio_utils import run_local_cmd
-from src.commons.utils.cluster_utils import RemoteHost
+import os
+import shutil
+
+from config import CLUSTER_CFG
 from src.commons import constants as cm_cmd
 from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
-from config import CLUSTER_CFG
+from src.commons.utils.cluster_utils import RemoteHost
+from src.commons.utils.corio_utils import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
 

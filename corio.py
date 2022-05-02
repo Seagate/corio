@@ -18,7 +18,6 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 #
-
 """Perform parallel S3 operations as per the given test input YAML using Asyncio."""
 
 import argparse
@@ -35,10 +34,13 @@ from datetime import datetime
 from distutils.util import strtobool
 from pprint import pformat
 
+import munch
 import schedule
 
-from config import S3_CFG, CORIO_CFG, CLUSTER_CFG
-from src.commons.cluster_health import health_check_process, check_cluster_health
+from config import CLUSTER_CFG
+from config import S3_CFG, CORIO_CFG
+from src.commons.cluster_health import check_health
+from src.commons.cluster_health import health_check_process
 from src.commons.constants import DATA_DIR_PATH
 from src.commons.constants import DT_STRING
 from src.commons.constants import MOUNT_DIR
@@ -47,7 +49,6 @@ from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
 from src.commons.report import log_status
 from src.commons.scheduler import schedule_test_plan
-from src.commons.scheduler import terminate_processes
 from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.support_bundle import support_bundle_process
 from src.commons.utils.corio_utils import cpu_memory_details
@@ -55,18 +56,14 @@ from src.commons.utils.corio_utils import log_cleanup
 from src.commons.utils.corio_utils import setup_environment
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.resource_util import collect_resource_utilisation
-from src.commons.workload_mapping import function_mapping
+from src.commons.workload_mapping import SCRIPT_MAPPING
 from src.commons.yaml_parser import test_parser
 
 LOGGER = logging.getLogger(ROOT)
 
 
 def initialize_loghandler(opt):
-    """
-    Initialize io driver runner logging with stream and file handlers.
-
-    param opt: logging level used in CorIO tool.
-    """
+    """Initialize io driver runner logging with stream and file handlers."""
     # If log level provided then it will use DEBUG else will use default INFO.
     if opt.verbose:
         level = logging.getLevelName(logging.DEBUG)
@@ -111,54 +108,113 @@ def parse_args():
     return parser.parse_args()
 
 
-# pylint: disable-msg=too-many-branches,too-many-locals, too-many-statements
 def main(options):
     """
     Main function for CORIO.
 
-    :param options: Parsed Arguments
+    :param options: Parsed Arguments.
     """
-    LOGGER.info("Setting up environment!!")
-    # Check cluster is healthy to start execution.
-    if options.health_check:
-        check_cluster_health()
     setup_environment()
-    commons_params = {"access_key": S3_CFG.access_key,
-                      "secret_key": S3_CFG.secret_key,
-                      "endpoint_url": S3_CFG.endpoint,
-                      "use_ssl": S3_CFG["use_ssl"],
-                      "seed": options.seed}
+    pre_requisites(options)
+    jira_obj = options.test_plan
     tests_details = {}
-    tests_to_execute = {}
-    jira_obj = None
-    jira_flg = options.test_plan
-    # start resource util
-    collect_resource_utilisation(action="start")
-    if jira_flg:
+    if jira_obj:
         jira_obj = JiraApp()
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
-    if os.path.isdir(options.test_input):
-        file_list = glob.glob(options.test_input + "/*")
-    elif os.path.isfile(options.test_input):
-        file_list = [os.path.abspath(options.test_input)]
-    else:
-        raise IOError(f"Incorrect test input: {options.test_input}")
-    LOGGER.info("Test YAML Files to be executed : %s", file_list)
-    parsed_input = {}
-    for each in file_list:
-        parsed_input[each] = test_parser(each, options.number_of_nodes)
-    test_ids, missing_jira_ids = [], []
-    for key, value in parsed_input.items():
+    workload_list = get_workload_list(options.test_input)
+    LOGGER.info("Test YAML Files to be executed : %s", workload_list)
+    parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
+    tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
+    corio_start_time = datetime.now()
+    LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
+    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
+    processes = schedule_execution_plan(parsed_input, options)
+    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
+                                              corio_start_time=corio_start_time, test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", 30)
+    terminated_tp, test_ids = None, []
+    try:
+        start_processes(processes)
+        while True:
+            cpu_memory_details()
+            time.sleep(1)
+            schedule.run_pending()
+            if jira_obj:
+                jira_obj.update_jira_status(
+                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
+            terminated_tp = monitor_processes(processes)
+            if terminated_tp:
+                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
+                sys.exit()
+    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
+        LOGGER.exception(error)
+        terminated_tp = type(error).__name__
+        sys.exit()
+    finally:
+        terminate_processes(processes)
+        schedule.cancel_job(sched_job)
+        log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
+        if jira_obj:
+            jira_obj.update_jira_status(corio_start_time=corio_start_time,
+                                        tests_details=tests_to_execute, aborted=True,
+                                        terminated_tests=test_ids)
+        if options.support_bundle:
+            collect_upload_rotate_support_bundles(MOUNT_DIR, os.getenv("sb_identifier"))
+        collect_resource_utilisation(action="stop")
+        LOGGER.info("Cleaning up TestData")
+        if os.path.exists(DATA_DIR_PATH):
+            shutil.rmtree(DATA_DIR_PATH)
+
+
+def pre_requisites(options: munch.Munch):
+    """Perform health check and start resource monitoring."""
+    # Check cluster is healthy to start execution.
+    if options.health_check:
+        check_health()
+    # start resource utilisation.
+    collect_resource_utilisation(action="start")
+    # support bundle identifier.
+    os.environ["sb_identifier"] = CLUSTER_CFG["nodes"][0]["hostname"] + DT_STRING if \
+        options.support_bundle else DT_STRING
+
+
+def get_parsed_input_details(flist: list, nodes: int) -> dict:
+    """Parse workloads and get all details with function mapping."""
+    parsed = {}
+    for each in flist:
+        parsed[each] = test_parser(each, nodes)
+    # update function mapping.
+    for _, value in parsed.items():
         LOGGER.info("Test Values : %s", value)
         for test_key, test_value in value.items():
-            test_ids.append(test_value["TEST_ID"])
             if "operation" in test_value.keys():
                 if "partcopy" in test_value["operation"].lower():
                     test_value["part_copy"] = True
-                test_value["operation"] = function_mapping[
-                    test_value["operation"]]
+                test_value["operation"] = SCRIPT_MAPPING[test_value["operation"]]
                 value[test_key] = test_value
-            if jira_flg:
+    return parsed
+
+
+def get_workload_list(path: str) -> list:
+    """Get all workload filepath list."""
+    if os.path.isdir(path):
+        file_list = glob.glob(path + "/*")
+    elif os.path.isfile(path):
+        file_list = [os.path.abspath(path)]
+    else:
+        raise IOError(f"Incorrect test input: {path}")
+    return file_list
+
+
+def check_report_duplicate_missing_ids(parsed_input, tests_details):
+    """Check and report duplicate test ids from workload."""
+    test_ids = []
+    missing_jira_ids = []
+    tests_to_execute = {}
+    for _, value in parsed_input.items():
+        for _, test_value in value.items():
+            test_ids.append(test_value["TEST_ID"])
+            if tests_details:
                 if test_value["TEST_ID"] in tests_details:
                     tests_to_execute[test_value["TEST_ID"]] = tests_details[test_value["TEST_ID"]]
                     tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value["start_time"]
@@ -169,98 +225,93 @@ def main(options):
     # Check and report duplicate test ids from workload.
     duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
     assert (not duplicate_ids), f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
-    if jira_flg:
+    if tests_details:
         # If jira update selected then will report missing workload test ids from jira TP.
         assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
-                                       f"which are missing from jira tp: {options.test_plan}"
-    corio_start_time = datetime.now()
-    LOGGER.info("Parsed input files : ")
-    LOGGER.info(pformat(parsed_input))
-    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
+                                       f"which are missing from jira tp: {tests_details.key()}"
+    return tests_to_execute
+
+
+def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
+    """Schedule the execution plan."""
     processes = {}
+    commons_params = {"access_key": S3_CFG.access_key,
+                      "secret_key": S3_CFG.secret_key,
+                      "endpoint_url": S3_CFG.endpoint,
+                      "use_ssl": S3_CFG.use_ssl,
+                      "seed": options.seed}
     for test_plan, test_plan_value in parsed_input.items():
-        process = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
-                                          args=(test_plan, test_plan_value, commons_params))
-        processes[test_plan] = process
-    LOGGER.info(processes)
-    sb_identifier = CLUSTER_CFG["nodes"][0]["hostname"] + DT_STRING if options.support_bundle \
-        else DT_STRING
+        processes[test_plan] = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
+                                                       args=(test_plan, test_plan_value,
+                                                             commons_params))
+    LOGGER.info("scheduled execution plan. Processes: %s", processes)
     if options.support_bundle:
-        process = multiprocessing.Process(target=support_bundle_process, name="support_bundle",
-                                          args=(CORIO_CFG["sb_interval_mins"] * 60, sb_identifier))
-        processes["support_bundle"] = process
+        processes["support_bundle"] = multiprocessing.Process(target=support_bundle_process,
+                                                              name="support_bundle",
+                                                              args=(CORIO_CFG.sb_interval_mins * 60,
+                                                                    os.getenv("sb_identifier")))
         LOGGER.info("Support bundle collection scheduled for every %s minutes",
-                    CORIO_CFG["sb_interval_mins"])
+                    CORIO_CFG.sb_interval_mins)
     if options.health_check:
-        process = multiprocessing.Process(target=health_check_process, name="health_check",
-                                          args=(CORIO_CFG["hc_interval_mins"] * 60,))
-        processes["health_check"] = process
-        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG["hc_interval_mins"])
-    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
-                                              corio_start_time=corio_start_time, test_failed=None)
-    LOGGER.info("Report status update scheduled for every %s minutes", 30)
-    try:
-        for process in processes.values():
-            LOGGER.info("Process started: %s", process)
-            process.start()
-        test_ids = []
-        while True:
-            terminated_tp = None
-            cpu_memory_details()
-            time.sleep(1)
-            schedule.run_pending()
-            if jira_flg:
-                jira_obj.update_jira_status(
-                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
-            for key, process in processes.items():
-                if not process.is_alive():
-                    if key == "support_bundle":
-                        LOGGER.warning("Process with PID %s stopped Support bundle collection"
-                                       " error.", process.pid)
-                        continue
-                    if key == "health_check":
-                        raise HealthCheckError(f"Process with PID {process.pid} stopped."
-                                               f" Health Check collection error.")
-                    LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
-                                    process.pid, process.name)
-                    terminated_tp = key
-                    # Get all test id from terminated workload due to failure.
-                    for test in parsed_input[terminated_tp].values():
-                        test_ids.append(test["TEST_ID"])
-            if terminated_tp:
-                terminate_processes(processes.values())
-                log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
-                if jira_flg:
-                    jira_obj.update_jira_status(corio_start_time=corio_start_time,
-                                                tests_details=tests_to_execute, aborted=True,
-                                                terminated_tests=test_ids)
-                schedule.cancel_job(sched_job)
-                if options.support_bundle:
-                    collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
-                collect_resource_utilisation(action="stop")
-                sys.exit()
-    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
-        LOGGER.exception(error)
-        terminate_processes(processes.values())
-        log_status(parsed_input, corio_start_time, "KeyboardInterrupt")
-        if jira_flg:
-            jira_obj.update_jira_status(corio_start_time=corio_start_time,
-                                        tests_details=tests_to_execute, aborted=True)
-        schedule.cancel_job(sched_job)
-        if options.support_bundle:
-            collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier)
-        # stop resource util
-        collect_resource_utilisation(action="stop")
-        sys.exit()
-    finally:
-        LOGGER.info("Cleaning up TestData")
-        if os.path.exists(DATA_DIR_PATH):
-            shutil.rmtree(DATA_DIR_PATH)
+        processes["health_check"] = multiprocessing.Process(target=health_check_process,
+                                                            name="health_check",
+                                                            args=(CORIO_CFG.hc_interval_mins * 60,))
+        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
+    return processes
+
+
+def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str) -> list:
+    """Get all test-id from terminated workload due to failure."""
+    test_ids = []
+    for test in workload_dict[workload_key].values():
+        test_ids.append(test["TEST_ID"])
+    return test_ids
+
+
+def monitor_processes(processes: dict) -> str or None:
+    """Monitor the process."""
+    for tp_key, process in processes.items():
+        if not process.is_alive():
+            if tp_key == "support_bundle":
+                LOGGER.warning("Process with PID %s stopped Support bundle collection"
+                               " error.", process.pid)
+                continue
+            if tp_key == "health_check":
+                raise HealthCheckError(f"Process with PID {process.pid} stopped."
+                                       f" Health Check collection error.")
+            LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
+                            process.pid, process.name)
+            return tp_key
+    return None
+
+
+def terminate_processes(processes: dict) -> None:
+    """
+    Terminate Process on failure.
+
+    :param processes: List of process to be terminated.
+    """
+    LOGGER.debug("Processes to terminate: %s", processes)
+    for process in processes.values():
+        process.terminate()
+        process.join()
+
+
+def start_processes(processes: dict) -> None:
+    """
+    Trigger all proces from process list.
+
+    :param processes: List of process to start.
+    """
+    LOGGER.info("Processes to start: %s", processes)
+    for process in processes.values():
+        process.start()
+        LOGGER.info("Process started: %s", process)
 
 
 if __name__ == "__main__":
     log_cleanup()
-    opts = parse_args()
-    initialize_loghandler(opts)
-    LOGGER.info("Arguments: %s", opts)
-    main(opts)
+    OPTS = parse_args()
+    initialize_loghandler(OPTS)
+    LOGGER.info("Arguments: %s", OPTS)
+    main(OPTS)
