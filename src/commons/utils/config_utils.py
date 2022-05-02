@@ -26,6 +26,7 @@ import os
 from configparser import ConfigParser
 from configparser import MissingSectionHeaderError
 from configparser import NoSectionError
+
 import yaml
 
 from src.commons.constants import ROOT
@@ -34,12 +35,13 @@ LOGGER = logging.getLogger(ROOT)
 
 
 def get_config_yaml(fpath: str) -> dict:
-    """Read the config and decrypts the passwords.
-
-    :param fpath: configuration file path
-    :return [type]: dictionary containing config data
     """
-    with open(fpath) as fin:
+    Read the config and decrypts the passwords.
+
+    :param fpath: configuration file path.
+    :return [type]: dictionary containing config data.
+    """
+    with open(fpath, encoding="utf-8") as fin:
         LOGGER.debug("Reading details from file : %s", fpath)
         data = yaml.safe_load(fin)
 
@@ -50,10 +52,10 @@ def get_config_section_key(path: str, section: str = None, key: str = None) -> l
     """
     Get config file value as per the section and key.
 
-    :param path: File path
-    :param section: Section name
-    :param key: Section key name
-    :return: key value else all items else None
+    :param path: File path.
+    :param section: Section name.
+    :param key: Section key name.
+    :return: key value else all items else None.
     """
     try:
         config = ConfigParser()
