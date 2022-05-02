@@ -49,7 +49,7 @@ class TestS3Object(S3Bucket, S3Object):
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=test_id)
+            "use_ssl"), test_id=f"{test_id}_object_operations")
         random.seed(kwargs.get("seed"))
         self.test_id = kwargs.get("test_id")
         self.object_size = kwargs.get("object_size")
