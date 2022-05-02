@@ -51,7 +51,7 @@ class TestS3Object(S3Bucket, S3Object):
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
             "use_ssl"), test_id=f"{test_id}_object_operations")
         random.seed(kwargs.get("seed"))
-        self.test_id = kwargs.get("test_id")
+        self.test_id = test_id
         self.object_size = kwargs.get("object_size")
         self.session_id = kwargs.get("session")
         self.iteration = 1
