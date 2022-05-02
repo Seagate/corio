@@ -23,17 +23,18 @@
 
 import logging
 import os
-import random
 
 from aiobotocore.config import AioConfig
 from aiobotocore.session import get_session
-from src.commons.logger import get_logger
+
 from config import S3_CFG
+from src.commons.logger import get_logger
 
 
-# pylint: disable=too-many-instance-attributes
 class S3RestApi:
     """Basic Class for Creating Boto3 REST API Objects."""
+
+    session = get_session()
 
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
@@ -51,14 +52,11 @@ class S3RestApi:
         """
         self.access_key = access_key
         self.secret_key = secret_key
-        self.session = get_session()
-        self.test_id = kwargs.get("test_id", f"Test-{random.randrange(124, 12400)}")
-        self.region = kwargs.get("region", S3_CFG["region"])
+        self.region = kwargs.get("region", S3_CFG.region)
         self.aws_session_token = kwargs.get("aws_session_token", None)
-        self.use_ssl = kwargs.get("use_ssl", S3_CFG["use_ssl"])
-        self.endpoint_url = kwargs.get("endpoint_url", S3_CFG["endpoint"])
-        self.config = AioConfig(connect_timeout=300, read_timeout=300, retries={"max_attempts": S3_CFG["s3api_retry"]})
-        self.log = get_logger(os.environ.get("log_level", logging.INFO), self.test_id)
+        self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
+        self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
+        self.log = get_logger(os.environ.get("log_level", logging.INFO), kwargs.get("test_id"))
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""
@@ -73,7 +71,10 @@ class S3RestApi:
                                           endpoint_url=self.endpoint_url,
                                           region_name=self.region,
                                           aws_session_token=self.aws_session_token,
-                                          config=self.config)
+                                          config=AioConfig(connect_timeout=300,
+                                                           read_timeout=300,
+                                                           retries={"max_attempts":
+                                                                    S3_CFG.s3api_retry}))
 
     def __del__(self):
         """destructor for aiobotocore."""

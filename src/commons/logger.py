@@ -20,13 +20,14 @@
 #
 """Logger for CorIO tool."""
 
-import os
-import gzip
-import shutil
 import datetime
+import gzip
 import logging
-from os import path
+import os
+import shutil
 from logging import handlers
+from os import path
+
 from config import CORIO_CFG
 from src.commons.constants import FORMATTER
 

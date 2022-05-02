@@ -95,15 +95,3 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.info("%s Loop interrupted", process_name)
         loop.stop()
     LOGGER.info("%s terminating", process_name)
-
-
-def terminate_processes(process_list):
-    """
-    Terminate Process on failure.
-
-    :param process_list: Terminate the given list of process
-    """
-    LOGGER.debug("Process lists to terminate: %s", process_list)
-    for process in process_list:
-        process.terminate()
-        process.join()
