@@ -56,13 +56,14 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        self.log = get_logger(os.environ.get("log_level", logging.INFO), kwargs.get("test_id"))
+        level = os.environ.get("log_level", logging.INFO)
+        if logging.getLevelName(level) == logging.DEBUG:
+            self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
+        else:
+            self.log = get_logger(level, kwargs.get("test_id"))
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""
-        if self.log.level == logging.DEBUG:
-            pass  # TODO: Enable debug level for aiobotocore packages.
-
         return self.session.create_client(service_name="s3",
                                           use_ssl=self.use_ssl,
                                           verify=False,

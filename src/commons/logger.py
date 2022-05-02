@@ -126,13 +126,19 @@ def get_logger(level, name) -> object:
     logger = logging.Logger.manager.loggerDict.get(name)
     if logger:
         return logger
-    level = logging.getLevelName(level)
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
     dir_path = os.path.join(os.getcwd(), "log", "latest")
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
-    fpath = os.path.join(dir_path, f"{name}_console.log")
+    level = logging.getLevelName(level)
+    if level == logging.DEBUG:
+        logger = logging.getLogger()
+        for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
+            logging.getLogger(pkg).setLevel(logging.DEBUG)
+            fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
+    else:
+        logger = logging.getLogger(name)
+        fpath = os.path.join(dir_path, f"{name}_console.INFO")
+    logger.setLevel(level)
     StreamToLogger(fpath, logger)
 
     return logger
