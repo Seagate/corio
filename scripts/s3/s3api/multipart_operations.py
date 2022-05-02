@@ -36,7 +36,7 @@ from src.libs.s3api.s3_object_ops import S3Object
 class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
     """Multipart class for executing given io stability workload."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, use_ssl: bool,
+    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
                  **kwargs) -> None:
         """s3 multipart init for multipart, part copy operations with different workload.
 
@@ -51,15 +51,16 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         :param part_copy: Perform part copy if True else normal part upload.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=use_ssl,
-                         test_id=kwargs.get("test_id"))
+        self.part_copy = kwargs.get("part_copy", False)
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
+            "use_ssl"), test_id=f"{test_id}_multipart_partcopy_operations" if self.part_copy else
+            f"{test_id}_multipart_operations")
         random.seed(kwargs.get("seed"))
         self.object_size = kwargs.get("object_size")
         self.part_range = kwargs.get("part_range")
-        self.part_copy = kwargs.get("part_copy", False)
         self.range_read = kwargs.get("range_read")
         self.session_id = kwargs.get("session")
-        self.test_id = kwargs.get("test_id").lower()
+        self.test_id = test_id.lower()
         if kwargs.get("duration"):
             self.finish_time = datetime.now() + kwargs.get("duration")
         else:  # If duration not given then test will run for 100 Day

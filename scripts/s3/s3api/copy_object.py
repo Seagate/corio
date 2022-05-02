@@ -51,7 +51,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         :param duration: Duration timedelta object, if not given will run for 100 days
         """
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=test_id)
+            "use_ssl"), test_id=f"{test_id}_copy_object_operations")
         random.seed(kwargs.get("seed"))
         self.object_size = kwargs.get("object_size")
         self.iteration = 1
