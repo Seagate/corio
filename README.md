@@ -12,28 +12,28 @@ This Tool can be divided logically in following sections:
 ## WHY CORIO
 
 Needed a single aggregator / umbrella tool which does following:
--   Checks Sustainability of IO Operations for long duration and updates results based on expected execution runtime
+-   Checks Sustainability of IO Operations for long duration and updates results based on expected runtime
 -   Support Stress (exponential workload) as well as longevity testing.
 -   Supports S3 IO operations using full capability of boto APIs.
 -   Benefits from unique capabilities of multiple IO tools (S3bench, WARP, etc.
--   Supports failure mode testing over long runs.
+-   Supports interrupt mode testing over long runs.
 -   Supports plug-n-play for other protocols (NFS, SMB, Block-IO, etc).
--   Supports easy deployment and enables various usage scenario across teams.
+-   Supports deployment and enables various usage scenario across teams.
 
 ## CURRENT CAPABILITIES
 
-- Matrix Based Test Execution:
-  -   Parallel test execution from multiple test suites, 
-  -   for e.g. first test from each suite will start and will be marked pass once it achieves ETA duration of execution.
-  -   Then next set of tests will start and previously “pass” marked tests will also continue to run for background load generation.
+-   Matrix Based Test Run
+-   Parallel test running from multiple test suites, 
+-   for e.g. first test from each suite will start and will be marked pass once it achieves ETA duration of run.
+-   Then next set of tests will start and previously “pass” marked tests will also continue to run for background load generation.
+-   Seed based run for reproduction of scenarios.
 
-- Seed based execution for easy reproduction of failure scenarios.
-- Customized for CORTX requirements:
-  -   Automated execution using Jenkins framework.
-  -   Results update in Jira.
-  -   Periodic system health checks.
-  -   Resource monitoring (CPU, Memory, etc.).
-  -   Capture support bundle logs (periodic and on failure).
+## Customized for CORTX requirements
+-   Automated run using Jenkins framework.
+-   Results update in Jira.
+-   Periodic system health checks.
+-   Resource monitoring (CPU, Memory, etc.).
+-   Capture support bundle logs (periodic and on breakdown).
   
 Refer [Architecture and Design documents](docs/Architecture_and_Design.md)
 
@@ -86,9 +86,9 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
 ### Prerequisites
 
--   S3 account and access key and secret key should be present to carry out execution
+-   S3 account and access key and secret key should be present to carry out run
 
--   Test input may be either a single yaml file path or a directory path containing multiple tests data input yaml files, which will be executed in parallel
+-   Test input may be either a single yaml file path or a directory path containing multiple tests data input yaml files, which will be run in parallel
 
     -   file path i.e. workload/s3/s3api/bucket_operations.yaml
     -   directory path i.e. workload/s3/s3api or any other customized directory(i.e. workload/s3/io)
@@ -96,7 +96,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
 ### CORIO help options
 
-  Use following command to execute workloads from different scenarios in parallel.
+  Use following command to run workloads from different scenarios in parallel.
 
     python corio.py -ak <access_key> -sk <secret_key> -ep <s3.seagate.com> -ti <workload_directory_path>
 
@@ -120,7 +120,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
                 Use HTTPS/SSL connection for S3 endpoint.
     
       -sd, --seed
-                Seed used to regenerate same workload  execution.
+                Seed used to regenerate same workload run.
     
       -sk, --secret_key
                 s3 secret Key.
