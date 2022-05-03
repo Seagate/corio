@@ -1,0 +1,119 @@
+test_1:
+  TEST_ID: TEST-37246
+  object_size:
+    start: 0Kib
+    end: 100Kib
+  min_runtime: 2h
+  sessions_per_node: 1
+  tool: s3api
+  operation: copy_object
+
+test_2:
+  TEST_ID: TEST-37247
+  object_size:
+    start: 100Kib
+    end: 1Mib
+  min_runtime: 2h
+  sessions_per_node: 2
+  tool: s3api
+  operation: copy_object
+
+test_3:
+  TEST_ID: TEST-37248
+  object_size:
+    start: 1Mib
+    end: 10Mib
+  min_runtime: 20h
+  sessions_per_node: 3
+  tool: s3api
+  operation: copy_object
+
+test_4:
+  TEST_ID: TEST-37249
+  object_size:
+    start: 10Mib
+    end: 20Mib
+  min_runtime: 1d
+  sessions_per_node: 5
+  tool: s3api
+  operation: copy_object
+
+test_5:
+  TEST_ID: TEST-37250
+  object_size:
+    start: 20Mib
+    end: 50Mib
+  min_runtime: 1d
+  sessions_per_node: 8
+  tool: s3api
+  operation: copy_object
+
+test_6:
+  TEST_ID: TEST-37251
+  object_size:
+    start: 50Mib
+    end: 100Mib
+  min_runtime: 2d
+  sessions_per_node: 13
+  tool: s3api
+  operation: copy_object
+
+test_7:
+  TEST_ID: TEST-37252
+  object_size:
+    start: 100Mib
+    end: 250Mib
+  min_runtime: 2d
+  sessions_per_node: 21
+  tool: s3api
+  operation: copy_object
+
+test_8:
+  TEST_ID: TEST-37254
+  object_size:
+    start: 250Mib
+    end: 500Mib
+  min_runtime: 4d
+  sessions_per_node: 34
+  tool: s3api
+  operation: copy_object
+
+test_9:
+  TEST_ID: TEST-37255
+  object_size:
+    start: 500Mib
+    end: 750Mib
+  min_runtime: 5d
+  sessions_per_node: 55
+  tool: s3api
+  operation: copy_object
+
+test_10:
+  TEST_ID: TEST-37256
+  object_size:
+    start: 750Mib
+    end: 1Gib
+  min_runtime: 5d
+  sessions_per_node: 89
+  tool: s3api
+  operation: copy_object
+
+test_11: 
+  TEST_ID: TEST-37257
+  object_size:
+    start: 1Gib
+    end: 2Gib
+  min_runtime: 5d
+  sessions_per_node: 144
+  tool: s3api
+  operation: copy_object
+
+test_12:
+  TEST_ID: TEST-37258
+  object_size:
+    start: 2Gib
+    end: 5Gib
+  min_runtime: 5d
+  sessions_per_node: 233
+  tool: s3api
+  operation: copy_object

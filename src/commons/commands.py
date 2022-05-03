@@ -13,8 +13,21 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
+#
 
-"""src package."""
+"""All commands for corio."""
+
+# K8s commands for cortx.
+CMD_K8S_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker|awk '{print $1}'"
+# Parameters: pod_name, container_name, command.
+CMD_K8S_CLUSTER_HEALTH = "kubectl exec -it {} -c {} -- {}"
+CMD_K8S_PODS_NAME = "kubectl get pods -o=custom-columns=NAME:.metadata.name"
+CMD_HCTL_STATUS = "hctl status --json"
+CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
+CMD_GENERATE_CLSTR_LOGS = "cd {}; sh logs-cortx-cloud.sh"
+# System commands.
+CMD_MOUNT = "mount -t nfs {} {}"

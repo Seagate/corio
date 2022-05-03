@@ -1,0 +1,155 @@
+test_1:
+    TEST_ID: TEST-36211
+    object_size:
+        start: 1Gib
+        end: 4Gib
+    part_range:
+        start: 50
+        end: 100
+    min_runtime: 2h
+    sessions: 5  # One object per session.
+    tool: s3api
+    operation: multipart
+
+test_2:
+    TEST_ID: TEST-36216
+    object_size:
+        start: 4Gib
+        end: 8Gib
+    part_range:
+        start: 100
+        end: 200
+    min_runtime: 2h
+    sessions: 5
+    tool: s3api
+    operation: multipart
+
+test_3:
+    TEST_ID: TEST-36217
+    object_size:
+        start: 8Gib
+        end: 16Gib
+    part_range:
+        start: 200
+        end: 300
+    min_runtime: 20h
+    sessions: 10
+    tool: s3api
+    operation: multipart
+
+test_4:
+    TEST_ID: TEST-36218
+    object_size:
+        start: 16Gib
+        end: 32Gib
+    part_range:
+        start: 300
+        end: 400
+    min_runtime: 1d
+    sessions: 10
+    tool: s3api
+    operation: multipart
+
+test_5:
+    TEST_ID: TEST-36219
+    object_size:
+        start: 32Gib
+        end: 64Gib
+    part_range:
+        start: 400
+        end: 500
+    min_runtime: 1d
+    sessions: 15
+    tool: s3api
+    operation: multipart
+
+test_6:
+    TEST_ID: TEST-36220
+    object_size:
+        start: 64Gib
+        end: 128Gib
+    part_range:
+        start: 500
+        end: 600
+    min_runtime: 2d
+    sessions: 15
+    tool: s3api
+    operation: multipart
+
+test_7:
+    TEST_ID: TEST-36221
+    object_size:
+        start: 128Gib
+        end: 256Gib
+    part_range:
+        start: 600
+        end: 700
+    min_runtime: 2d
+    sessions: 20
+    tool: s3api
+    operation: multipart
+
+test_8:
+    TEST_ID: TEST-36222
+    object_size:
+        start: 256Gib
+        end: 512Gib
+    part_range:
+        start: 700
+        end: 800
+    min_runtime: 4d
+    sessions: 20
+    tool: s3api
+    operation: multipart
+
+test_9:
+    TEST_ID: TEST-36223
+    object_size:
+        start: 512Gib
+        end: 1Tib
+    part_range:
+        start: 800
+        end: 1600
+    min_runtime: 5d
+    sessions: 25
+    tool: s3api
+    operation: multipart
+
+test_10:
+    TEST_ID: TEST-36224
+    object_size:
+        start: 1Tib
+        end: 2Tib
+    part_range:
+        start: 1600
+        end: 3200
+    min_runtime: 5d
+    sessions: 25
+    tool: s3api
+    operation: multipart
+
+test_11:
+    TEST_ID: TEST-36225
+    object_size:
+        start: 2Tib
+        end: 4Tib
+    part_range:
+        start: 3200
+        end: 6400
+    min_runtime: 5d
+    sessions: 30
+    tool: s3api
+    operation: multipart
+
+test_12:
+    TEST_ID: TEST-36226
+    object_size:
+        start: 4Tib
+        end: 5Tib
+    part_range:
+        start: 6400
+        end: 10000
+    min_runtime: 5d
+    sessions: 30
+    tool: s3api
+    operation: multipart

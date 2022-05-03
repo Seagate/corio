@@ -17,4 +17,4 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 
-"""src package."""
+"""s3 package."""

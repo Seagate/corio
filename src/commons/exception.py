@@ -13,8 +13,23 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
+#
 
-"""src package."""
+"""Exception module for corio tool."""
+
+
+class HealthCheckError(Exception):
+    """Class for health check error."""
+
+    def __init__(self, message=''):
+        """Initialize health check error."""
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        """Print error message."""
+        return self.message
