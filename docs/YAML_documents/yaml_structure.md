@@ -1,6 +1,6 @@
 YAML parser will receive a test yaml file as an input. 
 
-A test yaml file should have the following parameters based on workloads to execute:
+A test yaml file should have the following parameters based on workloads to run:
 
 * TEST_ID
 * object_size
@@ -15,7 +15,7 @@ A test yaml file should have the following parameters based on workloads to exec
 ---
 
 **TEST_ID** can be test ticket which is used for JIRA update or any unique string which is used to 
-create execution log file and for searching through execution logs.  
+create log file for searching through run logs.  
 
 **object_size** can be given as fixed values, list of values and range of values for test workload, 
 Range for object size can be mentioned using start and end.
@@ -27,7 +27,7 @@ can have the following keys in it.
 * start
 * end
 
-Start and End range parameters are **object_size**/**part_size** for which test will be executed.
+Start and End range parameters are **object_size**/**part_size** for which test will run.
 Sizes can be given from bytes, KB (1000 Bytes), MB (1000 KB) up to TB (1000 GB). We can also use 
 KiB (1024 Bytes) format as well.
 
