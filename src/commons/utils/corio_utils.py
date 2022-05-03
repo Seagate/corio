@@ -88,22 +88,21 @@ def log_cleanup() -> None:
 def cpu_memory_details() -> None:
     """Cpu and memory usage."""
     cpu_usages = ps.cpu_percent()
-    LOGGER.debug("Real Time CPU usage: %s", cpu_usages)
-    if cpu_usages > 80.0:
-        LOGGER.warning("CPU Usages are: %s", cpu_usages)
-        if cpu_usages > 95.0:
-            LOGGER.critical("usages greater then 95 percent hence tool may stop execution")
+    if cpu_usages > 85.0:
+        LOGGER.warning("Client: CPU Usages are: %s", cpu_usages)
+        if cpu_usages > 98.0:
+            LOGGER.critical("Client: CPU usages are greater then %s, hence tool may stop execution",
+                            cpu_usages)
     memory_usages = ps.virtual_memory().percent
-    LOGGER.debug("Real Time memory usages are: %s", memory_usages)
-    if memory_usages > 80.0:
-        LOGGER.warning("Memory Usages are: %s", memory_usages)
+    if memory_usages > 85.0:
+        LOGGER.warning("Client: Memory usages are: %s", memory_usages)
         available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
-        LOGGER.info("Available Memory is: %s", available_memory)
-        if memory_usages > 95.0:
-            LOGGER.critical("memory usages greater then 95 percent hence tool may stop execution")
+        LOGGER.warning("Available Memory is: %s", available_memory)
+        if memory_usages > 98.0:
+            LOGGER.critical("Client: Memory usages greater then %s, hence tool may stop execution",
+                            memory_usages)
             raise MemoryError(memory_usages)
-        top_processes = run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
-        LOGGER.debug(top_processes)
+        run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
 
 
 def run_local_cmd(cmd: str) -> tuple:
@@ -156,7 +155,6 @@ def create_file(file_name: str, size: int, data_type: Union[str, bytes] = bytes)
     else:
         with open(file_path, 'a+', encoding="utf-8") as sf_out:
             sf_out.write(b64encode(os.urandom(size)).decode("utf-8")[:size])
-    LOGGER.debug("File path: %s", file_path)
     return file_path
 
 

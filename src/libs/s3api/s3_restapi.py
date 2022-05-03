@@ -34,8 +34,6 @@ from src.commons.logger import get_logger
 class S3RestApi:
     """Basic Class for Creating Boto3 REST API Objects."""
 
-    session = get_session()
-
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
         Method initializes members of S3Lib.
@@ -56,26 +54,28 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        self.log = get_logger(os.environ.get("log_level", logging.INFO), kwargs.get("test_id"))
+        level = os.environ.get("log_level", logging.INFO)
+        if logging.getLevelName(level) == logging.DEBUG:
+            self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
+        else:
+            self.log = get_logger(level, kwargs.get("test_id"))
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""
-        if self.log.level == logging.DEBUG:
-            pass  # TODO: Enable debug level for aiobotocore packages.
+        session = get_session()
+        return session.create_client(service_name="s3",
+                                     use_ssl=self.use_ssl,
+                                     verify=False,
+                                     aws_access_key_id=self.access_key,
+                                     aws_secret_access_key=self.secret_key,
+                                     endpoint_url=self.endpoint_url,
+                                     region_name=self.region,
+                                     aws_session_token=self.aws_session_token,
+                                     config=AioConfig(connect_timeout=300,
+                                                      read_timeout=300,
+                                                      retries={"max_attempts":
+                                                               S3_CFG.s3api_retry}))
 
-        return self.session.create_client(service_name="s3",
-                                          use_ssl=self.use_ssl,
-                                          verify=False,
-                                          aws_access_key_id=self.access_key,
-                                          aws_secret_access_key=self.secret_key,
-                                          endpoint_url=self.endpoint_url,
-                                          region_name=self.region,
-                                          aws_session_token=self.aws_session_token,
-                                          config=AioConfig(connect_timeout=300,
-                                                           read_timeout=300,
-                                                           retries={"max_attempts":
-                                                                    S3_CFG.s3api_retry}))
-
-    def __del__(self):
-        """destructor for aiobotocore."""
-        del self.session
+    def __repr__(self):
+        """string representation of an S3API object."""
+        return "S3RestApi for asyncio operations using aiobotocore."
