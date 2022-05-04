@@ -104,3 +104,15 @@ class S3Bucket(S3RestApi):
             self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
+
+    def create_s3_bucket(self, bucket_name: str = None) -> dict:
+        """
+        Creating Bucket.
+
+        :param bucket_name: Name of the bucket.
+        :return: response.
+        """
+        response = self.get_boto3_client().create_bucket(Bucket=bucket_name)
+        self.log.info("Response: %s", str(response))
+
+        return response

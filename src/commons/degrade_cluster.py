@@ -24,11 +24,12 @@ import logging
 import os
 import time
 
-from config import CLUSTER_CFG
+from config import CLUSTER_CFG, S3_ENDPOINT
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import ClusterServices
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.commons.constants import DATA_POD_NAME_PREFIX, SERVER_POD_NAME_PREFIX
+
 LOGGER = logging.getLogger(ROOT)
 
 
@@ -45,13 +46,13 @@ def get_degraded_mode():
 
     except KeyError as error:
         LOGGER.error(error)
-        degraded_pods = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS: ")
+        degraded_pods = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS_CNT: ")
         degrade_pod = input("Do you want to degraded pods with this tool y/n.\nDEGRADE_POD: ")
         if degrade_pod.lower() == 'y':
             pod_prefix = input("Which pod you want to degraded data/server .\nPOD_PREFIX: ")
+            os.environ['POD_PREFIX'] = pod_prefix
         os.environ['DEGRADED_PODS_CNT'] = degraded_pods
         os.environ['DEGRADE_POD'] = degrade_pod
-        os.environ['POD_PREFIX'] = pod_prefix
 
 
 def activate_degraded_mode(options: dict):
@@ -62,13 +63,13 @@ def activate_degraded_mode(options: dict):
     """
     get_degraded_mode()
     bucket = f'object-op-{time.perf_counter_ns()}'.lower()
-    response = S3Bucket(access_key=options.access_key,
-                        secret_key=options.secret_key,
-                        endpoint_url=options.endpoint_url,
-                        use_ssl=options.use_ssl).create_bucket(bucket)
-    if response:
+    bucket_obj = S3Bucket(access_key=options.access_key,
+                          secret_key=options.secret_key,
+                          endpoint_url=S3_ENDPOINT,
+                          use_ssl=options.use_ssl)
+    resp = bucket_obj.create_s3_bucket(bucket)
+    if resp:
         os.environ["d_bucket"] = bucket
-
     if os.environ['DEGRADE_POD'].lower() == 'y':
         nodes = CLUSTER_CFG["nodes"]
         (host, user, password) = (None, None, None)
