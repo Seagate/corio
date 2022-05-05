@@ -75,6 +75,8 @@ class ClusterServices(RemoteHost):
         if status:
             for node in response["nodes"]:
                 pod_name = node["name"]
+                if not ClusterServices.degraded_pods:
+                    ClusterServices.degraded_pods = os.getenv('DEGRADED_PODS').split(',')
                 if pod_name in ClusterServices.degraded_pods:
                     LOGGER.info("Skipping Check for Pod %s as system is in degraded mode", pod_name)
                     continue

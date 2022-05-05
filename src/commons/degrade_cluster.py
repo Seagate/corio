@@ -46,13 +46,20 @@ def get_degraded_mode():
 
     except KeyError as error:
         LOGGER.error(error)
-        degraded_pods = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS_CNT: ")
-        degrade_pod = input("Do you want to degraded pods with this tool y/n.\nDEGRADE_POD: ")
+        degraded_pods_cnt = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS_CNT: ")
+        degrade_pod = input("Do you want to degraded pods with this tool y/n, Enter for no.\nDEGRADE_POD: ") or "n"
         if degrade_pod.lower() == 'y':
             pod_prefix = input("Which pod you want to degraded data/server .\nPOD_PREFIX: ")
             os.environ['POD_PREFIX'] = pod_prefix
-        os.environ['DEGRADED_PODS_CNT'] = degraded_pods
+        else:
+            try:
+                LOGGER.info("Name of degraded pods %s", os.environ['DEGRADED_PODS'])
+            except KeyError as error:
+                LOGGER.error(error)
+                degraded_pods = input("Enter name of pods with comma separated you degraded")
+        os.environ['DEGRADED_PODS_CNT'] = degraded_pods_cnt
         os.environ['DEGRADE_POD'] = degrade_pod
+        os.environ['DEGRADED_PODS'] = degraded_pods
 
 
 def activate_degraded_mode(options: dict):
