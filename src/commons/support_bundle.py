@@ -26,7 +26,7 @@ import time
 
 from config import CLUSTER_CFG
 from config import CORIO_CFG
-from src.commons.constants import MOUNT_DIR
+from src.commons.constants import CMN_LOG_DIR
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import ClusterServices
 from src.commons.utils.corio_utils import rotate_logs
@@ -34,15 +34,14 @@ from src.commons.utils.corio_utils import rotate_logs
 LOGGER = logging.getLogger(ROOT)
 
 
-def collect_upload_rotate_support_bundles(mount_path: str, run_id: str, max_sb: int = 0) -> tuple:
+def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> tuple:
     """Collect support bundle log and copy to NFS/LOCAL server and keep SB logs as per max_sb count.
 
-    :param mount_path: Path of mounted directory.
-    :param run_id: Unique id for each run.
+    :param dir_path: Path of common log directory.
     :param max_sb: maximum sb count to keep on nfs server.
     """
     try:
-        sb_dir = os.path.join(mount_path, "CorIO-Execution", str(run_id), "Support_Bundles")
+        sb_dir = os.path.join(dir_path, os.getenv("run_id"), "support_bundles")
         max_sb = max_sb if max_sb else CORIO_CFG["max_no_of_sb"]
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
@@ -50,9 +49,7 @@ def collect_upload_rotate_support_bundles(mount_path: str, run_id: str, max_sb: 
         host, user, password = None, None, None
         for node in nodes:
             if node["node_type"] == "master":
-                host = node["hostname"]
-                user = node["username"]
-                password = node["password"]
+                host, user, password = node["hostname"], node["username"], node["password"]
                 break
         if not host:
             LOGGER.critical(
@@ -70,15 +67,13 @@ def collect_upload_rotate_support_bundles(mount_path: str, run_id: str, max_sb: 
         return False, error
 
 
-def support_bundle_process(interval, sb_identifier):
+def support_bundle_process(interval: int) -> None:
     """
     Support bundle wrapper.
 
     :param interval: Interval in Seconds.
-    :param sb_identifier: Support Bundle Identifier.
     """
     while True:
         time.sleep(interval)
-        resp = collect_upload_rotate_support_bundles(MOUNT_DIR, sb_identifier,
-                                                     max_sb=CORIO_CFG["max_no_of_sb"])
+        resp = collect_upload_rotate_support_bundles(CMN_LOG_DIR, max_sb=CORIO_CFG["max_no_of_sb"])
         LOGGER.debug(resp)
