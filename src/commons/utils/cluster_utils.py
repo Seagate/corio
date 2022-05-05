@@ -27,7 +27,6 @@ import time
 
 from src.commons import commands as cmd
 from src.commons import constants as const
-from src.commons.constants import DATA_POD_NAME_PREFIX
 from src.commons.constants import ROOT
 from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import PodReplicaError, DeployReplicasetError, NumReplicaError
@@ -48,7 +47,7 @@ class ClusterServices(RemoteHost):
         status, output = self.execute_command(command, read_lines)
         return status, output
 
-    def get_pod_name(self, pod_prefix: str = const.POD_NAME_PREFIX):
+    def get_pod_name(self, pod_prefix: str = const.SERVER_POD_NAME_PREFIX):
         """Get pod name with given prefix."""
         status, output = self.exec_k8s_command(cmd.CMD_K8S_PODS_NAME, read_lines=True)
         if status:
@@ -380,7 +379,7 @@ class ClusterServices(RemoteHost):
         hostname = output.strip()
         return hostname
 
-    def degrade_nodes(self, pod_prefix=DATA_POD_NAME_PREFIX) -> None:
+    def degrade_nodes(self, pod_prefix=const.DATA_POD_NAME_PREFIX) -> bool:
         """
         degrade nodes as needed for execution by shutdown/deleting pod
         :param pod_prefix : pod type which needs to be degraded.

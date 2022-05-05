@@ -28,6 +28,7 @@ import os
 import random
 import sys
 import time
+from ast import literal_eval
 from collections import Counter
 from datetime import datetime
 from distutils.util import strtobool
@@ -122,9 +123,7 @@ def main(options):
 
     if options.degraded_mode:
         activate_degraded_mode(options)
-        options.number_of_nodes -= os.environ['DEGRADED_PODS']
-    else:
-        os.environ["d_bucket"] = False
+        options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
 
     if options.health_check:
         check_health()

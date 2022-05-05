@@ -21,6 +21,7 @@
 import os
 import random
 from datetime import timedelta, datetime
+from ast import literal_eval
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
@@ -64,10 +65,14 @@ class TestS3Object(S3Bucket, S3Object):
 
     async def execute_object_workload(self):
         """Execute object workload with given parameters."""
-        if not os.environ.get("options").get("degraded_mode"):
-            bucket = f'object-op-{self.test_id}-{time.perf_counter_ns()}'.lower()
+        if os.getenv("d_bucket"):
+            bucket = os.getenv("d_bucket")
+            self.log.info("Doing Object IO Operations with bucket %s", bucket)
+        else:
+            bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
             self.log.info("Create bucket %s", bucket)
             await self.create_bucket(bucket)
+
         while True:
             self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
