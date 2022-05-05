@@ -41,6 +41,7 @@ class ClusterServices(RemoteHost):
     """Cluster services class to perform service related operations."""
     kube_commands = ('create', 'apply', 'config', 'get', 'explain',
                      'autoscale', 'patch', 'scale', 'exec')
+    degraded_pods = []
 
     def exec_k8s_command(self, command, read_lines=False):
         """Execute command on remote k8s master."""
@@ -75,6 +76,9 @@ class ClusterServices(RemoteHost):
         if status:
             for node in response["nodes"]:
                 pod_name = node["name"]
+                if pod_name in ClusterServices.degraded_pods:
+                    LOGGER.info("Skipping Check for Pod %s as system is in degraded mode", pod_name)
+                    continue
                 services = node["svcs"]
                 for service in services:
                     if service["status"] != "started":
@@ -397,5 +401,6 @@ class ClusterServices(RemoteHost):
             LOGGER.info("Deleting pod %s", pod_name)
             self.create_pod_replicas(num_replica=0, pod_name=pod_name)
             LOGGER.info("Shutdown/deleted pod %s for host %s with replicas=0", pod_name, hostname)
+            ClusterServices.degraded_pods.append(pod_name)
         LOGGER.info("All pods shutdown successfully")
         return True
