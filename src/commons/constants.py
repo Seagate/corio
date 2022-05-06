@@ -45,7 +45,9 @@ POD_NAME_PREFIX = "cortx-server"
 HAX_CONTAINER_NAME = "cortx-hax"
 NAMESPACE = "default"
 
-K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
+K8S_SB_SCRIPT = "logs-cortx-cloud.sh"
+K8S_CFT_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud"
+K8S_RE_SCRIPTS_PATH = "/root/cortx-k8s/k8_cortx_cloud"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.

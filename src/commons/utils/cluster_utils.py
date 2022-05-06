@@ -103,18 +103,27 @@ class ClusterServices(RemoteHost):
         :param dir_path: local directory path to copy support bundles.
         """
         LOGGER.info("Support bundle collection is started.")
+        # Check service script path exists.
+        script_path, file_name = None, None
+        if (self.path_exists(const.K8S_CFT_SCRIPTS_PATH) and const.K8S_SB_SCRIPT in
+                self.list_dirs(const.K8S_CFT_SCRIPTS_PATH)):
+            script_path = const.K8S_CFT_SCRIPTS_PATH
+        elif (self.path_exists(const.K8S_RE_SCRIPTS_PATH) and const.K8S_SB_SCRIPT in
+              self.list_dirs(const.K8S_RE_SCRIPTS_PATH)):
+            script_path = const.K8S_RE_SCRIPTS_PATH
+        else:
+            assert script_path, f"Script {const.K8S_SB_SCRIPT} missing to collect SB log's in: " \
+                                f"'CFT:{const.K8S_CFT_SCRIPTS_PATH}/RE:{const.K8S_RE_SCRIPTS_PATH}"
         status, response = self.exec_k8s_command(cmd.CMD_GENERATE_CLSTR_LOGS.format(
-            const.K8S_SCRIPTS_PATH), read_lines=True)
-        if status:
-            LOGGER.debug(response)
-            for line in response:
-                if ".tar" in line:
-                    out = line.split()[1]
-                    file = out.strip('\"')
-                    remote_path = os.path.join(const.K8S_SCRIPTS_PATH, file)
-                    local_path = os.path.join(dir_path, file)
-                    self.download_file(local_path, remote_path)
-                    self.delete_file(remote_path)
-                    LOGGER.info("Support bundle '%s' generated and copied to %s.", file, local_path)
-                    return True, local_path
-        return False, f"Failed to generate support bundles. Response: {response}"
+            script_path, const.K8S_SB_SCRIPT), read_lines=True)
+        assert status, f"Failed to generate support bundle: {response}"
+        for line in response:
+            if ".tar" in line:
+                file_name = line.split()[1].strip('\"')
+        assert file_name, f"Failed to generate support bundles. Response: {response}"
+        remote_path = os.path.join(script_path, file_name)
+        local_path = os.path.join(dir_path, file_name)
+        self.download_file(local_path, remote_path)
+        self.delete_file(remote_path)
+        LOGGER.info("Support bundle '%s' generated and copied to %s.", file_name, local_path)
+        return os.path.exists(local_path), local_path

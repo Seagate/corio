@@ -373,3 +373,14 @@ class RemoteHost:
             return False
         finally:
             self.disconnect()
+
+    def list_dirs(self, remote_path: str) -> list:
+        """List all files and directories from remote path."""
+        self.connect()
+        try:
+            return self.sftp_obj.listdir(remote_path)
+        except IOError as err:
+            LOGGER.error(err)
+            return []
+        finally:
+            self.disconnect()
