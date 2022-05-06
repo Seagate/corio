@@ -358,3 +358,18 @@ class RemoteHost:
         self.sftp_obj.remove(remote_path)
         LOGGER.info("Removed file %s", remote_path)
         self.disconnect()
+
+    def path_exists(self, remote_path: str) -> bool:
+        """
+        Check remote file/directory path exists.
+
+        :param remote_path: Remote file/directory path.
+        """
+        self.connect()
+        try:
+            self.sftp_obj.stat(remote_path)
+            return True
+        except IOError:
+            return False
+        finally:
+            self.disconnect()
