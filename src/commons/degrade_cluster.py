@@ -56,7 +56,7 @@ def get_degraded_mode():
                 LOGGER.info("Name of degraded pods %s", os.environ['DEGRADED_PODS'])
             except KeyError as error:
                 LOGGER.warning(error)
-                degraded_pods = input("Enter name of pods with comma separated you degraded, Default is None") or None
+                degraded_pods = input("Enter name of degraded pods,or press enter key to skip")
         os.environ['DEGRADED_PODS_CNT'] = degraded_pods_cnt
         os.environ['DEGRADE_POD'] = degrade_pod
         os.environ['DEGRADED_PODS'] = degraded_pods
