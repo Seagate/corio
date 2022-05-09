@@ -42,7 +42,7 @@ CMN_LOG_DIR = os.path.join(MOUNT_DIR, "CorIO-Execution", socket.gethostname())
 
 # k8s constant for cortx.
 HAX_CONTAINER_NAME = "cortx-hax"
-NAMESPACE = "default"
+NAMESPACE = "cortx"
 DATA_POD_NAME_PREFIX = "cortx-data"
 SERVER_POD_NAME_PREFIX = "cortx-server"
 HA_POD_NAME_PREFIX = "cortx-ha"

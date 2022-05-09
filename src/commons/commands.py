@@ -27,7 +27,7 @@ KUBECTL_CMD = "kubectl {} {} -n {} {}"
 KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
 CMD_K8S_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker|awk '{print $1}'"
 CMD_POD_STATUS = "kubectl get pods"
-KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep '{}'"
+KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep {}"
 KUBECTL_GET_REPLICASET = "kubectl get rs | grep '{}'"
 KUBECTL_GET_POD_CONTAINERS = "kubectl get pods {} -o jsonpath='{{.spec.containers[*].name}}'"
 KUBECTL_GET_POD_IPS = 'kubectl get pods --no-headers -o ' \

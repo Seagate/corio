@@ -22,6 +22,7 @@
 """Module to degrade cluster nodes"""
 import logging
 import os
+import random
 import time
 
 from config import CLUSTER_CFG, S3_ENDPOINT
@@ -57,9 +58,9 @@ def get_degraded_mode():
             except KeyError as error:
                 LOGGER.warning(error)
                 degraded_pods = input("Enter name of degraded pods,or press enter key to skip")
+                os.environ['DEGRADED_PODS'] = degraded_pods
         os.environ['DEGRADED_PODS_CNT'] = degraded_pods_cnt
         os.environ['DEGRADE_POD'] = degrade_pod
-        os.environ['DEGRADED_PODS'] = degraded_pods
 
 
 def activate_degraded_mode(options: dict):
@@ -69,14 +70,22 @@ def activate_degraded_mode(options: dict):
     :return : None
     """
     get_degraded_mode()
-    bucket = f'object-op-{time.perf_counter_ns()}'.lower()
     bucket_obj = S3Bucket(access_key=options.access_key,
                           secret_key=options.secret_key,
                           endpoint_url=S3_ENDPOINT,
                           use_ssl=options.use_ssl)
-    resp = bucket_obj.create_s3_bucket(bucket)
-    if resp:
-        os.environ["d_bucket"] = bucket
+    if os.getenv('DEGRADE_POD') == 'n':
+        bucket_list = bucket_obj.list_s3_buckets()
+        if bucket_list:
+            os.environ["d_bucket"] = random.choice(bucket_list)
+        else:
+            LOGGER.critical("No Bucket exist")
+            raise "Bucket need to be created first for degraded mode IOs"
+    else:
+        bucket = f'object-op-{time.perf_counter_ns()}'.lower()
+        resp = bucket_obj.create_s3_bucket(bucket)
+        if resp:
+            os.environ["d_bucket"] = bucket
     if os.environ['DEGRADE_POD'].lower() == 'y':
         nodes = CLUSTER_CFG["nodes"]
         (host, user, password) = (None, None, None)

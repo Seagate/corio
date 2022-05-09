@@ -61,7 +61,7 @@ class ClusterServices(RemoteHost):
         status, pod_name = self.get_pod_name()
         if status:
             LOGGER.info("POD Name: %s", pod_name)
-            status, output = self.exec_k8s_command(cmd.CMD_K8S_CLUSTER_HEALTH.format_map(
+            status, output = self.exec_k8s_command(cmd.CMD_K8S_CLUSTER_HEALTH.format(
                 pod_name, const.HAX_CONTAINER_NAME, cmd.CMD_HCTL_STATUS))
             LOGGER.debug("Response of %s:\n %s ", cmd.CMD_HCTL_STATUS, output)
             if status:
@@ -153,7 +153,7 @@ class ClusterServices(RemoteHost):
             raise ValueError(
                 f"command parameter must be one of {ClusterServices.kube_commands}.")
         LOGGER.debug("Performing %s on service %s in namespace %s...", operation, pod, namespace)
-        k8s_cmd = cmd.KUBECTL_CMD.format_map(operation, pod, namespace, command_suffix)
+        k8s_cmd = cmd.KUBECTL_CMD.format(operation, pod, namespace, command_suffix)
         status, resp = self.execute_command(k8s_cmd, **kwargs)
         if decode and status:
             resp = (resp.decode("utf8")).strip()
@@ -196,7 +196,7 @@ class ClusterServices(RemoteHost):
                     pod_list.append(lines.strip())
 
         for pod in pod_list:
-            k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format_map(pod)
+            k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format(pod)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             if status:
                 pod_containers[pod] = output
@@ -218,12 +218,12 @@ class ClusterServices(RemoteHost):
             resp = self.get_deploy_replicaset(pod_name)
             deploy = resp[1]
         LOGGER.info("Scaling %s replicas for deployment %s", num_replica, deploy)
-        k8s_cmd = cmd.KUBECTL_CREATE_REPLICA.format_map(num_replica, deploy)
+        k8s_cmd = cmd.KUBECTL_CREATE_REPLICA.format(num_replica, pod_name)
         output = self.execute_command(command=k8s_cmd, read_lines=True)
         LOGGER.info("Response: %s", output)
         time.sleep(60)
         LOGGER.info("Check if pod of deployment %s exists", deploy)
-        k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format_map(deploy)
+        k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(deploy)
         status, output = self.execute_command(command=k8s_cmd, read_lines=True)
         LOGGER.info("Deployment %s after POD %s Replica", status, deploy)
         if not status:
@@ -238,11 +238,12 @@ class ClusterServices(RemoteHost):
         """
         try:
             LOGGER.info("Getting details of pod %s", pod_name)
-            k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format_map(pod_name)
+            k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(pod_name)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             LOGGER.info("Status %s,Response: %s", status, output)
-            output = output[-1].split(',')
-            deploy = output.split('=')[-1]
+            output = output.split(',')[-1]
+            pod_template_hash = output.split('=')[-1]
+            deploy = output[0].split(' ')[0].split(pod_template_hash)[0].rstrip('-')
             replicaset = deploy + "-" + output[-1].split('=')[-1]
             return True, deploy, replicaset
         except DeployReplicasetError as error:
@@ -259,7 +260,7 @@ class ClusterServices(RemoteHost):
         """
         try:
             LOGGER.info("Getting details of replicaset %s", replicaset)
-            k8s_cmd = cmd.KUBECTL_GET_REPLICASET.format_map(replicaset)
+            k8s_cmd = cmd.KUBECTL_GET_REPLICASET.format(replicaset)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             LOGGER.info("Status %s, Response: %s", status, output)
             LOGGER.info("Desired replicas: %s \nCurrent replicas: %s \nReady replicas: %s",
@@ -280,12 +281,12 @@ class ClusterServices(RemoteHost):
         """
         try:
             LOGGER.info("Recovering deployment using kubectl")
-            k8s_cmd = cmd.KUBECTL_RECOVER_DEPLOY.format_map(backup_path)
+            k8s_cmd = cmd.KUBECTL_RECOVER_DEPLOY.format(backup_path)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             LOGGER.info("Status %s, Response: %s", status, output)
             time.sleep(60)
             LOGGER.info("Check if pod of deployment %s exists", deployment_name)
-            k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format_map(deployment_name)
+            k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(deployment_name)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             return status, output
         except K8sDeploymentRecoverError as error:
@@ -304,7 +305,7 @@ class ClusterServices(RemoteHost):
             filename = deployment_name + "_backup.yaml"
             backup_path = os.path.join("/root", filename)
             LOGGER.info("Taking backup for deployment %s", deployment_name)
-            k8s_cmd = cmd.KUBECTL_DEPLOY_BACKUP.format_map(deployment_name, backup_path)
+            k8s_cmd = cmd.KUBECTL_DEPLOY_BACKUP.format(deployment_name, backup_path)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             LOGGER.debug("Backup for %s is stored at %s", deployment_name, backup_path)
             LOGGER.info("Status %s: Response: %s", status, output)
@@ -339,7 +340,7 @@ class ClusterServices(RemoteHost):
         :param: container_prefix: Prefix to define container category
         :return: list
         """
-        k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format_map(pod_name)
+        k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format(pod_name)
         _, output = self.execute_command(command=k8s_cmd, read_lines=True)
         output = output.split()
         container_list = []
@@ -376,9 +377,9 @@ class ClusterServices(RemoteHost):
         :return: str
         """
         LOGGER.info("Getting pod hostname for pod %s", pod_name)
-        k8s_cmd = cmd.KUBECTL_GET_POD_HOSTNAME.format_map(pod_name)
+        k8s_cmd = cmd.KUBECTL_GET_POD_HOSTNAME.format(pod_name)
         _, output = self.execute_command(command=k8s_cmd, read_lines=True)
-        hostname = output.strip()
+        hostname = output[0]
         return hostname
 
     def degrade_nodes(self, pod_prefix=const.DATA_POD_NAME_PREFIX) -> bool:
@@ -387,7 +388,7 @@ class ClusterServices(RemoteHost):
         :param pod_prefix : pod type which needs to be degraded.
         """
         LOGGER.info("Setting the current namespace")
-        k8s_cmd = cmd.KUBECTL_SET_CONTEXT.format_map(const.NAMESPACE)
+        k8s_cmd = cmd.KUBECTL_SET_CONTEXT.format(const.NAMESPACE)
         status, resp_ns = self.execute_command(command=k8s_cmd,
                                                read_lines=True)
         if status:
