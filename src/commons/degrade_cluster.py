@@ -45,9 +45,9 @@ def get_degraded_mode():
         LOGGER.info("POD prefix which need to be degraded %s", os.environ['POD_PREFIX'])
 
     except KeyError as error:
-        LOGGER.error(error)
+        LOGGER.warning(error)
         degraded_pods_cnt = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS_CNT: ")
-        degrade_pod = input("Do you want to degraded pods with this tool y/n, Enter for no.\nDEGRADE_POD: ") or "n"
+        degrade_pod = input("Degrade pods with CORIO y/n, Default is n.\nDEGRADE_POD: ") or "n"
         if degrade_pod.lower() == 'y':
             pod_prefix = input("Which pod you want to degraded data/server .\nPOD_PREFIX: ")
             os.environ['POD_PREFIX'] = pod_prefix
@@ -55,8 +55,8 @@ def get_degraded_mode():
             try:
                 LOGGER.info("Name of degraded pods %s", os.environ['DEGRADED_PODS'])
             except KeyError as error:
-                LOGGER.error(error)
-                degraded_pods = input("Enter name of pods with comma separated you degraded")
+                LOGGER.warning(error)
+                degraded_pods = input("Enter name of pods with comma separated you degraded, Default is None") or None
         os.environ['DEGRADED_PODS_CNT'] = degraded_pods_cnt
         os.environ['DEGRADE_POD'] = degrade_pod
         os.environ['DEGRADED_PODS'] = degraded_pods
