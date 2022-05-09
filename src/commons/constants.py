@@ -22,6 +22,7 @@
 """All common constants and params for corio."""
 
 import os
+import socket
 from datetime import datetime
 
 
@@ -33,16 +34,20 @@ CLUSTER_CFG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
 S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
 CORIO_CFG_PATH = os.path.join(CONFIG_DIR, "corio_config.yaml")
 S3_TOOL_PATH = os.path.join(CONFIG_DIR, 's3', "s3_tools.yaml")
-MOUNT_DIR = os.path.join("/root", "nfs_share")
+MOUNT_DIR = os.path.join("/mnt", "nfs_share")
 DATA_DIR_PATH = os.path.join(CORIO_ROOT, DATA_DIR)
-
+LOG_DIR = os.path.join(CORIO_ROOT, "log")
+REPORTS_DIR = os.path.join(CORIO_ROOT, "reports")
+CMN_LOG_DIR = os.path.join(MOUNT_DIR, "CorIO-Execution", socket.gethostname())
 
 # k8s constant for cortx.
 POD_NAME_PREFIX = "cortx-server"
 HAX_CONTAINER_NAME = "cortx-hax"
 NAMESPACE = "default"
 
-K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
+K8S_SB_SCRIPT = "logs-cortx-cloud.sh"
+K8S_CFT_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud"
+K8S_RE_SCRIPTS_PATH = "/root/cortx-k8s/k8_cortx_cloud"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.

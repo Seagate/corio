@@ -27,7 +27,6 @@ CMD_K8S_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=work
 CMD_K8S_CLUSTER_HEALTH = "kubectl exec -it {} -c {} -- {}"
 CMD_K8S_PODS_NAME = "kubectl get pods -o=custom-columns=NAME:.metadata.name"
 CMD_HCTL_STATUS = "hctl status --json"
-CLSTR_LOGS_CMD = "cd {}; sh logs-cortx-cloud.sh"
-CMD_GENERATE_CLSTR_LOGS = "cd {}; sh logs-cortx-cloud.sh"
+CMD_GENERATE_CLSTR_LOGS = "cd {}; sh {}"
 # System commands.
 CMD_MOUNT = "mount -t nfs {} {}"

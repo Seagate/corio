@@ -36,10 +36,9 @@ import psutil as ps
 
 from config import CORIO_CFG
 from src.commons.commands import CMD_MOUNT
-from src.commons.constants import DATA_DIR_PATH
-from src.commons.constants import KB
-from src.commons.constants import KIB
-from src.commons.constants import MOUNT_DIR
+from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR
+from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
+from src.commons.constants import KB, KIB
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -53,27 +52,26 @@ def log_cleanup() -> None:
     Create directory inside reports and copy all old report's in it.
     """
     LOGGER.info("Backup all old execution logs into current timestamp directory.")
-    log_dir = os.path.join(os.getcwd(), 'log')
     now = str(datetime.now()).replace(' ', '-').replace(":", "_").replace(".", "_")
-    if os.path.isdir(log_dir):
-        latest = os.path.join(log_dir, 'latest')
+    if os.path.isdir(LOG_DIR):
+        latest = os.path.join(LOG_DIR, 'latest')
         if os.path.isdir(latest):
             log_list = glob.glob(latest + "/*")
             if log_list:
-                os.rename(latest, os.path.join(log_dir, now))
-                LOGGER.info("Backup directory: %s", os.path.join(log_dir, now))
+                os.rename(latest, os.path.join(LOG_DIR, now))
+                LOGGER.info("Backup directory: %s", os.path.join(LOG_DIR, now))
             if not os.path.isdir(latest):
                 os.makedirs(latest)
         else:
             os.makedirs(latest)
     else:
-        os.makedirs(os.path.join(log_dir, 'latest'))
+        LOGGER.info("Created log directory '%s'", )
+        os.makedirs(os.path.join(LOG_DIR, 'latest'))
     LOGGER.info("Backup all old report into current timestamp directory.")
-    reports_dir = os.path.join(os.getcwd(), "reports")
-    if os.path.isdir(reports_dir):
-        report_list = glob.glob(reports_dir + "/*")
+    if os.path.isdir(REPORTS_DIR):
+        report_list = glob.glob(REPORTS_DIR + "/*")
         if report_list:
-            now_dir = os.path.join(reports_dir, now)
+            now_dir = os.path.join(REPORTS_DIR, now)
             if not os.path.isdir(now_dir):
                 os.makedirs(now_dir)
             for file in report_list:
@@ -82,7 +80,7 @@ def log_cleanup() -> None:
                     os.rename(file, os.path.join(now_dir, os.path.basename(fpath)))
             LOGGER.info("Backup directory: %s", now_dir)
     else:
-        os.makedirs(reports_dir)
+        os.makedirs(REPORTS_DIR)
 
 
 def cpu_memory_details() -> None:
@@ -257,7 +255,6 @@ def decode_bytes_to_string(text):
 def setup_environment():
     """Prepare client for workload execution with CORIO."""
     LOGGER.info("Setting up environment to start execution!!")
-    # backup old execution logs.
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
     assert ret, "Error while Mounting NFS directory"
     if os.path.exists(DATA_DIR_PATH):
@@ -265,6 +262,25 @@ def setup_environment():
     os.makedirs(DATA_DIR_PATH, exist_ok=True)
     LOGGER.debug("Data directory path created: %s", DATA_DIR_PATH)
     LOGGER.info("environment setup completed.")
+
+
+def store_logs_to_nfs_local_server():
+    """Copy/Store workload, support bundle and client/server resource log to local/NFS server."""
+    # Copy workload execution logs to nfs/local server.
+    latest = os.path.join(LOG_DIR, 'latest')
+    if os.path.exists(latest):
+        shutil.copytree(latest, os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "log", "latest"))
+    # Copy reports to nfs/local server.
+    reports = glob.glob(f"{REPORTS_DIR}/*.*")
+    svr_report_dir = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "reports")
+    if not os.path.exists(svr_report_dir):
+        os .makedirs(svr_report_dir)
+    for report in reports:
+        shutil.copyfile(report, os.path.join(svr_report_dir, os.path.basename(report)))
+    LOGGER.info("All logs copied to %s", os.path.join(CMN_LOG_DIR, os.getenv("run_id")))
+    # Cleaning up TestData.
+    if os.path.exists(DATA_DIR_PATH):
+        shutil.rmtree(DATA_DIR_PATH)
 
 
 class RemoteHost:
@@ -342,3 +358,29 @@ class RemoteHost:
         self.sftp_obj.remove(remote_path)
         LOGGER.info("Removed file %s", remote_path)
         self.disconnect()
+
+    def path_exists(self, remote_path: str) -> bool:
+        """
+        Check remote file/directory path exists.
+
+        :param remote_path: Remote file/directory path.
+        """
+        self.connect()
+        try:
+            self.sftp_obj.stat(remote_path)
+            return True
+        except IOError:
+            return False
+        finally:
+            self.disconnect()
+
+    def list_dirs(self, remote_path: str) -> list:
+        """List all files and directories from remote path."""
+        self.connect()
+        try:
+            return self.sftp_obj.listdir(remote_path)
+        except IOError as err:
+            LOGGER.error(err)
+            return []
+        finally:
+            self.disconnect()

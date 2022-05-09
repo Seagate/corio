@@ -26,7 +26,6 @@ import logging
 import multiprocessing
 import os
 import random
-import shutil
 import sys
 import time
 from collections import Counter
@@ -37,13 +36,11 @@ from pprint import pformat
 import munch
 import schedule
 
-from config import CLUSTER_CFG
 from config import S3_CFG, CORIO_CFG
 from src.commons.cluster_health import check_health
 from src.commons.cluster_health import health_check_process
-from src.commons.constants import DATA_DIR_PATH
+from src.commons.constants import CMN_LOG_DIR, LOG_DIR
 from src.commons.constants import DT_STRING
-from src.commons.constants import MOUNT_DIR
 from src.commons.constants import ROOT
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
@@ -54,6 +51,7 @@ from src.commons.support_bundle import support_bundle_process
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.utils.corio_utils import setup_environment
+from src.commons.utils.corio_utils import store_logs_to_nfs_local_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.workload_mapping import SCRIPT_MAPPING
@@ -65,17 +63,18 @@ LOGGER = logging.getLogger(ROOT)
 def initialize_loghandler(opt):
     """Initialize io driver runner logging with stream and file handlers."""
     # If log level provided then it will use DEBUG else will use default INFO.
-    if opt.verbose:
-        level = logging.getLevelName(logging.DEBUG)
-    else:
-        level = logging.getLevelName(logging.INFO)
-    os.environ["log_level"] = level
-    LOGGER.setLevel(level)
-    dir_path = os.path.join(os.path.join(os.getcwd(), "log", "latest"))
+    dir_path = os.path.join(os.path.join(LOG_DIR, "latest"))
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
     name = os.path.splitext(os.path.basename(__file__))[0]
-    name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.log")
+    if opt.verbose:
+        level = logging.getLevelName(logging.DEBUG)
+        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.DEBUG")
+    else:
+        level = logging.getLevelName(logging.INFO)
+        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
+    os.environ["log_level"] = level
+    LOGGER.setLevel(level)
     StreamToLogger(name, LOGGER, stream=True)
 
 
@@ -108,74 +107,16 @@ def parse_args():
     return parser.parse_args()
 
 
-def main(options):
-    """
-    Main function for CORIO.
-
-    :param options: Parsed Arguments.
-    """
-    setup_environment()
-    pre_requisites(options)
-    jira_obj = options.test_plan
-    tests_details = {}
-    if jira_obj:
-        jira_obj = JiraApp()
-        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
-    workload_list = get_workload_list(options.test_input)
-    LOGGER.info("Test YAML Files to be executed : %s", workload_list)
-    parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
-    tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
-    corio_start_time = datetime.now()
-    LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
-    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
-    processes = schedule_execution_plan(parsed_input, options)
-    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
-                                              corio_start_time=corio_start_time, test_failed=None)
-    LOGGER.info("Report status update scheduled for every %s minutes", 30)
-    terminated_tp, test_ids = None, []
-    try:
-        start_processes(processes)
-        while True:
-            cpu_memory_details()
-            time.sleep(1)
-            schedule.run_pending()
-            if jira_obj:
-                jira_obj.update_jira_status(
-                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
-            terminated_tp = monitor_processes(processes)
-            if terminated_tp:
-                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
-                sys.exit()
-    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
-        LOGGER.exception(error)
-        terminated_tp = type(error).__name__
-        sys.exit()
-    finally:
-        terminate_processes(processes)
-        schedule.cancel_job(sched_job)
-        log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
-        if jira_obj:
-            jira_obj.update_jira_status(corio_start_time=corio_start_time,
-                                        tests_details=tests_to_execute, aborted=True,
-                                        terminated_tests=test_ids)
-        if options.support_bundle:
-            collect_upload_rotate_support_bundles(MOUNT_DIR, os.getenv("sb_identifier"))
-        collect_resource_utilisation(action="stop")
-        LOGGER.info("Cleaning up TestData")
-        if os.path.exists(DATA_DIR_PATH):
-            shutil.rmtree(DATA_DIR_PATH)
-
-
 def pre_requisites(options: munch.Munch):
     """Perform health check and start resource monitoring."""
+    setup_environment()
     # Check cluster is healthy to start execution.
     if options.health_check:
         check_health()
     # start resource utilisation.
     collect_resource_utilisation(action="start")
-    # support bundle identifier.
-    os.environ["sb_identifier"] = CLUSTER_CFG["nodes"][0]["hostname"] + DT_STRING if \
-        options.support_bundle else DT_STRING
+    # Unique id for each run.
+    os.environ["run_id"] = DT_STRING
 
 
 def get_parsed_input_details(flist: list, nodes: int) -> dict:
@@ -249,7 +190,7 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
         processes["support_bundle"] = multiprocessing.Process(target=support_bundle_process,
                                                               name="support_bundle",
                                                               args=(CORIO_CFG.sb_interval_mins * 60,
-                                                                    os.getenv("sb_identifier")))
+                                                                    ))
         LOGGER.info("Support bundle collection scheduled for every %s minutes",
                     CORIO_CFG.sb_interval_mins)
     if options.health_check:
@@ -309,7 +250,64 @@ def start_processes(processes: dict) -> None:
         LOGGER.info("Process started: %s", process)
 
 
+def main(options):
+    """
+    Main function for CORIO.
+
+    :param options: Parsed Arguments.
+    """
+    # Pre-requisite to start CORIO run.
+    pre_requisites(options)
+    jira_obj = options.test_plan
+    tests_details = {}
+    if jira_obj:
+        jira_obj = JiraApp()
+        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
+    workload_list = get_workload_list(options.test_input)
+    LOGGER.info("Test YAML Files to be executed : %s", workload_list)
+    parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
+    tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
+    corio_start_time = datetime.now()
+    LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
+    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
+    processes = schedule_execution_plan(parsed_input, options)
+    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
+                                              corio_start_time=corio_start_time, test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", 30)
+    terminated_tp, test_ids = None, []
+    try:
+        start_processes(processes)
+        while True:
+            cpu_memory_details()
+            time.sleep(1)
+            schedule.run_pending()
+            if jira_obj:
+                jira_obj.update_jira_status(
+                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
+            terminated_tp = monitor_processes(processes)
+            if terminated_tp:
+                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
+                sys.exit()
+    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
+        LOGGER.exception(error)
+        terminated_tp = type(error).__name__
+        sys.exit()
+    finally:
+        terminate_processes(processes)
+        schedule.cancel_job(sched_job)
+        log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
+        if jira_obj:
+            jira_obj.update_jira_status(corio_start_time=corio_start_time,
+                                        tests_details=tests_to_execute, aborted=True,
+                                        terminated_tests=test_ids)
+        if options.support_bundle:
+            collect_upload_rotate_support_bundles(CMN_LOG_DIR)
+        collect_resource_utilisation(action="stop")
+        store_logs_to_nfs_local_server()
+
+
 if __name__ == "__main__":
+    # backup old execution logs.
     log_cleanup()
     OPTS = parse_args()
     initialize_loghandler(OPTS)
