@@ -26,7 +26,7 @@ import shutil
 
 from config import CLUSTER_CFG
 from src.commons import constants as cm_cmd
-from src.commons.constants import MOUNT_DIR
+from src.commons.constants import CMN_LOG_DIR
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import RemoteHost
 from src.commons.utils.corio_utils import run_local_cmd
@@ -75,13 +75,13 @@ def collect_resource_utilisation(action: str):
             LOGGER.debug("worker response: %s", str(resp))
             resp = worker_obj.execute_command(cm_cmd.CMD_RUN_NMON)
             LOGGER.debug("worker response: %s", str(resp))
-    else:
+    if action == "stop":
         resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
         LOGGER.debug(resp)
         stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'),
                             key=os.path.getctime, reverse=True)[-1]
         LOGGER.info(stat_fpath)
-        dpath = os.path.join(MOUNT_DIR, "system_stats", "client")
+        dpath = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client")
         if not os.path.exists(dpath):
             os.makedirs(dpath)
         shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
@@ -94,7 +94,7 @@ def collect_resource_utilisation(action: str):
         resp = cluster_obj.execute_command(cm_cmd.CMD_NMON_FILE)
         filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
-        client_path = os.path.join(MOUNT_DIR, "system_stats", "server")
+        client_path = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server")
         cl_path = os.path.join(client_path, filename)
         if not os.path.exists(client_path):
             os.makedirs(client_path)
