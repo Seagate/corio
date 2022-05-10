@@ -21,9 +21,10 @@
 
 """Python Library to perform object operations using aiobotocore module."""
 
-import os
 import hashlib
+import os
 from typing import List
+
 from src.libs.s3api.s3_restapi import S3RestApi
 
 
@@ -45,9 +46,10 @@ class S3Object(S3RestApi):
         if file_path:
             with open(file_path, "rb") as f_obj:
                 body = f_obj.read()
+        self.s3_url = f"s3://{bucket}/{key}"
         async with self.get_client() as s3client:
             response = await s3client.put_object(Body=body, Bucket=bucket, Key=key)
-            self.log.info("upload_object s3://%s/%s Response: %s", bucket, key, response)
+            self.log.info("upload_object %s Response: %s", self.s3_url, response)
 
         return response
 
@@ -58,11 +60,13 @@ class S3Object(S3RestApi):
         :param bucket: Name of the bucket.
         :return: Response of the list objects.
         """
+        objects = []
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}"
             paginator = s3client.get_paginator('list_objects')
             async for result in paginator.paginate(Bucket=bucket):
-                objects = [c['Key'] for c in result.get('Contents', [])]
-                self.log.info("list_objects s3://%s Objects: %s", bucket, objects)
+                objects += [c['Key'] for c in result.get('Contents', [])]
+        self.log.info("list_objects %s Objects: %s", self.s3_url, objects)
 
         return objects
 
@@ -75,8 +79,9 @@ class S3Object(S3RestApi):
         :return: Response of delete object.
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}/{key}"
             response = await s3client.delete_object(Bucket=bucket, Key=key)
-            self.log.info("delete_object s3://%s/%s Response: %s", bucket, key, response)
+            self.log.info("delete_object %s Response: %s", self.s3_url, response)
 
         return response
 
@@ -91,8 +96,9 @@ class S3Object(S3RestApi):
         objects = [{'Key': key} for key in keys]
         self.log.info("Deleting %s", keys)
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}"
             response = await s3client.delete_objects(Bucket=bucket, Delete={'Objects': objects})
-            self.log.info("delete_objects s3://%s Response: %s", bucket, response)
+            self.log.info("delete_objects %s Response: %s", self.s3_url, response)
 
         return response
 
@@ -105,6 +111,7 @@ class S3Object(S3RestApi):
         :return: Response of head object.
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}/{key}"
             response = await s3client.head_object(Bucket=bucket, Key=key)
             self.log.info("head_object s3://%s/%s Response: %s", bucket, key, response)
 
@@ -120,11 +127,12 @@ class S3Object(S3RestApi):
         :return: response.
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}/{key}"
             if ranges:
                 response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
             else:
                 response = await s3client.get_object(Bucket=bucket, Key=key)
-            self.log.info("get_object s3://%s/%s Response: %s", bucket, key, response)
+            self.log.info("get_object %s Response: %s", self.s3_url, response)
 
         return response
 
@@ -140,8 +148,9 @@ class S3Object(S3RestApi):
         :return: Response of download object.
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}/{key}"
             response = await s3client.get_object(Bucket=bucket, Key=key)
-            self.log.info("download_object s3://%s/%s Response %s", bucket, key, response)
+            self.log.info("download_object %s Response %s", self.s3_url, response)
             async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
                 self.log.debug("Reading chunk length: %s", len(chunk))
@@ -150,7 +159,7 @@ class S3Object(S3RestApi):
                         file_obj.write(chunk)
                     chunk = await stream.read(chunk_size)
         if os.path.exists(file_path):
-            self.log.info("download_object s3://%s/%s Path: %s Response %s", bucket, key, file_path,
+            self.log.info("download_object %s Path: %s Response %s", self.s3_url, file_path,
                           response)
 
         return response
@@ -167,11 +176,11 @@ class S3Object(S3RestApi):
         :return: Response of copy object.
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{src_bucket}/{src_key} to s3://{des_bucket}/{des_key}"
             response = await s3client.copy_object(Bucket=des_bucket,
                                                   CopySource=f'/{src_bucket}/{src_key}',
                                                   Key=des_key, **kwargs)
-            self.log.info("copy_object s3://%s/%s to s3://%s/%s Response %s", src_bucket, src_key,
-                          des_bucket, des_key, response)
+            self.log.info("copy_object  Response %s", self.s3_url)
 
         return response
 
@@ -187,11 +196,12 @@ class S3Object(S3RestApi):
         :param ranges: number of bytes to be read
         """
         async with self.get_client() as s3client:
+            self.s3_url = f"s3://{bucket}/{key}"
             if ranges:
                 response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
             else:
                 response = await s3client.get_object(Bucket=bucket, Key=key)
-            self.log.info("get_s3object_checksum s3://%s/%s Response %s", bucket, key, response)
+            self.log.info("get_s3object_checksum %s Response %s", self.s3_url, response)
             async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
                 file_hash = hashlib.sha256()
@@ -200,7 +210,7 @@ class S3Object(S3RestApi):
                     file_hash.update(chunk)
                     chunk = await stream.read(chunk_size)
         sha256_digest = file_hash.hexdigest()
-        self.log.debug("get_s3object_checksum s3://%s/%s, SHA-256: %s", bucket, key, sha256_digest)
+        self.log.debug("get_s3object_checksum %s, SHA-256: %s", self.s3_url, sha256_digest)
 
         return sha256_digest
 

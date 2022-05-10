@@ -302,7 +302,6 @@ def main(options):
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminated_tp = type(error).__name__
-        sys.exit()
     finally:
         terminate_processes(processes)
         schedule.cancel_job(sched_job)

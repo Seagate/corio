@@ -62,6 +62,7 @@ class TestS3Object(S3Bucket, S3Object):
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=broad-except
     async def execute_object_workload(self):
         """Execute object workload with given parameters."""
         if os.getenv("d_bucket"):
@@ -109,8 +110,8 @@ class TestS3Object(S3Bucket, S3Object):
                     await self.delete_object(bucket, file_name)
                     os.remove(file_path)
             except Exception as err:
-                self.log.exception(err)
-                raise err
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", bucket)
                 await self.delete_bucket(bucket, True)

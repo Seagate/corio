@@ -36,6 +36,7 @@ from src.commons.logger import get_logger
 class S3RestApi:
     """Basic Class for Creating Boto3 REST API Objects."""
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
         Method initializes members of S3Lib.
@@ -56,6 +57,7 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
+        self.s3_url = None
         level = os.environ.get("log_level", logging.INFO)
         if logging.getLevelName(level) == logging.DEBUG:
             self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
