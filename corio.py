@@ -43,7 +43,7 @@ from src.commons.cluster_health import health_check_process
 from src.commons.constants import CMN_LOG_DIR, LOG_DIR
 from src.commons.constants import DT_STRING
 from src.commons.constants import ROOT
-from src.commons.degrade_cluster import activate_degraded_mode
+from src.commons.degrade_cluster import activate_degraded_mode, restore_pod
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
 from src.commons.report import log_status
@@ -111,72 +111,6 @@ def parse_args():
                         help="Degraded Mode, True/False")
     return parser.parse_args()
 
-
-def main(options):
-    """
-    Main function for CORIO.
-
-    :param options: Parsed Arguments.
-    """
-    LOGGER.info("Setting up environment!!")
-    # Check cluster is healthy to start execution.
-
-    if options.degraded_mode:
-        activate_degraded_mode(options)
-        options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
-
-    if options.health_check:
-        check_health()
-    setup_environment()
-    pre_requisites(options)
-    jira_obj = options.test_plan
-    tests_details = {}
-    if jira_obj:
-        jira_obj = JiraApp()
-        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
-    workload_list = get_workload_list(options.test_input)
-    LOGGER.info("Test YAML Files to be executed : %s", workload_list)
-    parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
-    tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
-    corio_start_time = datetime.now()
-    LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
-    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
-    processes = schedule_execution_plan(parsed_input, options)
-    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
-                                              corio_start_time=corio_start_time, test_failed=None)
-    LOGGER.info("Report status update scheduled for every %s minutes", 30)
-    terminated_tp, test_ids = None, []
-    try:
-        start_processes(processes)
-        while True:
-            cpu_memory_details()
-            time.sleep(1)
-            schedule.run_pending()
-            if jira_obj:
-                jira_obj.update_jira_status(
-                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
-            terminated_tp = monitor_processes(processes)
-            if terminated_tp:
-                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
-                sys.exit()
-    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
-        LOGGER.exception(error)
-        terminated_tp = type(error).__name__
-        sys.exit()
-    finally:
-        terminate_processes(processes)
-        schedule.cancel_job(sched_job)
-        log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
-        if jira_obj:
-            jira_obj.update_jira_status(corio_start_time=corio_start_time,
-                                        tests_details=tests_to_execute, aborted=True,
-                                        terminated_tests=test_ids)
-        if options.support_bundle:
-            collect_upload_rotate_support_bundles(MOUNT_DIR, os.getenv("sb_identifier"))
-        collect_resource_utilisation(action="stop")
-        LOGGER.info("Cleaning up TestData")
-        if os.path.exists(DATA_DIR_PATH):
-            shutil.rmtree(DATA_DIR_PATH)
 
 
 def pre_requisites(options: munch.Munch):
@@ -321,14 +255,22 @@ def start_processes(processes: dict) -> None:
         process.start()
         LOGGER.info("Process started: %s", process)
 
-
 def main(options):
     """
     Main function for CORIO.
 
     :param options: Parsed Arguments.
     """
-    # Pre-requisite to start CORIO run.
+    LOGGER.info("Setting up environment!!")
+    # Check cluster is healthy to start execution.
+
+    if options.degraded_mode:
+        activate_degraded_mode(options)
+        options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
+
+    if options.health_check:
+        check_health()
+    setup_environment()
     pre_requisites(options)
     jira_obj = options.test_plan
     tests_details = {}
@@ -376,6 +318,8 @@ def main(options):
             collect_upload_rotate_support_bundles(CMN_LOG_DIR)
         collect_resource_utilisation(action="stop")
         store_logs_to_nfs_local_server()
+        if options.degraded_mode:
+            restore_pod()
 
 
 if __name__ == "__main__":

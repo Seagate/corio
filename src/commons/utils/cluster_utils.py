@@ -71,13 +71,18 @@ class ClusterServices(RemoteHost):
 
     def check_cluster_health(self):
         """Check the cluster health."""
+        if len(ClusterServices.degraded_pods) == 0:
+            ClusterServices.degraded_pods = os.getenv('DEGRADED_PODS').split(',')
+            LOGGER.info("Degraded pods assigned %s", ClusterServices.degraded_pods)
+        else:
+            LOGGER.info("DEGRADED_PODS are following %s", os.environ['DEGRADED_PODS'])
+
         status, response = self.get_hctl_status()
         if status:
             for node in response["nodes"]:
                 pod_name = node["name"]
-                if not ClusterServices.degraded_pods:
-                    ClusterServices.degraded_pods = os.getenv('DEGRADED_PODS').split(',')
-                if pod_name in ClusterServices.degraded_pods:
+                pod = pod_name[:10] + pod_name[23:]
+                if pod in ClusterServices.degraded_pods:
                     LOGGER.info("Skipping Check for Pod %s as system is in degraded mode", pod_name)
                     continue
                 services = node["svcs"]
@@ -218,16 +223,18 @@ class ClusterServices(RemoteHost):
             resp = self.get_deploy_replicaset(pod_name)
             deploy = resp[1]
         LOGGER.info("Scaling %s replicas for deployment %s", num_replica, deploy)
-        k8s_cmd = cmd.KUBECTL_CREATE_REPLICA.format(num_replica, pod_name)
+        k8s_cmd = cmd.KUBECTL_CREATE_REPLICA.format(num_replica, deploy)
         output = self.execute_command(command=k8s_cmd, read_lines=True)
         LOGGER.info("Response: %s", output)
         time.sleep(60)
-        LOGGER.info("Check if pod of deployment %s exists", deploy)
+        LOGGER.info("Check if deployment pod %s exists", deploy)
         k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(deploy)
         status, output = self.execute_command(command=k8s_cmd, read_lines=True)
-        LOGGER.info("Deployment %s after POD %s Replica", status, deploy)
-        if not status:
+        LOGGER.info("Deployment exists is: %s after POD: %s Replica set to %s", status, deploy, num_replica)
+        if (num_replica == 0 and status) or (num_replica == 1 and not status):
             raise PodReplicaError(output)
+        else:
+            os.environ['DEGRADED_PODS'] = deploy
 
     def get_deploy_replicaset(self, pod_name):
         """
@@ -241,8 +248,7 @@ class ClusterServices(RemoteHost):
             k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(pod_name)
             status, output = self.execute_command(command=k8s_cmd, read_lines=True)
             LOGGER.info("Status %s,Response: %s", status, output)
-            output = output.split(',')[-1]
-            pod_template_hash = output.split('=')[-1]
+            pod_template_hash = output[-1].split('=')[-1].rstrip('\n')
             deploy = output[0].split(' ')[0].split(pod_template_hash)[0].rstrip('-')
             replicaset = deploy + "-" + output[-1].split('=')[-1]
             return True, deploy, replicaset
@@ -403,6 +409,5 @@ class ClusterServices(RemoteHost):
             LOGGER.info("Deleting pod %s", pod_name)
             self.create_pod_replicas(num_replica=0, pod_name=pod_name)
             LOGGER.info("Shutdown/deleted pod %s for host %s with replicas=0", pod_name, hostname)
-            ClusterServices.degraded_pods.append(pod_name)
         LOGGER.info("All pods shutdown successfully")
         return True

@@ -87,19 +87,32 @@ def activate_degraded_mode(options: dict):
         if resp:
             os.environ["d_bucket"] = bucket
     if os.environ['DEGRADE_POD'].lower() == 'y':
-        nodes = CLUSTER_CFG["nodes"]
-        (host, user, password) = (None, None, None)
-        for node in nodes:
-            if node["node_type"] == "master":
-                host = node["hostname"]
-                user = node["username"]
-                password = node["password"]
-                break
-        logical_node = ClusterServices(host=host,
-                                       user=user,
-                                       password=password)
+        logical_node = get_logical_node()
+        os.environ["logical_node"] = str(logical_node)
         if os.environ['POD_PREFIX'].lower() == 'data':
             pod_prefix = DATA_POD_NAME_PREFIX
         elif os.environ['POD_PREFIX'].lower() == 'server':
             pod_prefix = SERVER_POD_NAME_PREFIX
         logical_node.degrade_nodes(pod_prefix)
+
+
+def get_logical_node() -> object:
+    """Create cluster services object and returns object"""
+    nodes = CLUSTER_CFG["nodes"]
+    (host, user, password) = (None, None, None)
+    for node in nodes:
+        if node["node_type"] == "master":
+            host = node["hostname"]
+            user = node["username"]
+            password = node["password"]
+            break
+    logical_node = ClusterServices(host=host,
+                                   user=user,
+                                   password=password)
+    return logical_node
+
+
+def restore_pod():
+    """ Restore pod which is already degraded."""
+    logical_node = get_logical_node()
+    logical_node.create_pod_replicas(num_replica=1, deploy=os.getenv('DEGRADED_PODS'))
