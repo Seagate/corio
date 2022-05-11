@@ -28,6 +28,7 @@ import os
 import random
 import sys
 import time
+from ast import literal_eval
 from collections import Counter
 from datetime import datetime
 from distutils.util import strtobool
@@ -42,6 +43,7 @@ from src.commons.cluster_health import health_check_process
 from src.commons.constants import CMN_LOG_DIR, LOG_DIR
 from src.commons.constants import DT_STRING
 from src.commons.constants import ROOT
+from src.commons.degrade_cluster import activate_degraded_mode, restore_pod
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
 from src.commons.report import log_status
@@ -104,7 +106,11 @@ def parse_args():
                         default=False, help="Health Check.")
     parser.add_argument("-tp", "--test_plan", type=str, default=None,
                         help="jira xray test plan id")
+    parser.add_argument("-dm", "--degraded_mode", type=lambda x: bool(strtobool(str(x))),
+                        default=False,
+                        help="Degraded Mode, True/False")
     return parser.parse_args()
+
 
 
 def pre_requisites(options: munch.Munch):
@@ -249,14 +255,19 @@ def start_processes(processes: dict) -> None:
         process.start()
         LOGGER.info("Process started: %s", process)
 
-
 def main(options):
     """
     Main function for CORIO.
 
     :param options: Parsed Arguments.
     """
-    # Pre-requisite to start CORIO run.
+    LOGGER.info("Setting up environment!!")
+    # Check cluster is healthy to start execution.
+
+    if options.degraded_mode:
+        activate_degraded_mode(options)
+        options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
+    setup_environment()
     pre_requisites(options)
     jira_obj = options.test_plan
     tests_details = {}
@@ -304,6 +315,8 @@ def main(options):
             collect_upload_rotate_support_bundles(CMN_LOG_DIR)
         collect_resource_utilisation(action="stop")
         store_logs_to_nfs_local_server()
+        if options.degraded_mode:
+            restore_pod()
 
 
 if __name__ == "__main__":
