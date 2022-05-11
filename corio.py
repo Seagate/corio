@@ -267,9 +267,6 @@ def main(options):
     if options.degraded_mode:
         activate_degraded_mode(options)
         options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
-
-    if options.health_check:
-        check_health()
     setup_environment()
     pre_requisites(options)
     jira_obj = options.test_plan

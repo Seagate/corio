@@ -128,4 +128,3 @@ class S3Bucket(S3RestApi):
         self.log.info("Response: %s", str(response))
         bucket_list = [bucket['Name'] for bucket in response['Buckets']]
         return bucket_list
-

@@ -230,11 +230,11 @@ class ClusterServices(RemoteHost):
         LOGGER.info("Check if deployment pod %s exists", deploy)
         k8s_cmd = cmd.KUBECTL_GET_POD_DETAILS.format(deploy)
         status, output = self.execute_command(command=k8s_cmd, read_lines=True)
-        LOGGER.info("Deployment exists is: %s after POD: %s Replica set to %s", status, deploy, num_replica)
+        LOGGER.info("Deployment exists is: %s after POD: %s Replica set to %s",
+                    status, deploy, num_replica)
         if (num_replica == 0 and status) or (num_replica == 1 and not status):
             raise PodReplicaError(output)
-        else:
-            os.environ['DEGRADED_PODS'] = deploy
+        os.environ['DEGRADED_PODS'] = deploy
 
     def get_deploy_replicaset(self, pod_name):
         """
