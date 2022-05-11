@@ -41,9 +41,13 @@ REPORTS_DIR = os.path.join(CORIO_ROOT, "reports")
 CMN_LOG_DIR = os.path.join(MOUNT_DIR, "CorIO-Execution", socket.gethostname())
 
 # k8s constant for cortx.
-POD_NAME_PREFIX = "cortx-server"
 HAX_CONTAINER_NAME = "cortx-hax"
-NAMESPACE = "default"
+NAMESPACE = "cortx"
+DATA_POD_NAME_PREFIX = "cortx-data"
+SERVER_POD_NAME_PREFIX = "cortx-server"
+HA_POD_NAME_PREFIX = "cortx-ha"
+CONTROL_POD_NAME_PREFIX = "cortx-control"
+CLIENT_POD_NAME_PREFIX = "cortx-client"
 
 K8S_SB_SCRIPT = "logs-cortx-cloud.sh"
 K8S_CFT_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud"
