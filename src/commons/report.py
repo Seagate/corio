@@ -23,7 +23,7 @@
 import logging
 import os
 from datetime import datetime
-from typing import Optional
+from typing import Union
 
 import pandas as pd
 
@@ -63,15 +63,15 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
                               "TEST_ID": value1['TEST_ID'],
                               "SESSIONS": int(value1['sessions'])}
                 convert_object_size(input_dict, value1)
-                update_tests_status(input_dict, corio_start_time, value, **kwargs)
+                update_tests_status(input_dict, corio_start_time, value1, **kwargs)
                 dataframe = dataframe.append(input_dict, ignore_index=True)
             # Convert sessions into integer.
             dataframe = dataframe.astype({"SESSIONS": 'int'})
-            status_file.write(f"\n\nTEST YAML FILE : {key}")
-            status_file.write(f'\n{dataframe}')
+            status_file.write(f"\n\nTEST YAML FILE : {key}\n")
+            dataframe.to_string(status_file)
 
 
-def convert_object_size(input_dict: dict, value: Optional[str, dict, list]) -> None:
+def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
     """Convert object size for reporting."""
     if isinstance(value['object_size'], list):
         input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
