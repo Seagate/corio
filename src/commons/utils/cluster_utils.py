@@ -40,7 +40,6 @@ class ClusterServices(RemoteHost):
     """Cluster services class to perform service related operations."""
     kube_commands = ('create', 'apply', 'config', 'get', 'explain',
                      'autoscale', 'patch', 'scale', 'exec')
-    degraded_pods = []
 
     def exec_k8s_command(self, command, read_lines=False):
         """Execute command on remote k8s master."""
@@ -71,18 +70,13 @@ class ClusterServices(RemoteHost):
 
     def check_cluster_health(self):
         """Check the cluster health."""
-        if len(ClusterServices.degraded_pods) == 0:
-            ClusterServices.degraded_pods = os.getenv('DEGRADED_PODS').split(',')
-            LOGGER.info("Degraded pods assigned %s", ClusterServices.degraded_pods)
-        else:
-            LOGGER.info("DEGRADED_PODS are following %s", os.environ['DEGRADED_PODS'])
 
         status, response = self.get_hctl_status()
         if status:
             for node in response["nodes"]:
                 pod_name = node["name"]
                 pod = pod_name[:10] + pod_name[23:]
-                if pod in ClusterServices.degraded_pods:
+                if pod in os.getenv('DEGRADED_PODS', '').split(','):
                     LOGGER.info("Skipping Check for Pod %s as system is in degraded mode", pod_name)
                     continue
                 services = node["svcs"]
