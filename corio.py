@@ -302,7 +302,7 @@ def main(options):
     finally:
         terminate_processes(processes)
         schedule.cancel_job(sched_job)
-        log_status(parsed_input, corio_start_time, terminated_tp, terminated_tests=test_ids)
+        log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)
         if jira_obj:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True,
