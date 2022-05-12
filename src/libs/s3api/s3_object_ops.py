@@ -31,6 +31,11 @@ from src.libs.s3api.s3_restapi import S3RestApi
 class S3Object(S3RestApi):
     """Class for object operations."""
 
+    def __init__(self, *args, **kwargs):
+        """Initializer for S3Object operations."""
+        super().__init__(*args, **kwargs)
+        self.s3_url = None
+
     async def upload_object(self, bucket: str, key: str, **kwargs) -> dict:
         """
         Uploading object to the Bucket, file_path or body is compulsory.
@@ -180,7 +185,7 @@ class S3Object(S3RestApi):
             response = await s3client.copy_object(Bucket=des_bucket,
                                                   CopySource=f'/{src_bucket}/{src_key}',
                                                   Key=des_key, **kwargs)
-            self.log.info("copy_object  Response %s", self.s3_url)
+            self.log.info("copy_object: %s,  Response %s", self.s3_url, response)
 
         return response
 

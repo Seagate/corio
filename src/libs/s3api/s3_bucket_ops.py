@@ -27,6 +27,11 @@ from src.libs.s3api.s3_restapi import S3RestApi
 class S3Bucket(S3RestApi):
     """Class for bucket operations."""
 
+    def __init__(self, *args, **kwargs):
+        """Initializer for S3Bucket operations."""
+        super().__init__(*args, **kwargs)
+        self.s3_url = None
+
     async def create_bucket(self, bucket_name: str) -> dict:
         """
         Creating Bucket.
@@ -110,7 +115,7 @@ class S3Bucket(S3RestApi):
 
     def create_s3_bucket(self, bucket_name: str = None) -> dict:
         """
-        Creating Bucket.
+        Creating s3 bucket.
 
         :param bucket_name: Name of the bucket.
         :return: response.
@@ -120,11 +125,10 @@ class S3Bucket(S3RestApi):
 
         return response
 
-    def list_s3_buckets(self) -> dict:
+    def list_s3_buckets(self) -> list:
         """
-        Creating Bucket.
+        List all s3 buckets.
 
-        :param bucket_name: Name of the bucket.
         :return: response.
         """
         response = self.get_boto3_client().list_buckets()

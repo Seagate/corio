@@ -27,6 +27,11 @@ from src.libs.s3api.s3_restapi import S3RestApi
 class S3MultiParts(S3RestApi):
     """Class for Multipart operations."""
 
+    def __init__(self, *args, **kwargs):
+        """Initializer for S3MultiParts operations."""
+        super().__init__(*args, **kwargs)
+        self.s3_url = None
+
     async def create_multipart_upload(self, bucket_name: str, obj_name: str) -> dict:
         """
         Request to initiate a multipart upload.
@@ -38,8 +43,7 @@ class S3MultiParts(S3RestApi):
         async with self.get_client() as client:
             self.s3_url = f"s3://{bucket_name}/{obj_name}"
             response = await client.create_multipart_upload(Bucket=bucket_name, Key=obj_name)
-            self.log.info("create_multipart_upload: %s/%s, Response: %s", bucket_name, obj_name,
-                          response)
+            self.log.info("create_multipart_upload: %s, Response: %s", self.s3_url, response)
 
         return response
 
@@ -60,7 +64,8 @@ class S3MultiParts(S3RestApi):
             self.s3_url = f"s3://{bucket_name}/{object_name}"
             response = await client.upload_part(Body=body, Bucket=bucket_name, Key=object_name,
                                                 UploadId=upload_id, PartNumber=part_number)
-            self.log.info("upload_part: %s, Response: %s", self.s3_url, response)
+            self.log.info("upload_part: %s, UploadID: %s, PartNumber: %s, Response: %s",
+                          self.s3_url, upload_id, part_number, response)
 
         return response
 
@@ -162,7 +167,7 @@ class S3MultiParts(S3RestApi):
             response = await client.upload_part_copy(Bucket=bucket_name, Key=object_name,
                                                      UploadId=upload_id, PartNumber=part_number,
                                                      CopySource=copy_source)
-            self.log.info("upload_part_copy: copy source: %s to %s/%s, Response: %s", copy_source,
-                          bucket_name, object_name, response)
+            self.log.info("upload_part_copy: copy source: %s to %s, Response: %s", copy_source,
+                          self.s3_url, response)
 
         return response

@@ -112,7 +112,6 @@ def parse_args():
     return parser.parse_args()
 
 
-
 def pre_requisites(options: munch.Munch):
     """Perform health check and start resource monitoring."""
     setup_environment()
@@ -176,6 +175,8 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
         # If jira update selected then will report missing workload test ids from jira TP.
         assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
                                        f"which are missing from jira tp: {tests_details.key()}"
+    if tests_to_execute:
+        LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
     return tests_to_execute
 
 
@@ -255,19 +256,16 @@ def start_processes(processes: dict) -> None:
         process.start()
         LOGGER.info("Process started: %s", process)
 
+
 def main(options):
     """
     Main function for CORIO.
 
     :param options: Parsed Arguments.
     """
-    LOGGER.info("Setting up environment!!")
-    # Check cluster is healthy to start execution.
-
     if options.degraded_mode:
         activate_degraded_mode(options)
         options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
-    setup_environment()
     pre_requisites(options)
     jira_obj = options.test_plan
     tests_details = {}
@@ -280,7 +278,6 @@ def main(options):
     tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
     corio_start_time = datetime.now()
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
-    LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
     processes = schedule_execution_plan(parsed_input, options)
     sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
                                               corio_start_time=corio_start_time, test_failed=None)
