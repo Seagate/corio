@@ -23,11 +23,11 @@
 
 import logging
 import os
-import boto3
 
-from botocore.config import Config
+import boto3
 from aiobotocore.config import AioConfig
 from aiobotocore.session import get_session
+from botocore.config import Config
 
 from config import S3_CFG
 from src.commons.logger import get_logger
@@ -76,7 +76,7 @@ class S3RestApi:
                                      config=AioConfig(connect_timeout=300,
                                                       read_timeout=300,
                                                       retries={"max_attempts":
-                                                                   S3_CFG.s3api_retry}))
+                                                               S3_CFG.s3api_retry}))
 
     def get_boto3_client(self):
         """Create s3 client for without asyncio operations.

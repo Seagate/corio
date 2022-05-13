@@ -66,6 +66,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         else:  # If duration not given then test will run for 100 Day
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=broad-except
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
         iteration = 1
@@ -98,8 +99,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
             except Exception as err:
-                self.log.exception(err)
-                raise err
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
