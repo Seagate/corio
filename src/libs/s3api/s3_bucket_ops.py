@@ -27,6 +27,11 @@ from src.libs.s3api.s3_restapi import S3RestApi
 class S3Bucket(S3RestApi):
     """Class for bucket operations."""
 
+    def __init__(self, *args, **kwargs):
+        """Initializer for S3Bucket operations."""
+        super().__init__(*args, **kwargs)
+        self.s3_url = None
+
     async def create_bucket(self, bucket_name: str) -> dict:
         """
         Creating Bucket.
@@ -35,6 +40,7 @@ class S3Bucket(S3RestApi):
         :return: Response of create bucket.
         """
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}"
             response = await client.create_bucket(Bucket=bucket_name)
             self.log.info("create_bucket:%s, Response: %s", bucket_name, response)
 
@@ -48,7 +54,6 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             buckets = await client.list_buckets()
-            self.log.info(buckets)
             response = [bucket["Name"] for bucket in buckets["Buckets"]]
             self.log.info("list_buckets: Response: %s", response)
 
@@ -62,8 +67,9 @@ class S3Bucket(S3RestApi):
         :return: Response of head bucket.
         """
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}"
             response = await client.head_bucket(Bucket=bucket_name)
-            self.log.info("head_bucket: %s, Response: %s", bucket_name, response)
+            self.log.info("head_bucket: %s, Response: %s", self.s3_url, response)
 
         return response
 
@@ -75,9 +81,9 @@ class S3Bucket(S3RestApi):
         :return: Response of bucket location.
         """
         async with self.get_client() as client:
-            self.log.debug("BucketName: %s", bucket_name)
+            self.s3_url = f"s3://{bucket_name}"
             response = await client.get_bucket_location(Bucket=bucket_name)
-            self.log.info("get_bucket_location: %s, Response: %s", bucket_name, response)
+            self.log.info("get_bucket_location: %s, Response: %s", self.s3_url, response)
 
         return response
 
@@ -97,17 +103,19 @@ class S3Bucket(S3RestApi):
                 paginator = client.get_paginator('list_objects')
                 async for result in paginator.paginate(Bucket=bucket_name):
                     for content in result.get('Contents', []):
+                        self.s3_url = f"s3://{bucket_name}/{content['Key']}"
                         resp = await client.delete_object(Bucket=bucket_name, Key=content['Key'])
                         self.log.debug(resp)
                 self.log.info("All objects deleted successfully.")
+            self.s3_url = f"s3://{bucket_name}"
             response = await client.delete_bucket(Bucket=bucket_name)
-            self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
+            self.log.info("Bucket '%s' deleted successfully. Response: %s", self.s3_url, response)
 
         return response
 
     def create_s3_bucket(self, bucket_name: str = None) -> dict:
         """
-        Creating Bucket.
+        Creating s3 bucket.
 
         :param bucket_name: Name of the bucket.
         :return: response.
@@ -117,11 +125,10 @@ class S3Bucket(S3RestApi):
 
         return response
 
-    def list_s3_buckets(self) -> dict:
+    def list_s3_buckets(self) -> list:
         """
-        Creating Bucket.
+        List all s3 buckets.
 
-        :param bucket_name: Name of the bucket.
         :return: response.
         """
         response = self.get_boto3_client().list_buckets()

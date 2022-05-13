@@ -73,7 +73,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     LOGGER.critical("Terminating process & pending task: %s", process_name)
     for task in pending:
         task.cancel()
-    LOGGER.error(done)
+    LOGGER.critical(done)
     for task in done:
         task.result()
 
@@ -92,6 +92,7 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     try:
         loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        LOGGER.info("%s Loop interrupted", process_name)
+        LOGGER.warning("%s Loop interrupted", process_name)
+    finally:
         loop.stop()
-    LOGGER.info("%s terminating", process_name)
+        LOGGER.critical("%s terminated", process_name)

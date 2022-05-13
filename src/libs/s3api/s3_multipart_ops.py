@@ -27,6 +27,11 @@ from src.libs.s3api.s3_restapi import S3RestApi
 class S3MultiParts(S3RestApi):
     """Class for Multipart operations."""
 
+    def __init__(self, *args, **kwargs):
+        """Initializer for S3MultiParts operations."""
+        super().__init__(*args, **kwargs)
+        self.s3_url = None
+
     async def create_multipart_upload(self, bucket_name: str, obj_name: str) -> dict:
         """
         Request to initiate a multipart upload.
@@ -36,9 +41,9 @@ class S3MultiParts(S3RestApi):
         :return: Response of create multipart upload.
         """
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}/{obj_name}"
             response = await client.create_multipart_upload(Bucket=bucket_name, Key=obj_name)
-            self.log.info("create_multipart_upload: %s/%s, Response: %s", bucket_name, obj_name,
-                          response)
+            self.log.info("create_multipart_upload: %s, Response: %s", self.s3_url, response)
 
         return response
 
@@ -56,9 +61,11 @@ class S3MultiParts(S3RestApi):
         upload_id = kwargs.get("upload_id")
         part_number = kwargs.get("part_number")
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}/{object_name}"
             response = await client.upload_part(Body=body, Bucket=bucket_name, Key=object_name,
                                                 UploadId=upload_id, PartNumber=part_number)
-            self.log.info("upload_part: %s/%s, Response: %s", bucket_name, object_name, response)
+            self.log.info("upload_part: %s, UploadID: %s, PartNumber: %s, Response: %s",
+                          self.s3_url, upload_id, part_number, response)
 
         return response
 
@@ -74,11 +81,12 @@ class S3MultiParts(S3RestApi):
         parts = []
         async with self.get_client() as client:
             paginator = client.get_paginator('list_parts')
+            self.s3_url = f"s3://{bucket_name}/{object_name}"
             async for result in paginator.paginate(
                     Bucket=bucket_name, Key=object_name, UploadId=mpu_id):
                 for content in result.get('Parts', []):
                     parts.append(content)
-            self.log.info("list_parts: %s/%s, parts: %s", bucket_name, object_name, parts)
+            self.log.info("list_parts: %s, parts: %s", self.s3_url, parts)
 
         return parts
 
@@ -95,12 +103,12 @@ class S3MultiParts(S3RestApi):
         """
         self.log.info("initiated complete multipart upload")
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket}/{object_name}"
             response = await client.complete_multipart_upload(Bucket=bucket,
                                                               Key=object_name,
                                                               UploadId=mpu_id,
                                                               MultipartUpload={"Parts": parts})
-            self.log.info("complete_multipart_upload: %s/%s, response: %s", bucket, object_name,
-                          response)
+            self.log.info("complete_multipart_upload: %s, response: %s", self.s3_url, response)
 
         return response
 
@@ -113,11 +121,12 @@ class S3MultiParts(S3RestApi):
         """
         uploads = []
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}"
             paginator = client.get_paginator('list_multipart_uploads')
             async for result in paginator.paginate(Bucket=bucket_name):
                 for content in result.get('Uploads', []):
                     uploads.append(content)
-            self.log.info("list_multipart_uploads: %s, Uploads: %s", bucket_name, uploads)
+            self.log.info("list_multipart_uploads: %s, Uploads: %s", self.s3_url, uploads)
 
         return uploads
 
@@ -132,6 +141,7 @@ class S3MultiParts(S3RestApi):
         :return: Response of abort multipart upload.
         """
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}/{object_name}"
             response = await client.abort_multipart_upload(
                 Bucket=bucket_name, Key=object_name, UploadId=upload_id)
             self.log.info("abort_multipart_upload: %s, Response: %s", bucket_name, response)
@@ -153,10 +163,11 @@ class S3MultiParts(S3RestApi):
         upload_id = kwargs.get("upload_id")
         part_number = kwargs.get("part_number")
         async with self.get_client() as client:
+            self.s3_url = f"s3://{bucket_name}/{object_name}"
             response = await client.upload_part_copy(Bucket=bucket_name, Key=object_name,
                                                      UploadId=upload_id, PartNumber=part_number,
                                                      CopySource=copy_source)
-            self.log.info("upload_part_copy: copy source: %s to %s/%s, Response: %s", copy_source,
-                          bucket_name, object_name, response)
+            self.log.info("upload_part_copy: copy source: %s to %s, Response: %s", copy_source,
+                          self.s3_url, response)
 
         return response
