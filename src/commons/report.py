@@ -58,6 +58,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
         status_file.write("\nTestWise Execution Details:")
         for key, value in parsed_input.items():
             dataframe = pd.DataFrame()
+            pd.set_option('display.colheader_justify', 'center')
             for key1, value1 in value.items():
                 input_dict = {"TEST_NO": key1,
                               "TEST_ID": value1['TEST_ID'],
