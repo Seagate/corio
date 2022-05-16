@@ -264,10 +264,6 @@ def main(options):
 
     :param options: Parsed Arguments.
     """
-    LOGGER.info("Setting up environment!!")
-    # Check cluster is healthy to start execution.
-
-    setup_environment()
     pre_requisites(options)
     jira_obj = options.test_plan
     tests_details = {}

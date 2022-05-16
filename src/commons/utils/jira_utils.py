@@ -71,7 +71,7 @@ class JiraApp:
         tp_response = requests.get(f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
                                    auth=self.auth)
         if tp_response.status_code != HTTPStatus.OK:
-            LOGGER.exception("Failed to get TE details: %s", test_plan_id)
+            LOGGER.exception("Failed to get TE: %s, reason %s", test_plan_id, tp_response.json())
             sys.exit(1)
 
         return tp_response.json()
