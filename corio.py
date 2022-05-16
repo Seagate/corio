@@ -35,7 +35,6 @@ from distutils.util import strtobool
 from pprint import pformat
 
 import munch
-import schedule
 
 from config import S3_CFG, CORIO_CFG
 from src.commons.cluster_health import check_health
@@ -46,8 +45,9 @@ from src.commons.constants import ROOT
 from src.commons.degrade_cluster import activate_degraded_mode, restore_pod
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
-from src.commons.report import log_status
 from src.commons.scheduler import schedule_test_plan
+from src.commons.scheduler import schedule_test_status_update
+from src.commons.scheduler import terminate_update_test_status
 from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.support_bundle import support_bundle_process
 from src.commons.utils.corio_utils import cpu_memory_details
@@ -279,16 +279,14 @@ def main(options):
     corio_start_time = datetime.now()
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     processes = schedule_execution_plan(parsed_input, options)
-    sched_job = schedule.every(30).minutes.do(log_status, parsed_input=parsed_input,
-                                              corio_start_time=corio_start_time, test_failed=None)
-    LOGGER.info("Report status update scheduled for every %s minutes", 30)
+    sched = schedule_test_status_update(parsed_input, corio_start_time)
     terminated_tp, test_ids = None, []
     try:
         start_processes(processes)
+        sched.start()
         while True:
             cpu_memory_details()
             time.sleep(1)
-            schedule.run_pending()
             if jira_obj:
                 jira_obj.update_jira_status(
                     corio_start_time=corio_start_time, tests_details=tests_to_execute)
@@ -301,8 +299,7 @@ def main(options):
         terminated_tp = type(error).__name__
     finally:
         terminate_processes(processes)
-        schedule.cancel_job(sched_job)
-        log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)
+        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids)
         if jira_obj:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True,
