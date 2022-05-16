@@ -73,7 +73,12 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
 
 
 def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
-    """Convert object size for reporting."""
+    """
+    Convert object size for reporting.
+
+    :param input_dict: Dict for all the input yaml files.
+    :param value: Dict/List/int for object size.
+    """
     if isinstance(value['object_size'], list):
         input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
     elif isinstance(value['object_size'], dict):
@@ -84,9 +89,17 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
 
 
 def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dict, **kwargs):
-    """Update tests status in report."""
+    """
+    Update tests status in report.
+
+    :param input_dict: Dict for all the input yaml files.
+    :param corio_start_time: start time of workload execution.
+    :param value: test details from workload execution.
+    """
+    # List of the test cases from terminated tp.
     terminated_tests = kwargs.get("terminated_tests", [])
-    test_failed = kwargs.get("test_failed", [])
+    # Reason of the test execution failure.
+    test_failed = kwargs.get("test_failed", '')
     test_start_time = corio_start_time + value['start_time']
     if datetime.now() > test_start_time:
         input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"

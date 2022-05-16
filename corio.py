@@ -35,6 +35,7 @@ from distutils.util import strtobool
 from pprint import pformat
 
 import munch
+import schedule
 
 from config import S3_CFG, CORIO_CFG
 from src.commons.cluster_health import check_health
@@ -283,10 +284,10 @@ def main(options):
     terminated_tp, test_ids = None, []
     try:
         start_processes(processes)
-        sched.start()
         while True:
-            cpu_memory_details()
             time.sleep(1)
+            cpu_memory_details()
+            schedule.run_pending()
             if jira_obj:
                 jira_obj.update_jira_status(
                     corio_start_time=corio_start_time, tests_details=tests_to_execute)
@@ -299,7 +300,7 @@ def main(options):
         terminated_tp = type(error).__name__
     finally:
         terminate_processes(processes)
-        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids)
+        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids, sched)
         if jira_obj:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True,

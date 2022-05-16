@@ -25,13 +25,12 @@ import asyncio
 import logging
 import os
 
-from apscheduler.schedulers.background import BackgroundScheduler
+import schedule
 
 from src.commons.constants import ROOT
 from src.commons.report import log_status
 
 LOGGER = logging.getLogger(ROOT)
-sched = BackgroundScheduler()
 
 
 async def create_session(funct: list, start_time: float, **kwargs) -> None:
@@ -102,22 +101,32 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.critical("%s terminated", process_name)
 
 
-def schedule_test_status_update(parsed_input, corio_start_time):
-    """Schedule the test status update."""
-    execution_time_list = [corio_start_time]
-    for _, test_d in parsed_input.items():
-        for _, test_data in test_d.items():
-            exec_time = corio_start_time + test_data['start_time'] + test_data['min_runtime']
-            if exec_time not in execution_time_list:
-                execution_time_list.append(execution_time_list)
-    for run_time in execution_time_list:
-        sched.add_job(lambda: log_status(parsed_input=parsed_input,
-                                         corio_start_time=corio_start_time,
-                                         test_failed=None), "date", next_run_time=run_time)
-    return sched
+def schedule_test_status_update(parsed_input, corio_start_time, periodic_time=30):
+    """
+    Schedule the test status update.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param periodic_time: Duration to update test status.
+    """
+    sched_job = schedule.every(periodic_time).minutes.do(log_status, parsed_input=parsed_input,
+                                                         corio_start_time=corio_start_time,
+                                                         test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", periodic_time)
+    sched_job.run()
+    return sched_job
 
 
-def terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids):
-    """Terminate the scheduler and update the test status."""
-    sched.shutdown()
+def terminate_update_test_status(parsed_input, corio_start_time,
+                                 terminated_tp, test_ids, sched_job):
+    """
+    Terminate the scheduler and update the test status.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param terminated_tp: Reason for failure is any.
+    :param test_ids: Terminated tests from workload.
+    :param sched_job: scheduled test status update job.
+    """
+    schedule.cancel_job(sched_job)
     log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)
