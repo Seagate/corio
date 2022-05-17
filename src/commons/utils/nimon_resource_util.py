@@ -23,7 +23,7 @@ import logging
 from src.commons.utils.corio_utils import run_local_cmd
 from src.commons.utils.corio_utils import is_package_installed_local
 from src.commons.utils.cluster_utils import RemoteHost
-from src.commons import constants as cm_cmd
+from src.commons import commands as cm_cmd
 from src.commons.constants import ROOT
 from config import CLUSTER_CFG
 

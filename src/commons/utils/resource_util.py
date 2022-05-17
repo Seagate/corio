@@ -25,7 +25,7 @@ import os
 import shutil
 
 from config import CLUSTER_CFG
-from src.commons import constants as cm_cmd
+from src.commons import commands as cm_cmd
 from src.commons.constants import CMN_LOG_DIR
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import RemoteHost
