@@ -2,4 +2,5 @@ log_size: 524288000
 sb_interval_mins: 60
 max_no_of_sb: 5
 hc_interval_mins: 60
+report_interval_mins: 30
 nfs_server:
