@@ -283,6 +283,19 @@ def store_logs_to_nfs_local_server():
         shutil.rmtree(DATA_DIR_PATH)
 
 
+def is_package_installed_local(package_name):
+    """
+    check package is installed or not.
+    :param package_name: package name to check
+    """
+    resp = run_local_cmd("rpm -qa | grep {}".format(package_name))
+    LOGGER.info("resp: %s", str(resp))
+    if not resp[0]:
+        resp = run_local_cmd("{} -h".format(package_name))
+        LOGGER.info("resp: %s", str(resp))
+    return resp
+
+
 class RemoteHost:
     """Class for execution of commands on remote machine."""
 
@@ -384,3 +397,17 @@ class RemoteHost:
             return []
         finally:
             self.disconnect()
+
+    def is_package_installed(self, package_name):
+        """
+        check package is installed or not.
+
+        :param package_name: package name to check
+        """
+        self.connect()
+        resp = self.execute_command("rpm -qa | grep {}".format(package_name))
+        LOGGER.info("resp: %s", str(resp))
+        if not resp[0]:
+            resp = self.execute_command("{} -h".format(package_name))
+            LOGGER.info("resp: %s", str(resp))
+        return resp
