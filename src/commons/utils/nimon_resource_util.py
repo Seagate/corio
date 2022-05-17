@@ -59,20 +59,20 @@ def monitor_resource_utilisation(action: str):
         LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             resp = run_local_cmd(cm_cmd.YUM_UNZIP)
-            LOGGER.info("Local response: %s", str(resp))
+            LOGGER.debug("Local response: %s", str(resp))
         resp = is_package_installed_local("nimon")
         LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             resp = run_local_cmd(cm_cmd.CMD_WGET_NIMON)
-            LOGGER.info("Local response: %s", str(resp))
+            LOGGER.debug("Local response: %s", str(resp))
             resp = run_local_cmd(cm_cmd.UNZIP_NIMON)
-            LOGGER.info("Local response: %s", str(resp))
+            LOGGER.debug("Local response: %s", str(resp))
             resp = run_local_cmd(cm_cmd.CMD_CHMOD)
-            LOGGER.info("Local response: %s", str(resp))
+            LOGGER.debug("Local response: %s", str(resp))
             resp = run_local_cmd(cm_cmd.CMD_NINSTALL)
-            LOGGER.info("Local response: %s", str(resp))
+            LOGGER.debug("Local response: %s", str(resp))
         resp = run_local_cmd(cm_cmd.CMD_RUN_NIMON)
-        LOGGER.info("Local response: %s", str(resp))
+        LOGGER.debug("Local response: %s", str(resp))
         if not cluster_obj:
             LOGGER.critical("Will not able to collect system stats for cluster as details not "
                             "provided in cluster config.")
