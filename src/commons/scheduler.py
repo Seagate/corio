@@ -22,10 +22,12 @@
 """Scheduler module."""
 
 import asyncio
+import datetime
 import logging
 import os
 
 import schedule
+from schedule import Job
 
 from src.commons.constants import ROOT
 from src.commons.report import log_status
@@ -101,7 +103,8 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.critical("%s terminated", process_name)
 
 
-def schedule_test_status_update(parsed_input, corio_start_time, periodic_time=30):
+def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime, periodic_time:
+                                int = 1) -> Job:
     """
     Schedule the test status update.
 
@@ -117,8 +120,8 @@ def schedule_test_status_update(parsed_input, corio_start_time, periodic_time=30
     return sched_job
 
 
-def terminate_update_test_status(parsed_input, corio_start_time,
-                                 terminated_tp, test_ids, sched_job):
+def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
+                                 terminated_tp: str, test_ids: list, sched_job: Job) -> None:
     """
     Terminate the scheduler and update the test status.
 

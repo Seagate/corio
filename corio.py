@@ -280,7 +280,8 @@ def main(options):
     corio_start_time = datetime.now()
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     processes = schedule_execution_plan(parsed_input, options)
-    sched = schedule_test_status_update(parsed_input, corio_start_time)
+    sched = schedule_test_status_update(parsed_input, corio_start_time,
+                                        CORIO_CFG.report_interval_mins)
     terminated_tp, test_ids = None, []
     try:
         start_processes(processes)
