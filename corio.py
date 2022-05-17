@@ -264,9 +264,6 @@ def main(options):
 
     :param options: Parsed Arguments.
     """
-    if options.degraded_mode:
-        activate_degraded_mode(options)
-        options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
     pre_requisites(options)
     jira_obj = options.test_plan
     tests_details = {}
@@ -284,6 +281,9 @@ def main(options):
                                         CORIO_CFG.report_interval_mins)
     terminated_tp, test_ids = None, []
     try:
+        if options.degraded_mode:
+            activate_degraded_mode(options)
+            options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
         start_processes(processes)
         while True:
             time.sleep(1)

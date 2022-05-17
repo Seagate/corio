@@ -395,6 +395,7 @@ class ClusterServices(RemoteHost):
             LOGGER.info(resp_ns)
         LOGGER.info("Shutdown the pods safely by making replicas=0")
         pod_list = self.get_all_pods(pod_prefix=pod_prefix)
+        degraded_pods_list = []
         for _ in range(int(os.environ['DEGRADED_PODS_CNT'])):
             LOGGER.info("Get pod name to be deleted")
             pod_name = random.sample(pod_list, 1)[0]
@@ -402,6 +403,7 @@ class ClusterServices(RemoteHost):
             hostname = self.get_pod_hostname(pod_name=pod_name)
             LOGGER.info("Deleting pod %s", pod_name)
             self.create_pod_replicas(num_replica=0, pod_name=pod_name)
+            degraded_pods_list.append(pod_name)
             LOGGER.info("Shutdown/deleted pod %s for host %s with replicas=0", pod_name, hostname)
-        LOGGER.info("All pods shutdown successfully")
+        LOGGER.info("%s pods shutdown successfully", degraded_pods_list)
         return True
