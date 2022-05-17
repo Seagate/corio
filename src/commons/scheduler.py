@@ -22,10 +22,15 @@
 """Scheduler module."""
 
 import asyncio
+import datetime
 import logging
 import os
 
+import schedule
+from schedule import Job
+
 from src.commons.constants import ROOT
+from src.commons.report import log_status
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -96,3 +101,35 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     finally:
         loop.stop()
         LOGGER.critical("%s terminated", process_name)
+
+
+def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime, periodic_time:
+                                int = 1) -> Job:
+    """
+    Schedule the test status update.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param periodic_time: Duration to update test status.
+    """
+    sched_job = schedule.every(periodic_time).minutes.do(log_status, parsed_input=parsed_input,
+                                                         corio_start_time=corio_start_time,
+                                                         test_failed=None)
+    LOGGER.info("Report status update scheduled for every %s minutes", periodic_time)
+    sched_job.run()
+    return sched_job
+
+
+def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
+                                 terminated_tp: str, test_ids: list, sched_job: Job) -> None:
+    """
+    Terminate the scheduler and update the test status.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param terminated_tp: Reason for failure is any.
+    :param test_ids: Terminated tests from workload.
+    :param sched_job: scheduled test status update job.
+    """
+    schedule.cancel_job(sched_job)
+    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)

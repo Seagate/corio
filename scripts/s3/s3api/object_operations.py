@@ -96,7 +96,7 @@ class TestS3Object(S3Bucket, S3Object):
                         loc = random.randrange(start, end)
                         assert (await self.get_s3object_checksum(
                             bucket, file_name, ranges=f'bytes={f"{loc}-{loc + range_read - 1}"}'
-                        ) == await self.checksum_part_file(file_path, loc, range_read)), \
+                        ) == self.checksum_part_file(file_path, loc, range_read)), \
                             f"Checksum of downloaded part for range  " \
                             f"({f'{loc}-{loc + range_read - 1}'}) does not " \
                             f"match for s3://{bucket}/{file_name}."
