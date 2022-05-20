@@ -85,7 +85,9 @@ class Warp:
     def execute_command(cmd) -> subprocess.CompletedProcess:
         """Execute Command."""
         LOGGER.info("Starting: %s", cmd)
-        return subprocess.run(cmd, shell=True, capture_output=True, text=True)
+        if type(cmd) is str:
+            cmd = cmd.split()
+        return subprocess.run(cmd, capture_output=True, text=True, check=True)
 
     def execute_workload(self) -> [bool, Any]:
         """Execute Warp command."""
@@ -95,7 +97,7 @@ class Warp:
                    f"--obj.size {self.size_high}b --benchdata {self.log} " \
                    f"--disable-multipart --analyze.v "
         if self.random_size:
-            self.cmd = self.cmd + " --obj.randsize"
+            self.cmd += " --obj.randsize"
         self.execute_command(self.cmd)
         return self.check_errors()
 
