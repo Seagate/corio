@@ -20,12 +20,13 @@
 """Module to collect resource utilisation utils."""
 
 import logging
-from src.commons.utils.corio_utils import run_local_cmd
-from src.commons.utils.corio_utils import is_package_installed_local
-from src.commons.utils.cluster_utils import RemoteHost
+
+from config import CLUSTER_CFG
 from src.commons import commands as cm_cmd
 from src.commons.constants import ROOT
-from config import CLUSTER_CFG
+from src.commons.utils.cluster_utils import RemoteHost
+from src.commons.utils.corio_utils import is_package_installed_local
+from src.commons.utils.corio_utils import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -49,7 +50,7 @@ def monitor_resource_utilisation(action: str):
             host, user, passwd = node["hostname"], node["username"], node["password"]
             server_nodes.extend(host)
             cluster_obj = RemoteHost(host, user, passwd)
-            resp = cluster_obj.execute_command(cm_cmd.K8S_WORKER_NODES)
+            resp = cluster_obj.execute_command(cm_cmd.KUBECTL_GET_WORKERS_NAME)
             LOGGER.debug("response is: %s", str(resp))
             worker_node = resp[1].strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", str(worker_node))
