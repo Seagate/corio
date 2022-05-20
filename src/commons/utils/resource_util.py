@@ -24,91 +24,97 @@ import logging
 import os
 import shutil
 
-from config import CLUSTER_CFG
-from src.commons import commands as cm_cmd
-from src.commons.constants import CMN_LOG_DIR
-from src.commons.constants import ROOT
-from src.commons.utils.cluster_utils import RemoteHost
-from src.commons.utils.corio_utils import run_local_cmd
+from src.commons import commands as cmd
+from src.commons import constants as const
+from src.commons.utils import corio_utils
+from src.commons.utils.cluster_utils import ClusterServices
 
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(const.ROOT)
 
 
-# pylint: disable-msg=too-many-statements
 def collect_resource_utilisation(action: str):
     """
-    start/stop collect resource utilisation.
+    Start/stop collect resource utilisation.
 
     :param action: start/stop collection resource_utilisation
     """
-    cluster_obj = None
-    host, user, passwd = None, None, None
-    worker_node = []
-    for node in CLUSTER_CFG["nodes"]:
-        if node["node_type"] == "master":
-            if not node.get("hostname", None):
-                LOGGER.critical("failed to get master details so will not able to collect system"
-                                " stats for cluster. Nodes: '%s'", CLUSTER_CFG["nodes"])
-                continue
-            host, user, passwd = node["hostname"], node["username"], node["password"]
-            cluster_obj = RemoteHost(host, user, passwd)
-            resp = cluster_obj.execute_command(cm_cmd.K8S_WORKER_NODES)
-            LOGGER.debug("response is: %s", str(resp))
-            worker_node = resp[1].strip().split("\n")[1:]
-            LOGGER.info("worker nodes: %s", str(worker_node))
     if action == "start":
-        resp = run_local_cmd(cm_cmd.CMD_YUM_NMON)
-        LOGGER.debug("Local response: %s", str(resp))
-        resp = run_local_cmd(cm_cmd.CMD_RUN_NMON)
-        LOGGER.debug("Local response: %s", str(resp))
-        if not cluster_obj:
-            LOGGER.critical("Will not able to collect system stats for cluster as details not "
-                            "provided in cluster config.")
-            return
-        resp = cluster_obj.execute_command(cm_cmd.CMD_YUM_NMON)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_RUN_NMON)
-        LOGGER.debug("master response: %s", str(resp))
-        for worker in worker_node:
-            worker_obj = RemoteHost(worker, user, passwd)
-            resp = worker_obj.execute_command(cm_cmd.CMD_YUM_NMON)
-            LOGGER.debug("worker response: %s", str(resp))
-            resp = worker_obj.execute_command(cm_cmd.CMD_RUN_NMON)
-            LOGGER.debug("worker response: %s", str(resp))
+        start_client_resource_utilisation()
+        start_server_resource_utilization()
     if action == "stop":
-        resp = run_local_cmd(cm_cmd.CMD_KILL_NMON)
-        LOGGER.debug(resp)
-        stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'),
-                            key=os.path.getctime, reverse=True)[-1]
-        LOGGER.info(stat_fpath)
-        dpath = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client")
-        if not os.path.exists(dpath):
-            os.makedirs(dpath)
-        shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
-        if not cluster_obj:
-            LOGGER.critical("Will not able to collect system stats for cluster as details not "
-                            "provided in cluster config.")
-            return
-        resp = cluster_obj.execute_command(cm_cmd.CMD_KILL_NMON)
-        LOGGER.debug("master response: %s", str(resp))
-        resp = cluster_obj.execute_command(cm_cmd.CMD_NMON_FILE)
+        stop_store_client_resource_utilization()
+        stop_store_server_resource_utilization()
+
+
+def start_client_resource_utilisation():
+    """Start resource utilization on client."""
+    resp = corio_utils.install_package(const.NMON)
+    if resp[0]:
+        resp = corio_utils.run_local_cmd(cmd.CMD_RUN_NMON)
+    LOGGER.info(resp)
+
+
+def stop_store_client_resource_utilization():
+    """Stop resource utilization from client and copy to NFS/LOCAL server."""
+    resp = corio_utils.run_local_cmd(cmd.CMD_KILL_NMON)
+    LOGGER.debug(resp)
+    stat_fpath = sorted(glob.glob(os.getcwd() + '/*.nmon'), key=os.path.getctime, reverse=True)[-1]
+    LOGGER.info(stat_fpath)
+    dpath = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client")
+    if not os.path.exists(dpath):
+        os.makedirs(dpath)
+    shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
+    if os.path.exists(stat_fpath):
+        os.remove(stat_fpath)
+    corio_utils.remove_package(const.NMON)
+
+
+def start_server_resource_utilization() -> None:
+    """Start resource utilization on master and workers."""
+    cluster_nodes = []
+    host, user, passwd = corio_utils.get_master_details()
+    if not host:
+        LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
+        return
+    cluster_nodes.append(host)
+    cluster_obj = ClusterServices(host, user, passwd)
+    worker_node = cluster_obj.get_all_workers_details()
+    LOGGER.debug("Workers list is: %s", worker_node)
+    cluster_nodes.extend(worker_node)
+    for node in cluster_nodes:
+        cluster_obj = ClusterServices(node, user, passwd)
+        resp = cluster_obj.install_package(const.NMON)
+        LOGGER.info(resp)
+        resp = cluster_obj.execute_command(cmd.CMD_RUN_NMON)
+        LOGGER.info(resp)
+
+
+def stop_store_server_resource_utilization():
+    """Stop resource utilization on master, workers and copy to NFS/LOCAL server."""
+    cluster_nodes = []
+    host, user, passwd = corio_utils.get_master_details()
+    if not host:
+        LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
+        return
+    cluster_nodes.append(host)
+    cluster_obj = ClusterServices(host, user, passwd)
+    worker_node = cluster_obj.get_all_workers_details()
+    LOGGER.debug("Workers list is: %s", worker_node)
+    cluster_nodes.extend(worker_node)
+    for node in cluster_nodes:
+        cluster_obj = ClusterServices(node, user, passwd)
+        resp = cluster_obj.execute_command(cmd.CMD_KILL_NMON)
+        LOGGER.info(resp)
+        resp = cluster_obj.execute_command(cmd.CMD_SEARCH_FILE.format("'*.nmon'"))
         filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
-        client_path = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server")
-        cl_path = os.path.join(client_path, filename)
-        if not os.path.exists(client_path):
-            os.makedirs(client_path)
-        cluster_obj.download_file(cl_path, f"/root/{filename}")
-        resp = cluster_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
+        stat_path = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server")
+        cl_path = os.path.join(stat_path, filename)
+        remote_path = os.path.join("/root", filename)
+        if not os.path.exists(stat_path):
+            os.makedirs(stat_path)
+        cluster_obj.download_file(cl_path, remote_path)
+        resp = cluster_obj.execute_command(cmd.CMD_RM_NMON.format(remote_path))
         LOGGER.debug("file removed: %s", resp)
-        for worker in worker_node:
-            worker_obj = RemoteHost(worker, user, passwd)
-            resp = worker_obj.execute_command(cm_cmd.CMD_KILL_NMON)
-            LOGGER.debug("worker response: %s", str(resp))
-            resp = worker_obj.execute_command(cm_cmd.CMD_NMON_FILE)
-            filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
-            LOGGER.info("Filename is: %s", filename)
-            cl_path = os.path.join(client_path, filename)
-            worker_obj.download_file(cl_path, f"/root/{filename}")
-            resp = worker_obj.execute_command(cm_cmd.CMD_RM_NMON.format(filename))
-            LOGGER.debug("file removed: %s", resp)
+        resp = cluster_obj.remove_package(const.NMON)
+        LOGGER.info(resp)

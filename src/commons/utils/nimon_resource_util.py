@@ -25,7 +25,7 @@ from config import CLUSTER_CFG
 from src.commons import commands as cm_cmd
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import RemoteHost
-from src.commons.utils.corio_utils import is_package_installed_local
+from src.commons.utils.corio_utils import install_package
 from src.commons.utils.corio_utils import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
@@ -56,11 +56,11 @@ def monitor_resource_utilisation(action: str):
             LOGGER.info("worker nodes: %s", str(worker_node))
             server_nodes.extend(worker_node)
     if action == "start":
-        resp = is_package_installed_local("unzip")
+        resp = install_package("unzip")
         LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             run_local_cmd(cm_cmd.YUM_UNZIP)
-        resp = is_package_installed_local("nimon")
+        resp = install_package("nimon")
         LOGGER.debug("Local response: %s", str(resp))
         if not resp[0]:
             run_local_cmd(cm_cmd.CMD_WGET_NIMON)
@@ -75,11 +75,11 @@ def monitor_resource_utilisation(action: str):
             return
         for server in server_nodes:
             worker_obj = RemoteHost(server, user, passwd)
-            resp = worker_obj.is_package_installed("unzip")
+            resp = worker_obj.install_package("unzip")
             if not resp[0]:
                 resp = worker_obj.execute_command(cm_cmd.YUM_UNZIP)
                 LOGGER.info("worker response: %s", str(resp))
-            resp = worker_obj.is_package_installed("nimon")
+            resp = worker_obj.install_package("nimon")
             if not resp[0]:
                 worker_obj.execute_command(cm_cmd.CMD_WGET_NIMON)
                 worker_obj.execute_command(cm_cmd.UNZIP_NIMON)
