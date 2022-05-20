@@ -57,3 +57,7 @@ class K8sDeploymentRecoverError(CheckError):
 
 class DeploymentBackupException(CheckError):
     """Exception class for Deployment Backup"""
+
+
+class NoBucketExistsException(CheckError):
+    """Exception class for if buckets created/exists"""

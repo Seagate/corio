@@ -27,6 +27,7 @@ from datetime import timedelta
 from typing import Any
 
 from config import S3_TOOLS_CFG
+from src.commons.exception import CheckError
 
 LOGGER = logging.getLogger(__name__)
 WARP_CONF = S3_TOOLS_CFG["s3bench"]
@@ -85,9 +86,13 @@ class Warp:
     def execute_command(cmd) -> subprocess.CompletedProcess:
         """Execute Command."""
         LOGGER.info("Starting: %s", cmd)
-        if type(cmd) is str:
-            cmd = cmd.split()
-        return subprocess.run(cmd, capture_output=True, text=True, check=True)
+        if isinstance(cmd, str):
+            if 'rm -rf' not in cmd:
+                cmd = cmd.split()
+            else:
+                LOGGER.warning("force remove is not permitted")
+                raise CheckError("Security Implications: execution of untrusted input")
+        return subprocess.check_output(cmd)
 
     def execute_workload(self) -> [bool, Any]:
         """Execute Warp command."""
@@ -113,11 +118,11 @@ class Warp:
             error = False
         else:
             for operation in ops:
-                process = self.execute_command(f"warp analyze {self.log_file} "
+                process_output = self.execute_command(f"warp analyze {self.log_file} "
                                                f"--analyze.op {operation.upper()} --analyze.v")
                 pattern = r"Errors: (\d+)"
                 # Grep pattern in cp.stdout
-                matches = re.finditer(pattern, process.stdout, re.MULTILINE)
+                matches = re.finditer(pattern, process_output, re.MULTILINE)
                 matches = list(matches)
                 if matches:
                     ops[operation] = matches[-1].group(1)
