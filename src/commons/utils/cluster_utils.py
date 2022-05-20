@@ -38,6 +38,7 @@ LOGGER = logging.getLogger(ROOT)
 
 class ClusterServices(RemoteHost):
     """Cluster services class to perform service related operations."""
+
     kube_commands = ('create', 'apply', 'config', 'get', 'explain',
                      'autoscale', 'patch', 'scale', 'exec')
 
@@ -70,7 +71,6 @@ class ClusterServices(RemoteHost):
 
     def check_cluster_health(self):
         """Check the cluster health."""
-
         status, response = self.get_hctl_status()
         if status:
             for node in response["nodes"]:
@@ -109,7 +109,8 @@ class ClusterServices(RemoteHost):
         return False, "Failed to get cluster storage stat."
 
     def collect_support_bundles(self, dir_path: str) -> tuple:
-        """Collect support bundles from various components using support bundle cmd.
+        """
+        Collect support bundles from various components using support bundle cmd.
 
         :param dir_path: local directory path to copy support bundles.
         """
@@ -139,28 +140,21 @@ class ClusterServices(RemoteHost):
         LOGGER.info("Support bundle '%s' generated and copied to %s.", file_name, local_path)
         return os.path.exists(local_path), local_path
 
-    def send_k8s_cmd(
-            self,
-            operation: str,
-            pod: str,
-            namespace: str,
-            command_suffix: str,
-            decode=False,
-            **kwargs) -> bytes:
-        """send/execute command on logical node/pods."""
+    def send_k8s_cmd(self, operation: str, pod: str, namespace: str, command_suffix: str,
+                     **kwargs) -> bytes:
+        """Send/execute command on logical node/pods."""
         if operation not in ClusterServices.kube_commands:
-            raise ValueError(
-                f"command parameter must be one of {ClusterServices.kube_commands}.")
+            raise ValueError(f"command parameter must be one of {ClusterServices.kube_commands}.")
         LOGGER.debug("Performing %s on service %s in namespace %s...", operation, pod, namespace)
         k8s_cmd = cmd.KUBECTL_CMD.format(operation, pod, namespace, command_suffix)
         status, resp = self.execute_command(k8s_cmd, **kwargs)
-        if decode and status:
+        if kwargs.get("decode", False) and status:
             resp = (resp.decode("utf8")).strip()
         return resp
 
     def send_sync_command(self, pod_prefix):
         """
-        Helper function to send sync command to all containers of given pod category.
+        Send sync command to all containers of given pod category.
 
         :param pod_prefix: Prefix to define the pod category
         :return: Bool
@@ -179,7 +173,7 @@ class ClusterServices(RemoteHost):
 
     def get_all_pods_containers(self, pod_prefix, pod_list=None):
         """
-        Helper function to get all pods with containers of given pod_prefix.
+        Get all pods with containers of given pod_prefix.
 
         :param pod_prefix: Prefix to define the pod category
         :param pod_list: List of pods
@@ -204,14 +198,13 @@ class ClusterServices(RemoteHost):
 
     def create_pod_replicas(self, num_replica, deploy=None, pod_name=None):
         """
-        Helper function to delete/remove/create pod by changing number of replicas.
+        Delete/remove/create pod by changing number of replicas.
 
         :param num_replica: Number of replicas to be scaled
         :param deploy: Name of the deployment of pod
         :param pod_name: Name of the pod
         :return: Bool, string (status, deployment name)
         """
-
         if pod_name:
             LOGGER.info("Getting deploy and replicaset of pod %s", pod_name)
             resp = self.get_deploy_replicaset(pod_name)
@@ -232,7 +225,7 @@ class ClusterServices(RemoteHost):
 
     def get_deploy_replicaset(self, pod_name):
         """
-        Helper function to get deployment name and replicaset name of the given pod.
+        Get deployment name and replicaset name of the given pod.
 
         :param pod_name: Name of the pod
         :return: Bool, str, str (status, deployment name, replicaset name)
@@ -253,7 +246,7 @@ class ClusterServices(RemoteHost):
 
     def get_num_replicas(self, replicaset):
         """
-        Helper function to get number of desired, current and ready replicas for given replica set.
+        Get number of desired, current and ready replicas for given replica set.
 
         :param replicaset: Name of the replica set
         :return: Bool, str, str, str (Status, Desired replicas, Current replicas, Ready replicas)
@@ -273,7 +266,7 @@ class ClusterServices(RemoteHost):
 
     def recover_deployment_k8s(self, backup_path, deployment_name):
         """
-        Helper function to recover the deleted deployment using kubectl.
+        Recover the deleted deployment using kubectl.
 
         :param deployment_name: Name of the deployment to be recovered
         :param backup_path: Path of the backup taken for given deployment
@@ -296,7 +289,7 @@ class ClusterServices(RemoteHost):
 
     def backup_deployment(self, deployment_name):
         """
-        Helper function to take backup of the given deployment.
+        Take backup of the given deployment.
 
         :param deployment_name: Name of the deployment
         :return: Bool, str (status, path of the backup)
@@ -317,7 +310,7 @@ class ClusterServices(RemoteHost):
 
     def get_all_pods_and_ips(self, pod_prefix) -> dict:
         """
-        Helper function to get pods name with pod_prefix and their IPs.
+        Get pods name with pod_prefix and their IPs.
 
         :param: pod_prefix: Prefix to define the pod category
         :return: dict
@@ -352,7 +345,7 @@ class ClusterServices(RemoteHost):
 
     def get_all_pods(self, pod_prefix=None) -> list:
         """
-        Helper function to get all pods name with pod_prefix.
+        Get all pods name with pod_prefix.
 
         :param: pod_prefix: Prefix to define the pod category
         :return: list
@@ -371,7 +364,7 @@ class ClusterServices(RemoteHost):
 
     def get_pod_hostname(self, pod_name):
         """
-        Helper function to get pod hostname.
+        Get pod hostname.
 
         :param pod_name: name of the pod
         :return: str
@@ -384,7 +377,8 @@ class ClusterServices(RemoteHost):
 
     def degrade_nodes(self, pod_prefix=const.DATA_POD_NAME_PREFIX) -> bool:
         """
-        degrade nodes as needed for execution by shutdown/deleting pod
+        Degrade nodes as needed for execution by shutdown/deleting pod.
+
         :param pod_prefix : pod type which needs to be degraded.
         """
         LOGGER.info("Setting the current namespace")
@@ -407,3 +401,12 @@ class ClusterServices(RemoteHost):
             LOGGER.info("Shutdown/deleted pod %s for host %s with replicas=0", pod_name, hostname)
         LOGGER.info("%s pods shutdown successfully", degraded_pods_list)
         return True
+
+    def get_all_workers_details(self, names: bool = True) -> list:
+        """Get all worker name from master node if names else all details."""
+        resp = self.execute_command(cmd.KUBECTL_GET_WORKERS_NAME)
+        LOGGER.debug("response is: %s", resp)
+        if names:
+            resp = resp[1].strip().split("\n")[1:]
+            LOGGER.info("worker nodes: %s", resp)
+        return resp
