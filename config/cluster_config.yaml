@@ -4,7 +4,6 @@
 # Note: Make sure master/worker credentials are same as we are using them to collect system stat.
 "nodes":
     - "hostname": ""
-      "ip": ""
       "username": ""
       "password": ""
       "node_type": "master"

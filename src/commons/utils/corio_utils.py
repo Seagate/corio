@@ -420,7 +420,7 @@ class RemoteHost:
         resp = (False, None)
         try:
             resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
-            if package_name not in resp[0]:
+            if package_name not in resp[1]:
                 resp = self.execute_command(cmd.CMD_INSTALL_PKG.format(package_name))
         except IOError as err:
             LOGGER.error(err)
