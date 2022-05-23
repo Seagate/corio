@@ -44,6 +44,8 @@ CMD_HCTL_STATUS = "hctl status --json"
 CMD_GENERATE_CLSTR_LOGS = "cd {}; sh {}"
 # System commands.
 CMD_MOUNT = "mount -t nfs {} {}"
+CMD_JOURNALCTL = "journalctl > {}"
+CMD_DMESG = "dmesg > {}"
 
 # CentOS commands.
 CMD_INSTALL_PKG = "yum install -y {}"

@@ -67,20 +67,21 @@ def stop_store_client_resource_utilization():
     if os.path.exists(stat_fpath):
         os.remove(stat_fpath)
     corio_utils.remove_package(const.NMON)
+    # collect journalctl logs from client.
+    journalctl_filepath = os.path.join("/root", "client_journalctl.log")
+    resp = corio_utils.install_package(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
+    if resp[0]:
+        shutil.move(journalctl_filepath, os.path.join(dpath, os.path.basename(journalctl_filepath)))
+    # collect dmesg logs from client.
+    dmesg_filepath = os.path.join("/root", "client_dmesg.log")
+    resp = corio_utils.install_package(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
+    if resp[0]:
+        shutil.move(dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath)))
 
 
 def start_server_resource_utilization() -> None:
     """Start resource utilization on master and workers."""
-    cluster_nodes = []
-    host, user, passwd = corio_utils.get_master_details()
-    if not host:
-        LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
-        return
-    cluster_nodes.append(host)
-    cluster_obj = ClusterServices(host, user, passwd)
-    worker_node = cluster_obj.get_all_workers_details()
-    LOGGER.debug("Workers list is: %s", worker_node)
-    cluster_nodes.extend(worker_node)
+    user, passwd, cluster_nodes = get_server_details()
     for node in cluster_nodes:
         cluster_obj = ClusterServices(node, user, passwd)
         resp = cluster_obj.install_package(const.NMON)
@@ -89,18 +90,24 @@ def start_server_resource_utilization() -> None:
         LOGGER.info(resp)
 
 
-def stop_store_server_resource_utilization():
-    """Stop resource utilization on master, workers and copy to NFS/LOCAL server."""
+def get_server_details() -> tuple:
+    """Get K8s based Server details."""
     cluster_nodes = []
     host, user, passwd = corio_utils.get_master_details()
     if not host:
         LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
-        return
+        return None, None, cluster_nodes
     cluster_nodes.append(host)
     cluster_obj = ClusterServices(host, user, passwd)
     worker_node = cluster_obj.get_all_workers_details()
     LOGGER.debug("Workers list is: %s", worker_node)
     cluster_nodes.extend(worker_node)
+    return user, passwd, cluster_nodes
+
+
+def stop_store_server_resource_utilization():
+    """Stop resource utilization on master, workers and copy to NFS/LOCAL server."""
+    user, passwd, cluster_nodes = get_server_details()
     for node in cluster_nodes:
         cluster_obj = ClusterServices(node, user, passwd)
         resp = cluster_obj.execute_command(cmd.CMD_KILL_NMON)
@@ -118,3 +125,17 @@ def stop_store_server_resource_utilization():
         LOGGER.debug("file removed: %s", resp)
         resp = cluster_obj.remove_package(const.NMON)
         LOGGER.info(resp)
+        # collect journalctl
+        journalctl_path = os.path.join("/root", f"{node}_journalctl.log")
+        resp = cluster_obj.execute_command(cmd.CMD_JOURNALCTL.format(journalctl_path))
+        if resp[0]:
+            cluster_obj.download_file(
+                os.path.join(stat_path, os.path.basename(journalctl_path)), journalctl_path)
+            cluster_obj.delete_file(journalctl_path)
+        # collect dmesg
+        dmesg_path = os.path.join("/root", f"{node}_dmesg.log")
+        resp = cluster_obj.execute_command(cmd.CMD_DMESG.format(dmesg_path))
+        if resp[0]:
+            cluster_obj.download_file(
+                os.path.join(stat_path, os.path.basename(dmesg_path)), dmesg_path)
+            cluster_obj.delete_file(dmesg_path)
