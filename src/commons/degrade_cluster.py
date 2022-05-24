@@ -26,10 +26,11 @@ import random
 import time
 
 from config import CLUSTER_CFG, S3_ENDPOINT
+from src.commons.exception import NoBucketExistsException
+from src.commons.constants import DATA_POD_NAME_PREFIX, SERVER_POD_NAME_PREFIX
 from src.commons.constants import ROOT
 from src.commons.utils.cluster_utils import ClusterServices
 from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.commons.constants import DATA_POD_NAME_PREFIX, SERVER_POD_NAME_PREFIX
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -80,7 +81,7 @@ def activate_degraded_mode(options: dict):
             os.environ["d_bucket"] = random.choice(bucket_list)
         else:
             LOGGER.critical("No Bucket exist")
-            raise "Bucket need to be created first for degraded mode IOs"
+            raise NoBucketExistsException("Bucket need to be created first for degraded mode IOs")
     else:
         bucket = f'object-op-{time.perf_counter_ns()}'.lower()
         resp = bucket_obj.create_s3_bucket(bucket)
