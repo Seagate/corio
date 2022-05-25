@@ -1,0 +1,14 @@
+test_1:
+  TEST_ID: TEST-36184
+  object_size:
+    start: 0b
+    end: 1GiB
+  min_runtime: 30d
+  sessions: 20
+  tool: s3bench
+  disable_background_delete: False
+  write_percentage: 30
+  read_percentage: 30
+  delete_percentage: 15
+  cleanup_percentage: 85
+  total_storage: 80GiB
