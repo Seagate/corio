@@ -100,8 +100,6 @@ class S3bench:
         self.cli_log = f"{self.label}-cli"
         self.cmd = None
         self.results = []
-        self.errors = ["with error", "panic", "status code", "fatal error",
-                       "flag provided but not defined", "InternalError", "ServiceUnavailable"]
 
     @staticmethod
     def install_s3bench() -> bool:
@@ -218,7 +216,8 @@ class S3bench:
                 return status, ops
             LOGGER.info("No error found continuing execution")
 
-    def check_log_file_error(self, report_file: str, cli_log: str) -> Tuple[bool, dict]:
+    @classmethod
+    def check_log_file_error(cls, report_file: str, cli_log: str) -> Tuple[bool, dict]:
         """
         Check if errors found in s3bench workload.
 
@@ -232,7 +231,7 @@ class S3bench:
                 report = json.load(report_fp)
         except JSONDecodeError as err:
             LOGGER.error("Incorrect Json format %s - %s", report_file, err)
-            return self.check_terminated_results(cli_log)
+            return cls.check_terminated_results(cli_log)
         ops = {"Write": 0, "Read": 0, "Validate": 0, "HeadObj": 0}
         error = True
         for test in report["Tests"]:
@@ -247,12 +246,15 @@ class S3bench:
         error_ops = {f"{key} Errors": value for key, value in ops.items()}
         return error, error_ops
 
-    def check_terminated_results(self, cli_log: str) -> Tuple[bool, dict]:
+    @staticmethod
+    def check_terminated_results(cli_log: str) -> Tuple[bool, dict]:
         """Check results if s3bench workload is terminated.
 
         :param cli_log: CLI log file name.
         :return: Tuple of Test Pass/Fail with dict of failures per operation
         """
+        errors = ["with error", "panic", "status code", "fatal error",
+                  "flag provided but not defined", "InternalError", "ServiceUnavailable"]
         pattern = r"{0} \| [\d\/\.% \(\)]+ \| [a-z\d ]+ \| errors ([1-9]+)"
         ops = {"Write": 0, "Read": 0, "Validate": 0, "HeadObj": 0}
         error = True
@@ -266,7 +268,7 @@ class S3bench:
                     ops[operation] = int(matches[-1].group(1))
                     error = False
             error_ops = {f"{key} Errors": value for key, value in ops.items()}
-            errors_pattern = fr"^.*(?:{'|'.join(self.errors)}).*$"
+            errors_pattern = fr"^.*(?:{'|'.join(errors)}).*$"
             matches = list(re.finditer(errors_pattern, data, re.MULTILINE))
             if len(matches) != 0:
                 error_ops["Error String"] = matches[0].group()

@@ -200,20 +200,15 @@ class S3Object(S3RestApi):
         :param chunk_size: size to read the content of s3 object.
         :param ranges: number of bytes to be read
         """
-        async with self.get_client() as s3client:
-            self.s3_url = f"s3://{bucket}/{key}"
-            if ranges:
-                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
-            else:
-                response = await s3client.get_object(Bucket=bucket, Key=key)
-            self.log.info("get_s3object_checksum %s Response %s", self.s3_url, response)
-            async with response['Body'] as stream:
+        file_hash = hashlib.sha256()
+        response = await self.get_object(bucket=bucket, key=key, ranges=ranges)
+        self.log.info("get_s3object_checksum %s Response %s", self.s3_url, response)
+        async with response['Body'] as stream:
+            chunk = await stream.read(chunk_size)
+            self.log.debug("Reading chunk length: %s", len(chunk))
+            while len(chunk) > 0:
+                file_hash.update(chunk)
                 chunk = await stream.read(chunk_size)
-                file_hash = hashlib.sha256()
-                self.log.debug("Reading chunk length: %s", len(chunk))
-                while len(chunk) > 0:
-                    file_hash.update(chunk)
-                    chunk = await stream.read(chunk_size)
         sha256_digest = file_hash.hexdigest()
         self.log.debug("get_s3object_checksum %s, SHA-256: %s", self.s3_url, sha256_digest)
 
