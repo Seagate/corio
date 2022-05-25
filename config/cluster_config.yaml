@@ -1,9 +1,9 @@
 "product_family": "LC"
 "product_type": "k8s"
-#K8s based s3 server master details.
+# K8s based s3 server master details.
+# Note: Make sure master/worker credentials are same as we are using them to collect system stat.
 "nodes":
     - "hostname": ""
-      "ip": ""
       "username": ""
       "password": ""
       "node_type": "master"

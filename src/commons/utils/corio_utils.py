@@ -34,13 +34,12 @@ from typing import Union
 import paramiko
 import psutil as ps
 
-from config import CORIO_CFG
-from src.commons.commands import CMD_MOUNT
+from config import CORIO_CFG, CLUSTER_CFG
+from src.commons import commands as cmd
 from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR
 from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
 from src.commons.constants import KB, KIB
 from src.commons.constants import ROOT
-from src.commons.commands import CHECK_RPM, CHECK_H
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -104,18 +103,18 @@ def cpu_memory_details() -> None:
         run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
 
 
-def run_local_cmd(cmd: str) -> tuple:
+def run_local_cmd(command: str) -> tuple:
     """
     Execute any given command on local machine(Windows, Linux).
 
-    :param cmd: command to be executed.
+    :param command: command to be executed.
     :return: bool, response.
     """
-    if not cmd:
+    if not command:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        with Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
@@ -184,7 +183,7 @@ def convert_size(size_bytes) -> str:
     return part_size
 
 
-def rotate_logs(dpath: str, max_count: int = 0):
+def rotate_logs(dpath: str, max_count: int = 0) -> None:
     """
     Remove old logs based on creation time and keep as per max log count, default is 5.
 
@@ -223,7 +222,7 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
             LOGGER.debug("Created directory: %s", mnt_dir)
         if host_dir:
             if not os.path.ismount(mnt_dir):
-                resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
+                resp = os.system(cmd.CMD_MOUNT.format(host_dir, mnt_dir))
                 if resp:
                     raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
                 LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
@@ -237,7 +236,7 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
         return False
 
 
-def decode_bytes_to_string(text):
+def decode_bytes_to_string(text) -> Union[str, list]:
     """Convert byte to string."""
     if isinstance(text, bytes):
         text = text.decode("utf-8")
@@ -253,7 +252,7 @@ def decode_bytes_to_string(text):
     return text
 
 
-def setup_environment():
+def setup_environment() -> None:
     """Prepare client for workload execution with CORIO."""
     LOGGER.info("Setting up environment to start execution!!")
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
@@ -265,7 +264,7 @@ def setup_environment():
     LOGGER.info("environment setup completed.")
 
 
-def store_logs_to_nfs_local_server():
+def store_logs_to_nfs_local_server() -> None:
     """Copy/Store workload, support bundle and client/server resource log to local/NFS server."""
     # Copy workload execution logs to nfs/local server.
     latest = os.path.join(LOG_DIR, 'latest')
@@ -284,17 +283,33 @@ def store_logs_to_nfs_local_server():
         shutil.rmtree(DATA_DIR_PATH)
 
 
-def is_package_installed_local(package_name):
-    """
-    check package is installed or not.
-    :param package_name: package name to check
-    """
-    resp = run_local_cmd(CHECK_RPM.format(package_name))
-    LOGGER.info("resp: %s", str(resp))
-    if not resp[0]:
-        resp = run_local_cmd(CHECK_H.format(package_name))
-        LOGGER.info("resp: %s", str(resp))
+def install_package(package_name: str) -> tuple:
+    """Check if package installed, if not then install it."""
+    resp = run_local_cmd(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+    if package_name not in resp[1]:
+        run_local_cmd(cmd.CMD_INSTALL_PKG.format(package_name))
+    resp = run_local_cmd(cmd.CMD_PKG_HELP.format(package_name))
     return resp
+
+
+def remove_package(package_name: str) -> tuple:
+    """Remove package, if installed."""
+    resp = run_local_cmd(cmd.CMD_PKG_HELP.format(package_name))
+    if resp[0]:
+        resp = run_local_cmd(cmd.CMD_REMOVE_PKG.format(package_name))
+    return resp
+
+
+def get_master_details() -> tuple:
+    """Get master details from cluster config."""
+    host, user, passwd = None, None, None
+    for node in CLUSTER_CFG["nodes"]:
+        if node["node_type"] == "master":
+            if not node.get("hostname", None):
+                LOGGER.critical("failed to get master details: '%s'", CLUSTER_CFG["nodes"])
+                continue
+            host, user, passwd = node["hostname"], node["username"], node["password"]
+    return host, user, passwd
 
 
 class RemoteHost:
@@ -399,16 +414,30 @@ class RemoteHost:
         finally:
             self.disconnect()
 
-    def is_package_installed(self, package_name):
-        """
-        check package is installed or not.
-
-        :param package_name: package name to check
-        """
+    def install_package(self, package_name: str) -> tuple:
+        """Install package on remote machine."""
         self.connect()
-        resp = self.execute_command(CHECK_RPM.format(package_name))
-        LOGGER.info("resp: %s", str(resp))
-        if not resp[0]:
-            resp = self.execute_command(CHECK_H.format(package_name))
-            LOGGER.info("resp: %s", str(resp))
+        resp = (False, None)
+        try:
+            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+            if package_name not in resp[1]:
+                resp = self.execute_command(cmd.CMD_INSTALL_PKG.format(package_name))
+        except IOError as err:
+            LOGGER.error(err)
+        finally:
+            self.disconnect()
+        return resp
+
+    def remove_package(self, package_name: str) -> tuple:
+        """Remove package from remote machine."""
+        self.connect()
+        resp = (False, None)
+        try:
+            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+            if package_name in resp[1]:
+                resp = self.execute_command(cmd.CMD_REMOVE_PKG.format(package_name))
+        except IOError as err:
+            LOGGER.error(err)
+        finally:
+            self.disconnect()
         return resp
