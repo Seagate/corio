@@ -79,8 +79,7 @@ class S3RestApi:
                                                                S3_CFG.s3api_retry}))
 
     def get_boto3_client(self):
-        """Create s3 client for without asyncio operations.
-        """
+        """Create s3 client for without asyncio operations."""
         return boto3.client("s3",
                             use_ssl=self.use_ssl,
                             verify=False,
@@ -92,6 +91,20 @@ class S3RestApi:
                             config=Config(connect_timeout=300,
                                           read_timeout=300,
                                           retries={'max_attempts': 6}))
+
+    def get_boto3_resource(self):
+        """Create s3 resource for without asyncio operations."""
+        return boto3.resource("s3",
+                              use_ssl=self.use_ssl,
+                              verify=False,
+                              aws_access_key_id=self.access_key,
+                              aws_secret_access_key=self.secret_key,
+                              endpoint_url=self.endpoint_url,
+                              region_name=self.region,
+                              aws_session_token=self.aws_session_token,
+                              config=Config(connect_timeout=300,
+                                            read_timeout=300,
+                                            retries={'max_attempts': 6}))
 
     def __repr__(self):
         """string representation of an S3API object."""
