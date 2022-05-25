@@ -61,3 +61,6 @@ DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 # Supported type of object size.
 KB = 1000
 KIB = 1024
+
+# resource utilization package.
+NMON = "nmon"

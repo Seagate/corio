@@ -25,7 +25,8 @@
 # Parameters: pod_name, container_name, command.
 KUBECTL_CMD = "kubectl {} {} -n {} {}"
 KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
-CMD_K8S_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker|awk '{print $1}'"
+KUBECTL_GET_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{" \
+                           "print $1}'"
 CMD_POD_STATUS = "kubectl get pods"
 KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep {}"
 KUBECTL_GET_REPLICASET = "kubectl get rs | grep '{}'"
@@ -43,16 +44,20 @@ CMD_HCTL_STATUS = "hctl status --json"
 CMD_GENERATE_CLSTR_LOGS = "cd {}; sh {}"
 # System commands.
 CMD_MOUNT = "mount -t nfs {} {}"
+CMD_JOURNALCTL = "journalctl > {}"
+CMD_DMESG = "dmesg > {}"
 
-# nmon installation
-CMD_YUM_NMON = "yum install -y nmon"
-K8S_WORKER_NODES = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
+# CentOS commands.
+CMD_INSTALL_PKG = "yum install -y {}"
+CMD_REMOVE_PKG = "yum remove -y {}"
+CMD_CHK_PKG_INSTALLED = "rpm -qa | grep {}"
+CMD_PKG_HELP = "{} -h"
+CMD_RM_NMON = "rm -f {}"
+CHECK_RPM = "rpm -qa | grep {}"
+CMD_SEARCH_FILE = "find . -name {}"
+# nimon installation
 CMD_RUN_NMON = "nmon -f -s 60 -TU"
 CMD_KILL_NMON = "kill -USR2 $(ps ax | grep nmon  | grep -v grep | awk '{print $1}')"
-CMD_NMON_FILE = "find . -name '*.nmon'"
-CMD_RM_NMON = "rm -f {}"
-# nimon installation
-CHECK_RPM = "rpm -qa | grep {}"
 CHECK_H = "{} -h"
 YUM_UNZIP = "yum install -y unzip"
 CMD_WGET_NIMON = "wget http://sourceforge.net/projects/nmon/files/njmon_linux_binaries_v78.zip" \
