@@ -61,6 +61,8 @@ class S3RestApi:
             self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
         else:
             self.log = get_logger(level, kwargs.get("test_id"))
+        self.log_path = next(iter([handler.baseFilename for handler in self.log.handlers if
+                                   isinstance(handler, logging.FileHandler)]))
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""

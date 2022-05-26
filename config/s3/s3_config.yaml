@@ -2,7 +2,7 @@
 aws_cred_section: "default"
 aws_path: "/root/.aws/credentials"
 aws_config_path: "/root/.aws/config"
-region: "US"
+region: "us-east-1"
 endpoint: "https://s3.seagate.com"
 validate_certs: True
 use_ssl: True

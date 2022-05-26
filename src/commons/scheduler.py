@@ -77,6 +77,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
                                             start_time=each["start_time"].total_seconds(),
                                             **params))
         elif each["tool"] == "s3bench":
+            params.update(each)
+            params.pop("start_time")
+            params.pop("TEST_ID")
             tasks.append(create_session(funct=each["operation"],
                                         start_time=each["start_time"].total_seconds(), **params))
         else:

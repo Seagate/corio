@@ -46,7 +46,7 @@ class S3bench:
                  samples: int, size_low: int, size_high: int, seed: int, part_high: int = 0,
                  part_low: int = 0, head: bool = True, skip_read: bool = True,
                  skip_write: bool = False, skip_cleanup: bool = False, validate: bool = True,
-                 duration: timedelta = None) -> None:
+                 duration: timedelta = None, region="us-east-1") -> None:
         """S3bench workload tests generate following log files.
 
         1. {log_file}-report-i.log -> CLI redirection logs
@@ -92,6 +92,7 @@ class S3bench:
         self.validate = validate
         self.part_high = part_high
         self.part_low = part_low
+        self.region = region
         self.min_duration = 10  # In seconds
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
@@ -181,6 +182,8 @@ class S3bench:
                   f"-numClients={self.num_clients} -numSamples={self.num_samples} " \
                   f"-objectNamePrefix={self.object_prefix} -multipartSize={part_size}b -t json "
 
+            if self.region:
+                cmd = cmd + f"-region {self.region} "
             if self.head:
                 cmd += "-headObj "
             if self.skip_write:

@@ -268,13 +268,17 @@ def store_logs_to_nfs_local_server() -> None:
     """Copy/Store workload, support bundle and client/server resource log to local/NFS server."""
     # Copy workload execution logs to nfs/local server.
     latest = os.path.join(LOG_DIR, 'latest')
+    # copy s3bench run logs
+    for fpath in glob.glob(os.path.join(os.getcwd(), "s3bench*.log")):
+        if os.path.exists(fpath):
+            os.rename(fpath, os.path.join(latest, os.path.basename(fpath)))
     if os.path.exists(latest):
         shutil.copytree(latest, os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "log", "latest"))
     # Copy reports to nfs/local server.
     reports = glob.glob(f"{REPORTS_DIR}/*.*")
     svr_report_dir = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "reports")
     if not os.path.exists(svr_report_dir):
-        os .makedirs(svr_report_dir)
+        os.makedirs(svr_report_dir)
     for report in reports:
         shutil.copyfile(report, os.path.join(svr_report_dir, os.path.basename(report)))
     LOGGER.info("All logs copied to %s", os.path.join(CMN_LOG_DIR, os.getenv("run_id")))
