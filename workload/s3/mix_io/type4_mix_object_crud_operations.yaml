@@ -3,12 +3,13 @@ test_1:
   object_size:
     start: 0b
     end: 1GiB
-  min_runtime: 30d
-  sessions: 20
-  tool: s3bench
-  disable_background_delete: False
   write_percentage: 30
   read_percentage: 30
   delete_percentage: 15
   cleanup_percentage: 85
-  total_storage: 80GiB
+  total_storage_size: 80GiB
+  min_runtime: 30d
+  sessions_per_node: 20
+  background_delete: False
+  tool: s3bench
+  operation: "mix_object_ops"
