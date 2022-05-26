@@ -31,22 +31,17 @@ import time
 from datetime import datetime, timedelta
 from json.decoder import JSONDecodeError
 from typing import Tuple, List, Any
-
-from config import S3_TOOLS_CFG
+from config import S3_CFG
 
 LOGGER = logging.getLogger(__name__)
-S3BENCH_CONF = S3_TOOLS_CFG["s3bench"]
 
 
 class S3bench:
     """S3bench class for executing given s3bench workload."""
 
-    # pylint: disable=too-many-arguments,too-many-locals, too-many-instance-attributes
-    def __init__(self, access: str, secret: str, endpoint: str, test_id: str, clients: int,
-                 samples: int, size_low: int, size_high: int, seed: int, part_high: int = 0,
-                 part_low: int = 0, head: bool = True, skip_read: bool = True,
-                 skip_write: bool = False, skip_cleanup: bool = False, validate: bool = True,
-                 duration: timedelta = None, region="us-east-1") -> None:
+    # pylint: disable=too-many-arguments,too-many-locals
+    def __init__(self, access: str, secret: str, test_id: str,
+                 seed: int, duration: timedelta = None, **kwargs) -> None:
         """S3bench workload tests generate following log files.
 
         1. {log_file}-report-i.log -> CLI redirection logs
@@ -76,23 +71,23 @@ class S3bench:
             sys.exit(-1)
         self.access_key = access
         self.secret_key = secret
-        self.endpoint = endpoint
+        self.endpoint = kwargs.get("endpoint", S3_CFG.endpoint)
         self.bucket = f"bucket-{test_id.lower()}"
         self.object_prefix = f"obj-{test_id.lower()}"
-        self.num_clients = clients
-        self.num_samples = samples
+        self.num_clients = kwargs.get("clients")
+        self.num_samples = kwargs.get("samples")
         self.label = f"{test_id.lower()}"
-        self.size_low = size_low
-        self.size_high = size_high
+        self.size_low = kwargs.get("size_low")
+        self.size_high = kwargs.get("size_high")
         self.report_file = f"{self.label}-report"
-        self.head = head
-        self.skip_read = skip_read
-        self.skip_write = skip_write
-        self.skip_cleanup = skip_cleanup
-        self.validate = validate
-        self.part_high = part_high
-        self.part_low = part_low
-        self.region = region
+        self.head = kwargs.get("head")
+        self.skip_read = kwargs.get("skip_read")
+        self.skip_write = kwargs.get("skip_write")
+        self.skip_cleanup = kwargs.get("skip_cleanup")
+        self.validate = kwargs.get("validate")
+        self.part_high = kwargs.get("part_high")
+        self.part_low = kwargs.get("part_low")
+        self.region = kwargs.get("region","us-east-1")
         self.min_duration = 10  # In seconds
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
@@ -105,12 +100,14 @@ class S3bench:
     @staticmethod
     def install_s3bench() -> bool:
         """Install s3bench if already not installed."""
+        from config import S3_TOOLS_CFG
+        s3bench_conf = S3_TOOLS_CFG["s3bench"]
         if os.system("s3bench --help"):
             LOGGER.info("s3bench is not installed. Installing s3bench.")
-            if os.system(f"wget -O {S3BENCH_CONF['path']} {S3BENCH_CONF['version']}"):
+            if os.system(f"wget -O {s3bench_conf['path']} {s3bench_conf['version']}"):
                 LOGGER.error("ERROR: Unable to download s3bench binary from github")
                 return False
-            if os.system(f"chmod +x {S3BENCH_CONF['path']}"):
+            if os.system(f"chmod +x {s3bench_conf['path']}"):
                 LOGGER.error("ERROR: Unable to add execute permission to s3bench")
                 return False
             if os.system("s3bench --help"):

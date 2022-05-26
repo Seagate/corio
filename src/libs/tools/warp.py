@@ -26,20 +26,18 @@ import subprocess
 from datetime import timedelta
 from typing import Any
 
-from config import S3_TOOLS_CFG
+
 from src.commons.exception import CheckError
 
 LOGGER = logging.getLogger(__name__)
-WARP_CONF = S3_TOOLS_CFG["s3bench"]
 
 
 class Warp:
     """Warp class for executing given Warp workload."""
 
-    # pylint: disable=too-many-arguments,too-many-locals, too-many-instance-attributes
-    def __init__(self, operation: str, access: str, secret: str, host: str, test_id: str,
-                 concurrent: int, objects: int, size_high: int, random_size: bool = True,
-                 duration: timedelta = None) -> None:
+    # pylint: disable=too-many-arguments,too-many-locals
+    def __init__(self, operation: str, access: str, secret: str,
+                 duration: timedelta = None, **kwargs) -> None:
         """Log file generated name = log_file.csv.zst file in current directory.
 
         operations can be one of the get, put, stat
@@ -58,23 +56,26 @@ class Warp:
         self.operation = operation
         self.access_key = access
         self.secret_key = secret
-        self.host = host
-        self.bucket = f"bucket-{test_id}"
-        self.concurrent = concurrent
-        self.objects = objects
-        self.size_high = size_high
+        self.host = kwargs.get("host")
+        self.concurrent = kwargs.get("concurrent")
+        self.objects = kwargs.get("objects")
+        self.size_high = kwargs.get("size_high")
+        test_id = kwargs.get("test_id")
         self.log = test_id
+        self.bucket = f"bucket-{test_id}"
         self.log_file = f"{test_id}.csv.zst"
-        self.random_size = random_size
+        self.random_size = kwargs.get("random_size")
         self.duration = duration if duration else timedelta(hours=int(40 * 24))
         self.cmd = None
 
     @staticmethod
     def install_warp() -> bool:
         """Install Warp if not present."""
+        from config import S3_TOOLS_CFG
+        warp_conf = S3_TOOLS_CFG["s3bench"]
         if os.system("warp -v"):
             LOGGER.error("ERROR: warp is not installed. Installing warp tool.")
-            if os.system(f"yum install -y {WARP_CONF['version']}"):
+            if os.system(f"yum install -y {warp_conf['version']}"):
                 LOGGER.error("ERROR: Unable to install warp")
                 return False
             if os.system("warp -v"):
