@@ -36,7 +36,7 @@ WARP_CONF = S3_TOOLS_CFG["s3bench"]
 class Warp:
     """Warp class for executing given Warp workload."""
 
-    # pylint: disable=too-many-arguments,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-locals, too-many-instance-attributes
     def __init__(self, operation: str, access: str, secret: str, host: str, test_id: str,
                  concurrent: int, objects: int, size_high: int, random_size: bool = True,
                  duration: timedelta = None) -> None:
@@ -118,8 +118,8 @@ class Warp:
             error = False
         else:
             for operation in ops:
-                process_output = self.execute_command(f"warp analyze {self.log_file} "
-                                               f"--analyze.op {operation.upper()} --analyze.v")
+                process_output = self.execute_command(
+                    f"warp analyze {self.log_file} --analyze.op {operation.upper()} --analyze.v")
                 pattern = r"Errors: (\d+)"
                 # Grep pattern in cp.stdout
                 matches = re.finditer(pattern, process_output, re.MULTILINE)
