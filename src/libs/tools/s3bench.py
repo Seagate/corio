@@ -41,12 +41,12 @@ S3BENCH_CONF = S3_TOOLS_CFG["s3bench"]
 class S3bench:
     """S3bench class for executing given s3bench workload."""
 
-    # pylint: disable=too-many-arguments,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-locals, too-many-instance-attributes
     def __init__(self, access: str, secret: str, endpoint: str, test_id: str, clients: int,
                  samples: int, size_low: int, size_high: int, seed: int, part_high: int = 0,
                  part_low: int = 0, head: bool = True, skip_read: bool = True,
                  skip_write: bool = False, skip_cleanup: bool = False, validate: bool = True,
-                 duration: timedelta = None) -> None:
+                 duration: timedelta = None, region="us-east-1") -> None:
         """S3bench workload tests generate following log files.
 
         1. {log_file}-report-i.log -> CLI redirection logs
@@ -92,6 +92,7 @@ class S3bench:
         self.validate = validate
         self.part_high = part_high
         self.part_low = part_low
+        self.region = region
         self.min_duration = 10  # In seconds
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
@@ -100,8 +101,6 @@ class S3bench:
         self.cli_log = f"{self.label}-cli"
         self.cmd = None
         self.results = []
-        self.errors = ["with error", "panic", "status code", "fatal error",
-                       "flag provided but not defined", "InternalError", "ServiceUnavailable"]
 
     @staticmethod
     def install_s3bench() -> bool:
@@ -119,6 +118,7 @@ class S3bench:
                 return False
         return True
 
+    # pylint: disable=no-member, subprocess-popen-preexec-fn
     def execute_command(self, duration: float) -> bool:
         """
         Execute s3bench command on local machine for given duration.
@@ -128,17 +128,17 @@ class S3bench:
         :return: Subprocess completed returns False or killed due to timeout returns True
         """
         LOGGER.info("Starting: %s wait: %s", self.cmd, duration)
-        proc = subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid)
-        pgid = os.getpgid(proc.pid)
-        counter = 0
-        # Poll for either process completion or for timeout
-        while counter < duration and proc.poll() is None:
-            counter += 5
-            time.sleep(5)
-        if proc.poll() is None:
-            LOGGER.info("S3bench workload still running, Terminating.")
-            os.killpg(pgid, signal.SIGKILL)
-            return True
+        with subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid) as proc:
+            pgid = os.getpgid(proc.pid)
+            counter = 0
+            # Poll for either process completion or for timeout
+            while counter < duration and proc.poll() is None:
+                counter += 5
+                time.sleep(5)
+            if proc.poll() is None:
+                LOGGER.info("S3bench workload still running, Terminating.")
+                os.killpg(pgid, signal.SIGKILL)
+                return True
         LOGGER.info("S3bench workload is complete.")
         return False
 
@@ -182,6 +182,8 @@ class S3bench:
                   f"-numClients={self.num_clients} -numSamples={self.num_samples} " \
                   f"-objectNamePrefix={self.object_prefix} -multipartSize={part_size}b -t json "
 
+            if self.region:
+                cmd = cmd + f"-region {self.region} "
             if self.head:
                 cmd += "-headObj "
             if self.skip_write:
@@ -217,7 +219,8 @@ class S3bench:
                 return status, ops
             LOGGER.info("No error found continuing execution")
 
-    def check_log_file_error(self, report_file: str, cli_log: str) -> Tuple[bool, dict]:
+    @classmethod
+    def check_log_file_error(cls, report_file: str, cli_log: str) -> Tuple[bool, dict]:
         """
         Check if errors found in s3bench workload.
 
@@ -227,11 +230,11 @@ class S3bench:
                   e.g. False, {"Write": 5, "Read":3, "Head":0}
         """
         try:
-            with open(report_file) as report_fp:
+            with open(report_file, encoding="utf-8") as report_fp:
                 report = json.load(report_fp)
         except JSONDecodeError as err:
             LOGGER.error("Incorrect Json format %s - %s", report_file, err)
-            return self.check_terminated_results(cli_log)
+            return cls.check_terminated_results(cli_log)
         ops = {"Write": 0, "Read": 0, "Validate": 0, "HeadObj": 0}
         error = True
         for test in report["Tests"]:
@@ -246,18 +249,21 @@ class S3bench:
         error_ops = {f"{key} Errors": value for key, value in ops.items()}
         return error, error_ops
 
-    def check_terminated_results(self, cli_log: str) -> Tuple[bool, dict]:
+    @staticmethod
+    def check_terminated_results(cli_log: str) -> Tuple[bool, dict]:
         """Check results if s3bench workload is terminated.
 
         :param cli_log: CLI log file name.
         :return: Tuple of Test Pass/Fail with dict of failures per operation
         """
+        errors = ["with error", "panic", "status code", "fatal error",
+                  "flag provided but not defined", "InternalError", "ServiceUnavailable"]
         pattern = r"{0} \| [\d\/\.% \(\)]+ \| [a-z\d ]+ \| errors ([1-9]+)"
         ops = {"Write": 0, "Read": 0, "Validate": 0, "HeadObj": 0}
         error = True
-        with open(cli_log) as log_f:
+        with open(cli_log, encoding="utf-8") as log_f:
             data = log_f.read()
-            for operation in ops:
+            for operation in dict(ops):
                 ops_pattern = pattern.format(operation)
                 matches = re.finditer(ops_pattern, data, re.MULTILINE)
                 matches = list(matches)
@@ -265,7 +271,7 @@ class S3bench:
                     ops[operation] = int(matches[-1].group(1))
                     error = False
             error_ops = {f"{key} Errors": value for key, value in ops.items()}
-            errors_pattern = fr"^.*(?:{'|'.join(self.errors)}).*$"
+            errors_pattern = fr"^.*(?:{'|'.join(errors)}).*$"
             matches = list(re.finditer(errors_pattern, data, re.MULTILINE))
             if len(matches) != 0:
                 error_ops["Error String"] = matches[0].group()

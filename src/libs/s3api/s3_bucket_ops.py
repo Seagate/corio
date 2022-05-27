@@ -135,3 +135,24 @@ class S3Bucket(S3RestApi):
         self.log.info("Response: %s", str(response))
         bucket_list = [bucket['Name'] for bucket in response['Buckets']]
         return bucket_list
+
+    def delete_s3_bucket(self, bucket_name: str = None, force: bool = False) -> dict:
+        """
+        Delete the empty bucket or delete the bucket along with objects stored in it.
+
+        :param bucket_name: Name of the bucket.
+        :param force: Value for delete bucket with object or without object.
+        :return: response.
+        """
+        self.s3_url = f"s3://{bucket_name}"
+        bucket = self.get_boto3_resource().Bucket(bucket_name)
+        if force:
+            self.log.info("This might cause data loss as you have opted for bucket deletion with "
+                          "objects in it")
+            response = bucket.objects.all().delete()
+            self.log.debug("Objects deleted successfully from bucket %s, response: %s",
+                           bucket_name, response)
+        response = bucket.delete()
+        self.log.debug("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
+
+        return response

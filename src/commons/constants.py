@@ -39,6 +39,7 @@ DATA_DIR_PATH = os.path.join(CORIO_ROOT, DATA_DIR)
 LOG_DIR = os.path.join(CORIO_ROOT, "log")
 REPORTS_DIR = os.path.join(CORIO_ROOT, "reports")
 CMN_LOG_DIR = os.path.join(MOUNT_DIR, "CorIO-Execution", socket.gethostname())
+LATEST_LOG_PATH = os.path.join(LOG_DIR, "latest")
 
 # k8s constant for cortx.
 HAX_CONTAINER_NAME = "cortx-hax"

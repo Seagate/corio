@@ -70,10 +70,20 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         if "part_copy" in each.keys():
             params["part_copy"] = each["part_copy"]
         params.update(common_params)
-        for i in range(1, int(each["sessions"]) + 1):
-            params["session"] = f"{each['TEST_ID']}_session{i}"
+        if each["tool"] == "s3api":
+            for i in range(1, int(each["sessions"]) + 1):
+                params["session"] = f"{each['TEST_ID']}_session{i}"
+                tasks.append(create_session(funct=each["operation"],
+                                            start_time=each["start_time"].total_seconds(),
+                                            **params))
+        elif each["tool"] == "s3bench":
+            params.update(each)
+            params.pop("start_time")
+            params.pop("TEST_ID")
             tasks.append(create_session(funct=each["operation"],
                                         start_time=each["start_time"].total_seconds(), **params))
+        else:
+            raise NotImplementedError(f"Tool is not supported: {each['tool']}")
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
     LOGGER.critical("Terminating process & pending task: %s", process_name)
     for task in pending:

@@ -140,7 +140,7 @@ def convert_min_runtime_to_time_delta(test, delta_list, data):
 
 def convert_object_part_size_to_bytes(data):
     """convert object_size, part_size to bytes."""
-    for size_type in ["object_size", "part_size"]:
+    for size_type in ["object_size", "part_size", "total_storage_size"]:
         if size_type in data:
             if isinstance(data[size_type], dict):
                 assert "start" in data[size_type] or "end" in data[size_type], \
