@@ -72,3 +72,8 @@ class Adapter:
     def get_objects(self):
         """Print original object dict"""
         return self.obj.__dict__
+
+    def execute(self):
+        """execute adapted object
+        """
+        self.obj.run()

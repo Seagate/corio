@@ -25,6 +25,9 @@ from src.libs.tools.warp import Warp
 class WarpInterface(Warp):
     """S3bench Interface"""
 
+    def __init__(self, operation: str = None, access: str = None, secret: str = None):
+        super().__init__(operation, access, secret)
+
     def __str__(self):
         """Object Representation"""
         return 'warp'

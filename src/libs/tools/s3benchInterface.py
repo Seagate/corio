@@ -18,12 +18,17 @@
 #
 
 """S3bench Library for IO driver."""
+import random
+
 from src.libs.tools.s3bench import S3bench
 
 
 # The existing interface, Adaptee
 class S3benchInterface(S3bench):
     """S3bench Interface"""
+
+    def __init__(self,access=None, secret=None, test_id=None):
+        super().__init__(access, secret, test_id, seed=random.randint(1, 100))
 
     def __str__(self):
         """Object Representation"""

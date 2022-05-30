@@ -32,6 +32,7 @@ from datetime import datetime, timedelta
 from json.decoder import JSONDecodeError
 from typing import Tuple, List, Any
 from config import S3_CFG
+from config import S3_TOOLS_CFG
 
 LOGGER = logging.getLogger(__name__)
 
@@ -100,7 +101,6 @@ class S3bench:
     @staticmethod
     def install_s3bench() -> bool:
         """Install s3bench if already not installed."""
-        from config import S3_TOOLS_CFG
         s3bench_conf = S3_TOOLS_CFG["s3bench"]
         if os.system("s3bench --help"):
             LOGGER.info("s3bench is not installed. Installing s3bench.")

@@ -25,7 +25,7 @@ import re
 import subprocess
 from datetime import timedelta
 from typing import Any
-
+from config import S3_TOOLS_CFG
 
 from src.commons.exception import CheckError
 
@@ -71,7 +71,6 @@ class Warp:
     @staticmethod
     def install_warp() -> bool:
         """Install Warp if not present."""
-        from config import S3_TOOLS_CFG
         warp_conf = S3_TOOLS_CFG["s3bench"]
         if os.system("warp -v"):
             LOGGER.error("ERROR: warp is not installed. Installing warp tool.")
