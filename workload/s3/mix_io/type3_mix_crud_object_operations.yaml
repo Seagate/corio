@@ -1,0 +1,16 @@
+test_1:
+    TEST_ID: TEST-40042
+    object_size:
+        start: 0bytes
+        end: 1Gib
+    write_percentage: 100  # Percentage of data to fill the storage.
+    read_percentage: 100  # Percentage of data to be used to read from storage.
+    delete_percentage: 0  # Percentage of data to be deleted from storage.
+    cleanup_percentage: 0  # Percentage of data once reached then cleanup all data.
+    #  If None then it will be fetched from cluster(cortx specific.)
+    total_storage_size: None  # Total available storage from cluster or user to be used.
+    min_runtime: 30d  # Minimum execution durations to mark workload pass.
+    sessions_per_node: 20  # Number of sessions per node.
+    background_delete: False  # Enable/Disable background delete(Cortx specific).
+    tool: s3bench
+    operation: "mix_object_ops"
