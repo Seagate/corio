@@ -171,20 +171,27 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
         :param file_size: Single object size used to calculate the number of sample.
         """
-        err_str = "Number of samples '{}' should be greater/equal to number of sessions '{}'."
+        err_str = "Number of samples '%s' should be greater/equal to number of sessions '%s'."
         # Logic behind adding extra 1 sample is to cover fractional part.
         w_chunks = modf(self.storage_size_to_fill / file_size)
         write_samples = int(w_chunks[1]) + 1 if w_chunks[0] else int(w_chunks[1])
-        self.log.info("Number of samples '%s' will be used for write operation.", write_samples)
-        assert write_samples >= self.sessions, err_str.format(write_samples, self.sessions)
+        if write_samples > self.sessions:
+            self.log.warning(err_str, write_samples, self.sessions)
+        else:
+            self.log.info("Number of samples '%s' will be used for write operation.", write_samples)
         r_chunks = modf(self.storage_size_to_read / file_size)
         read_samples = int(r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
-        self.log.info("Number of samples '%s' will be used for read operation.", read_samples)
-        assert read_samples >= self.sessions, err_str.format(read_samples, self.sessions)
+        if read_samples > self.sessions:
+            self.log.warning(err_str, read_samples, self.sessions)
+        else:
+            self.log.info("Number of samples '%s' will be used for read operation.", read_samples)
         d_chunks = modf(self.storage_size_to_delete / file_size)
         delete_samples = int(d_chunks[1]) + 1 if d_chunks[0] else int(d_chunks[1])
-        self.log.info("Number of samples '%s' will be used for delete operation.", delete_samples)
-        assert delete_samples >= self.sessions, err_str.format(delete_samples, self.sessions)
+        if delete_samples > self.sessions:
+            self.log.warning(err_str, delete_samples, self.sessions)
+        else:
+            self.log.info(
+                "Number of samples '%s' will be used for delete operation.", delete_samples)
         return write_samples, read_samples, delete_samples
 
     def s3bench_cmd(self, object_size: int, number_sample: int) -> str:
@@ -194,9 +201,13 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param object_size: Object size per sample.
         :param number_sample: Total number samples.
         """
+        sessions = self.sessions if number_sample > self.sessions else number_sample
+        if number_sample < self.sessions:
+            self.log.info("Number of sessions '%s' adjusted as per number of samples '%s'",
+                          sessions, number_sample)
         return f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} " \
                f"-endpoint={self.endpoint_url} -bucket={self.bucket_name} " \
-               f"-numClients={self.sessions} -skipSSLCertVerification=True " \
+               f"-numClients={sessions} -skipSSLCertVerification=True " \
                f"-objectNamePrefix={self.object_prefix.format(self.iteration)} " \
                f"-numSamples={number_sample} -objectSize={object_size}b -region {self.region} "
 
