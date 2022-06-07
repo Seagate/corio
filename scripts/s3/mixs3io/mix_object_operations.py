@@ -94,14 +94,10 @@ class TestMixObjectOps(S3Bucket, S3Object):
             cls.total_storage = resp["total_capacity"]
         cls.iteration = 0
         cls.total_written_data = 0
-        cls.storage_size_to_fill = int(cls.total_storage / 100 * cls.write_percentage) if \
-            cls.write_percentage else cls.total_storage
-        cls.storage_size_to_read = int(cls.total_storage / 100 * cls.read_percentage) if \
-            cls.read_percentage else cls.total_storage
-        cls.storage_size_to_delete = int(cls.total_storage / 100 * cls.delete_percentage) \
-            if cls.delete_percentage else cls.total_storage
-        cls.size_to_cleanup_all_data = int(cls.total_storage / 100 * cls.cleanup_percentage) if \
-            cls.cleanup_percentage else int(cls.total_storage / 100 * 90)
+        cls.storage_size_to_fill = int(cls.total_storage / 100 * cls.write_percentage)
+        cls.storage_size_to_read = int(cls.total_storage / 100 * cls.read_percentage)
+        cls.storage_size_to_delete = int(cls.total_storage / 100 * cls.delete_percentage)
+        cls.size_to_cleanup_all_data = int(cls.total_storage / 100 * cls.cleanup_percentage)
         cls.s3_url = None
         cls.report_path = os.path.join(
             LATEST_LOG_PATH, f"{kwargs.get('test_id')}_mix_s3io_operations_report.log")
@@ -123,29 +119,37 @@ class TestMixObjectOps(S3Bucket, S3Object):
                     file_size = self.object_size
                 self.log.info("Single object size: %s bytes", file_size)
                 write_samples, read_samples, delete_samples = self.get_sample_details(file_size)
-                # Write data to fill specified write percentage.
-                written_data = 0
-                while self.storage_size_to_fill >= written_data:
-                    self.write_data(file_size, write_samples)
-                    written_data += write_samples * file_size
-                self.display_storage_consumed(operation="write")
-                # Read data as per specified read percentage.
-                read_data = 0
-                while self.storage_size_to_read >= read_data:
+                # Write data to fill storage as per write percentage.
+                if int(self.total_written_data / self.total_storage * 100) < 100:
+                    written_data = 0
+                    while self.storage_size_to_fill > written_data:
+                        self.write_data(file_size, write_samples)
+                        written_data += write_samples * file_size
+                    self.display_storage_consumed(operation="write")
+                # Read data as per read percentage.
+                read_data, read_iter = 0, 0
+                while self.storage_size_to_read > read_data:
                     self.read_data(file_size, read_samples, validate=True)
                     read_data += read_samples * file_size
-                # Delete data as per specified delete percentage.
-                deleted_data = 0
-                while self.storage_size_to_delete >= deleted_data:
-                    self.delete_data(file_size, delete_samples)
-                    deleted_data += file_size * delete_samples
-                self.display_storage_consumed(operation="delete")
-                if self.total_written_data >= self.size_to_cleanup_all_data:
-                    self.log.info("Deleting all object from %s as storage consumption reached "
-                                  "limit %s%% ", self.s3_url, self.cleanup_percentage)
-                    self.delete_s3_objects(self.bucket_name, object_prefix=self.object_prefix)
-                    self.total_written_data *= 0
-                    self.log.info("Data cleanup competed...")
+                    read_iter += 1
+                read_percentage = int(read_data / self.total_storage * 100)
+                self.log.info("Able to read %s%% of data from cluster in %s iterations.",
+                              read_percentage, read_iter)
+                # Delete data as per delete percentage.
+                if self.storage_size_to_delete:
+                    deleted_data = 0
+                    while self.storage_size_to_delete > deleted_data:
+                        self.delete_data(file_size, delete_samples)
+                        deleted_data += file_size * delete_samples
+                    self.display_storage_consumed(operation="delete")
+                # Cleanup data as per cleanup percentage.
+                if self.size_to_cleanup_all_data:
+                    if self.total_written_data >= self.size_to_cleanup_all_data:
+                        self.log.info("cleanup objects from %s as storage consumption reached "
+                                      "limit %s%% ", self.s3_url, self.cleanup_percentage)
+                        self.delete_s3_objects(self.bucket_name, object_prefix=self.object_prefix)
+                        self.total_written_data *= 0
+                        self.log.info("Data cleanup competed...")
                 self.display_storage_consumed(operation="")
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
@@ -158,12 +162,13 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
     def display_storage_consumed(self, operation="write"):
         """Display storage consumed after specified operation."""
+        consumed_per = int(self.total_written_data / self.total_storage * 100)
+        storage_consumed = 100 if consumed_per > 100 else consumed_per
         if operation:
-            self.log.info("Storage consumed %s%% after %s operations.",
-                          int(self.total_written_data / self.total_storage * 100), operation)
+            self.log.info("Storage consumed %s%% after %s operations.", storage_consumed, operation)
         else:
-            self.log.info("Storage consumed %s%% after iteration %s.",
-                          int(self.total_written_data / self.total_storage * 100), self.iteration)
+            self.log.info("Storage consumed %s%% after iteration %s.", storage_consumed,
+                          self.iteration)
 
     def get_sample_details(self, file_size: int) -> tuple:
         """
@@ -171,20 +176,32 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
         :param file_size: Single object size used to calculate the number of sample.
         """
-        err_str = "Number of samples '{}' should be greater/equal to number of sessions '{}'."
+        err_str = "Number of samples '%s' should be greater/equal to number of sessions '%s'."
+        sample_msg = "Number of samples '%s' will be used for %s operation."
+        per_limit = "%s percentage should be less than or equal to 100%"
         # Logic behind adding extra 1 sample is to cover fractional part.
+        assert self.write_percentage < 100, per_limit.format("Write")
+        assert self.delete_percentage < 100, per_limit.format("Delete")
         w_chunks = modf(self.storage_size_to_fill / file_size)
         write_samples = int(w_chunks[1]) + 1 if w_chunks[0] else int(w_chunks[1])
-        self.log.info("Number of samples '%s' will be used for write operation.", write_samples)
-        assert write_samples >= self.sessions, err_str.format(write_samples, self.sessions)
+        if write_samples < self.sessions:
+            self.log.warning(err_str, write_samples, self.sessions)
+        else:
+            self.log.info(sample_msg, write_samples, "write")
         r_chunks = modf(self.storage_size_to_read / file_size)
         read_samples = int(r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
-        self.log.info("Number of samples '%s' will be used for read operation.", read_samples)
-        assert read_samples >= self.sessions, err_str.format(read_samples, self.sessions)
+        # Added if we are reading data in iteration more than 100 percent.
+        read_samples = read_samples if self.read_percentage <= 100 else write_samples
+        if read_samples < self.sessions:
+            self.log.warning(err_str, read_samples, self.sessions)
+        else:
+            self.log.info(sample_msg, read_samples, "read")
         d_chunks = modf(self.storage_size_to_delete / file_size)
         delete_samples = int(d_chunks[1]) + 1 if d_chunks[0] else int(d_chunks[1])
-        self.log.info("Number of samples '%s' will be used for delete operation.", delete_samples)
-        assert delete_samples >= self.sessions, err_str.format(delete_samples, self.sessions)
+        if delete_samples < self.sessions:
+            self.log.warning(err_str, delete_samples, self.sessions)
+        else:
+            self.log.info(sample_msg, delete_samples, "delete")
         return write_samples, read_samples, delete_samples
 
     def s3bench_cmd(self, object_size: int, number_sample: int) -> str:
@@ -194,9 +211,13 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param object_size: Object size per sample.
         :param number_sample: Total number samples.
         """
+        sessions = self.sessions if number_sample > self.sessions else number_sample
+        if number_sample < self.sessions:
+            self.log.info("Number of sessions '%s' adjusted as per number of samples '%s'",
+                          sessions, number_sample)
         return f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} " \
                f"-endpoint={self.endpoint_url} -bucket={self.bucket_name} " \
-               f"-numClients={self.sessions} -skipSSLCertVerification=True " \
+               f"-numClients={sessions} -skipSSLCertVerification=True " \
                f"-objectNamePrefix={self.object_prefix.format(self.iteration)} " \
                f"-numSamples={number_sample} -objectSize={object_size}b -region {self.region} "
 
@@ -264,12 +285,12 @@ class TestMixObjectOps(S3Bucket, S3Object):
         self.log.info("Deleting data...")
         self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
         cmd = self.s3bench_cmd(object_size, number_sample)
-        self.total_written_data -= object_size * number_sample
         if validate:
             cmd += " -skipWrite -skipRead -validate"
         else:
             cmd += " -skipWrite -skipRead"
         self.execute_validate_run(cmd)
+        self.total_written_data -= object_size * number_sample
         self.log.info("Deletion completed...")
 
     def validate_data(self, object_size: int, number_sample: int) -> None:
