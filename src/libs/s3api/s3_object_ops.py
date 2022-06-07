@@ -276,9 +276,9 @@ class S3Object(S3RestApi):
                     objects.append({"key": file.key})
             response = self.get_boto3_client().delete_objects(Bucket=bucket_name,
                                                               Delete={'Objects': objects})
-            self.log.info("deleted all s3 object with prefix '{}' from '{}', response: {}",
-                           object_prefix, self.s3_url, response)
+            self.log.info("deleted all s3 object with prefix '%s' from '%s', response: %s",
+                          object_prefix, self.s3_url, response)
         else:
             response = self.get_boto3_resource().Bucket(bucket_name).objects.all()
-            self.log.info("deleted all s3 object from {}, response: {}", self.s3_url, response)
+            self.log.info("deleted all s3 object from %s, response: %s", self.s3_url, response)
         return response
