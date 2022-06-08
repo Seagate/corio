@@ -13,4 +13,6 @@ test_1:
     sessions_per_node: 20  # Number of sessions per node.
     background_delete: False  # Enable/Disable background delete(Cortx specific).
     tool: s3bench
+    s3max_retries: 5 # Maximum number of times that a request will be retried for failures.
+    connection_timeout: 5 # Specifies a time limit in Minutes for requests made by Client.
     operation: "mix_object_ops"
