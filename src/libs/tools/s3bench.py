@@ -31,12 +31,14 @@ import time
 from datetime import datetime, timedelta
 from json.decoder import JSONDecodeError
 from typing import Tuple, List, Any
+
 from config import S3_CFG
 from config import S3_TOOLS_CFG
 
 LOGGER = logging.getLogger(__name__)
 
 
+# pylint: disable=too-many-instance-attributes
 class S3bench:
     """S3bench class for executing given s3bench workload."""
 
@@ -65,6 +67,8 @@ class S3bench:
         :param skip_write: Skip write operation
         :param skip_cleanup: Skip cleanup operation
         :param validate: Validate downloaded objects
+        :param s3max_retries: Maximum number of times that a request will be retried for failures
+        :param connection_timeout: Time limit in Minutes for requests made by this Client.
         :param duration: Duration timedelta object, if not given will run for 100 days
         """
         random.seed(seed)
@@ -88,8 +92,10 @@ class S3bench:
         self.validate = kwargs.get("validate")
         self.part_high = kwargs.get("part_high")
         self.part_low = kwargs.get("part_low")
-        self.region = kwargs.get("region","us-east-1")
+        self.region = kwargs.get("region", "us-east-1")
         self.min_duration = 10  # In seconds
+        self.s3max_retries = kwargs.get("s3max_retries", None)
+        self.connection_timeout = kwargs.get("connection_timeout", None)
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
         else:
@@ -102,7 +108,7 @@ class S3bench:
     def install_s3bench() -> bool:
         """Install s3bench if already not installed."""
         s3bench_conf = S3_TOOLS_CFG["s3bench"]
-        if os.system("s3bench --help"):
+        if os.system("s3bench --version"):
             LOGGER.info("s3bench is not installed. Installing s3bench.")
             if os.system(f"wget -O {s3bench_conf['path']} {s3bench_conf['version']}"):
                 LOGGER.error("ERROR: Unable to download s3bench binary from github")
@@ -149,7 +155,7 @@ class S3bench:
             else:
                 LOGGER.info("Old log %s does not exist", log)
 
-    # pylint: disable=too-many-branches,too-many-locals
+    # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     def execute_s3bench_workload(self) -> Tuple[bool, Any]:
         """Prepare and execute s3bench workload command.
 
@@ -190,7 +196,12 @@ class S3bench:
             if self.skip_cleanup:
                 cmd += "-skipCleanup "
             if self.validate:
-                cmd += "-validate"
+                cmd += "-validate "
+            if self.s3max_retries:
+                cmd = cmd + f"-s3MaxRetries={self.s3max_retries} "
+            if self.connection_timeout:
+                self.connection_timeout *= 60000  # conversion minutes into milliseconds.
+                cmd = cmd + f"-httpClientTimeout={self.connection_timeout}"
 
             report = f"{self.report_file}-{i}.log"
             cli_log = f"{self.cli_log}-{i}.log"

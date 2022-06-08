@@ -85,6 +85,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
         cls.object_size = kwargs.get("object_size")
         cls.sessions = kwargs.get("sessions")
         cls.region = kwargs.get("region", "us-east-1")
+        cls.s3max_retries = kwargs.get("s3max_retries", None)
+        cls.connection_timeout = kwargs.get("connection_timeout", None)
         # If user input is zero then we will use hctl status to fetch storage details.
         if not cls.total_storage:
             host, user, password = get_master_details()
@@ -231,6 +233,11 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
         :param cmd: s3bench command to be executed with some workload.
         """
+        if self.s3max_retries:
+            cmd = cmd + f"-s3MaxRetries={self.s3max_retries} "
+        if self.connection_timeout:
+            self.connection_timeout *= 60000  # conversion minutes into milliseconds.
+            cmd = cmd + f"-httpClientTimeout={self.connection_timeout}"
         cmd += self.cmd_reporting_params()
         status, resp = run_local_cmd(cmd)
         assert status, f"Failed execute '{cmd}', response: {resp}"
