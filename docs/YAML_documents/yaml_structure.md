@@ -7,6 +7,12 @@ A test yaml file should have the following parameters based on workloads to run:
 * part_size
 * range_read
 * part_range
+* write_percentage
+* read_percentage
+* delete_percentage
+* cleanup_percentage
+* total_storage_size
+* background_delete
 * min_runtime
 * sessions_per_node
 * sessions
@@ -40,6 +46,19 @@ as total number of sessions for a test workload. Default value of number_of_node
 
 **part_range** is range of numbers from which random number of parts for multipart workloads can be 
 calculated.
+
+**write_percentage** is percentage of data to fill the storage size.
+
+**read_percentage** is percentage of data to read from given storage size.
+
+**delete_percentage** is percentage of data to be deleted from storage.
+
+**cleanup_percentage** is Percentage(less or equal to write) of data once reached then do cleanup.
+
+**total_storage_size** Total available storage from cluster or user inout size will be used as following
+(MB, Mib to PB, Pib and if None will be fetched from cluster).
+
+**background_delete** Enable/Disable background delete(Cortx specific)
 
 **min_runtime** can be specified from seconds up to days. For example: 1d1h, 1h or 2d1h2s.
 

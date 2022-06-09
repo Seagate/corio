@@ -16,7 +16,7 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 
-"""Unit Test Class to check adapter interface"""
+"""Unit Test Class to check adapter interface."""
 import unittest
 from src.libs.adapter import Adapter
 from src.libs.tools.warpInterface import WarpInterface
@@ -24,11 +24,11 @@ from src.libs.tools.s3benchInterface import S3benchInterface
 
 
 class AdapterTest(unittest.TestCase):
-    """Adapter Test Class"""
+    """Adapter Test Class."""
 
     @staticmethod
     def test_warp_adapter():
-        """list to store objects"""
+        """List to store objects."""
         objects = []
         iotool = WarpInterface()
         adapter = Adapter(iotool, execution=iotool.run)
@@ -37,7 +37,7 @@ class AdapterTest(unittest.TestCase):
 
     @staticmethod
     def test_s3bench_adapter():
-        """list to store objects"""
+        """List to store objects."""
         objects = []
         iotool = S3benchInterface()
         adapter = Adapter(iotool, execution=iotool.run)
@@ -46,18 +46,18 @@ class AdapterTest(unittest.TestCase):
 
     @staticmethod
     def test_adapter():
-        """test s3bench and Warp Together"""
+        """Test s3bench and Warp Together."""
         objects = []
         warp = WarpInterface()
         objects.append(Adapter(warp, execution=warp.run))
         s3bench = S3benchInterface()
         objects.append(Adapter(s3bench, execution=s3bench.run))
         for obj in objects:
-            print("{0} is {1} IO".format(obj, obj.run()))
+            print("{obj} is {} IO",obj.run())
 
     @staticmethod
     def test_adapter_interface():
-        """ Test S3bench interface"""
+        """ Test S3bench interface."""
         objects = []
         iotool = S3benchInterface()
         adapter = Adapter(iotool, execution=iotool.run)
