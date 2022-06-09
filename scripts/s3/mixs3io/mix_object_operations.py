@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from math import modf
 from time import perf_counter_ns
 
+from config import S3_CFG
 from src.commons.constants import LATEST_LOG_PATH
 from src.commons.constants import MIN_DURATION
 from src.commons.utils.cluster_utils import ClusterServices
@@ -33,6 +34,7 @@ from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.tools.s3bench import S3bench
 
 
+# pylint: disable=too-many-instance-attributes
 class TestMixObjectOps(S3Bucket, S3Object):
     """S3 mix object operations class for executing given io stability workload."""
 
@@ -85,9 +87,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
         cls.object_size = kwargs.get("object_size")
         cls.sessions = kwargs.get("sessions")
         cls.region = kwargs.get("region", "us-east-1")
-        cls.s3max_retries = kwargs.get("s3max_retries", None)
-        cls.connection_timeout = kwargs.get("connection_timeout", None)
-        # If user input is zero then we will use hctl status to fetch storage details.
+        cls.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retry)
+        cls.http_client_timeout = kwargs.get("http_client_timeout", S3_CFG.http_client_timeout)
         if not cls.total_storage:
             host, user, password = get_master_details()
             cluster_obj = ClusterServices(host, user, password)
@@ -235,9 +236,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         """
         if self.s3max_retries:
             cmd = cmd + f"-s3MaxRetries={self.s3max_retries} "
-        if self.connection_timeout:
-            self.connection_timeout *= 60000  # conversion minutes into milliseconds.
-            cmd = cmd + f"-httpClientTimeout={self.connection_timeout}"
+        if self.http_client_timeout:
+            self.http_client_timeout *= 60000  # conversion minutes into milliseconds.
+            cmd = cmd + f"-httpClientTimeout={self.http_client_timeout} "
         cmd += self.cmd_reporting_params()
         status, resp = run_local_cmd(cmd)
         assert status, f"Failed execute '{cmd}', response: {resp}"

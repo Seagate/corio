@@ -67,8 +67,10 @@ class S3bench:
         :param skip_write: Skip write operation
         :param skip_cleanup: Skip cleanup operation
         :param validate: Validate downloaded objects
-        :param s3max_retries: Maximum number of times that a request will be retried for failures
-        :param connection_timeout: Time limit in Minutes for requests made by this Client.
+        :param s3max_retries: Maximum number of times that a request will be retried for failures.
+                default is 5
+        :param http_client_timeout: Time limit in Minutes for requests made by this Client.
+                default is 3 minute.
         :param duration: Duration timedelta object, if not given will run for 100 days
         """
         random.seed(seed)
@@ -94,8 +96,8 @@ class S3bench:
         self.part_low = kwargs.get("part_low")
         self.region = kwargs.get("region", "us-east-1")
         self.min_duration = 10  # In seconds
-        self.s3max_retries = kwargs.get("s3max_retries", None)
-        self.connection_timeout = kwargs.get("connection_timeout", None)
+        self.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retries)
+        self.http_client_timeout = kwargs.get("http_client_timeout", S3_CFG.http_client_timeout)
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
         else:
@@ -199,9 +201,9 @@ class S3bench:
                 cmd += "-validate "
             if self.s3max_retries:
                 cmd = cmd + f"-s3MaxRetries={self.s3max_retries} "
-            if self.connection_timeout:
-                self.connection_timeout *= 60000  # conversion minutes into milliseconds.
-                cmd = cmd + f"-httpClientTimeout={self.connection_timeout}"
+            if self.http_client_timeout:
+                self.http_client_timeout *= 60000  # conversion minutes into milliseconds.
+                cmd = cmd + f"-httpClientTimeout={self.http_client_timeout}"
 
             report = f"{self.report_file}-{i}.log"
             cli_log = f"{self.cli_log}-{i}.log"
