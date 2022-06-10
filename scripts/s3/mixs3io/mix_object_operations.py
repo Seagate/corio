@@ -152,7 +152,7 @@ class TestMixObjectOps(S3Bucket, S3Object):
                     if self.total_written_data >= self.size_to_cleanup_all_data:
                         self.log.info("cleanup objects from %s as storage consumption reached "
                                       "limit %s%% ", self.s3_url, self.cleanup_percentage)
-                        self.delete_s3_objects(self.bucket_name, object_prefix=self.object_prefix)
+                        self.delete_s3_objects(self.bucket_name)
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
                 self.display_storage_consumed(operation="")
