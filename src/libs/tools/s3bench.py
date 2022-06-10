@@ -97,7 +97,9 @@ class S3bench:
         self.region = kwargs.get("region", "us-east-1")
         self.min_duration = 10  # In seconds
         self.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retries)
-        self.http_client_timeout = kwargs.get("http_client_timeout", S3_CFG.http_client_timeout)
+        # conversion minutes into milliseconds.
+        self.http_client_timeout = (kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) *
+                                    60000)
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
         else:
@@ -110,7 +112,7 @@ class S3bench:
     def install_s3bench() -> bool:
         """Install s3bench if already not installed."""
         s3bench_conf = S3_TOOLS_CFG["s3bench"]
-        if os.system("s3bench --version"):
+        if os.system("s3bench --version") != 256:
             LOGGER.info("s3bench is not installed. Installing s3bench.")
             if os.system(f"wget -O {s3bench_conf['path']} {s3bench_conf['version']}"):
                 LOGGER.error("ERROR: Unable to download s3bench binary from github")
@@ -202,7 +204,6 @@ class S3bench:
             if self.s3max_retries:
                 cmd = cmd + f"-s3MaxRetries={self.s3max_retries} "
             if self.http_client_timeout:
-                self.http_client_timeout *= 60000  # conversion minutes into milliseconds.
                 cmd = cmd + f"-httpClientTimeout={self.http_client_timeout}"
 
             report = f"{self.report_file}-{i}.log"
