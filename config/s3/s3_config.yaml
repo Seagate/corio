@@ -7,3 +7,7 @@ endpoint: "https://s3.seagate.com"
 validate_certs: True
 use_ssl: True
 debug: False
+# Specifies a time limit in Minutes for requests made by Client. Default is 3 minutes.
+http_client_timeout: 3
+# Maximum number of times that a request will be retried for failures. Default is 5.
+s3max_retry: 5

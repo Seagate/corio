@@ -23,6 +23,7 @@ from datetime import datetime, timedelta
 from math import modf
 from time import perf_counter_ns
 
+from config import S3_CFG
 from src.commons.constants import LATEST_LOG_PATH
 from src.commons.constants import MIN_DURATION
 from src.commons.utils.cluster_utils import ClusterServices
@@ -33,6 +34,7 @@ from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.tools.s3bench import S3bench
 
 
+# pylint: disable=too-many-instance-attributes
 class TestMixObjectOps(S3Bucket, S3Object):
     """S3 mix object operations class for executing given io stability workload."""
 
@@ -85,7 +87,10 @@ class TestMixObjectOps(S3Bucket, S3Object):
         cls.object_size = kwargs.get("object_size")
         cls.sessions = kwargs.get("sessions")
         cls.region = kwargs.get("region", "us-east-1")
-        # If user input is zero then we will use hctl status to fetch storage details.
+        cls.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retry)
+        # conversion minutes into milliseconds.
+        cls.http_client_timeout = (kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) *
+                                   60000)
         if not cls.total_storage:
             host, user, password = get_master_details()
             cluster_obj = ClusterServices(host, user, password)
@@ -147,7 +152,7 @@ class TestMixObjectOps(S3Bucket, S3Object):
                     if self.total_written_data >= self.size_to_cleanup_all_data:
                         self.log.info("cleanup objects from %s as storage consumption reached "
                                       "limit %s%% ", self.s3_url, self.cleanup_percentage)
-                        self.delete_s3_objects(self.bucket_name, object_prefix=self.object_prefix)
+                        self.delete_s3_objects(self.bucket_name)
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
                 self.display_storage_consumed(operation="")
@@ -231,6 +236,10 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
         :param cmd: s3bench command to be executed with some workload.
         """
+        if self.s3max_retries:
+            cmd = cmd + f" -s3MaxRetries={self.s3max_retries} "
+        if self.http_client_timeout:
+            cmd = cmd + f" -httpClientTimeout={self.http_client_timeout} "
         cmd += self.cmd_reporting_params()
         status, resp = run_local_cmd(cmd)
         assert status, f"Failed execute '{cmd}', response: {resp}"

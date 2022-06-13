@@ -197,8 +197,8 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
     if options.support_bundle:
         processes["support_bundle"] = multiprocessing.Process(target=support_bundle_process,
                                                               name="support_bundle",
-                                                              args=(CORIO_CFG.sb_interval_mins * 60,
-                                                                    ))
+                                                              args=(CORIO_CFG.sb_interval_mins *
+                                                                    60,))
         LOGGER.info("Support bundle collection scheduled for every %s minutes",
                     CORIO_CFG.sb_interval_mins)
     if options.health_check:
