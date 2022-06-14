@@ -52,9 +52,10 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
         self.part_copy = kwargs.get("part_copy", False)
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=f"{test_id}_multipart_partcopy_operations" if self.part_copy else
-            f"{test_id}_multipart_operations")
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url,
+                         use_ssl=kwargs.get("use_ssl"),
+                         test_id=(f"{test_id}_multipart_partcopy_operations" if self.part_copy else
+                                  f"{test_id}_multipart_operations"))
         random.seed(kwargs.get("seed"))
         self.object_size = kwargs.get("object_size")
         self.part_range = kwargs.get("part_range")

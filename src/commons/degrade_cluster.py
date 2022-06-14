@@ -23,12 +23,14 @@
 import logging
 import os
 import random
-import time
+from time import perf_counter_ns
+
+from munch import munchify
 
 from config import CLUSTER_CFG, S3_ENDPOINT
-from src.commons.exception import NoBucketExistsException
 from src.commons.constants import DATA_POD_NAME_PREFIX, SERVER_POD_NAME_PREFIX
 from src.commons.constants import ROOT
+from src.commons.exception import NoBucketExistsException
 from src.commons.utils.cluster_utils import ClusterServices
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 
@@ -64,7 +66,7 @@ def get_degraded_mode():
         os.environ['DEGRADE_POD'] = degrade_pod
 
 
-def activate_degraded_mode(options: dict):
+def activate_degraded_mode(options: munchify):
     """Create bucket and degrade node as needed .
 
     :param options : dictionary to fetch command line params
@@ -83,7 +85,7 @@ def activate_degraded_mode(options: dict):
             LOGGER.critical("No Bucket exist")
             raise NoBucketExistsException("Bucket need to be created first for degraded mode IOs")
     else:
-        bucket = f'object-op-{time.perf_counter_ns()}'.lower()
+        bucket = f'object-op-{perf_counter_ns()}'.lower()
         resp = bucket_obj.create_s3_bucket(bucket)
         if resp:
             os.environ["d_bucket"] = bucket

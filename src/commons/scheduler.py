@@ -113,8 +113,8 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         LOGGER.critical("%s terminated", process_name)
 
 
-def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime, periodic_time:
-                                int = 1) -> Job:
+def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
+                                periodic_time: int = 1) -> Job:
     """
     Schedule the test status update.
 
