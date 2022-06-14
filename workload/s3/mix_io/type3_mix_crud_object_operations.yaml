@@ -6,7 +6,7 @@ test_1:
     write_percentage: 100  # Percentage of data to fill the storage.
     read_percentage: 100  # Percentage of data to be used to read from storage.
     delete_percentage: 0  # Percentage of data to be deleted from storage.
-    cleanup_percentage: 100  # Percentage of data once reached then cleanup all data.
+    cleanup_percentage: 0  # Percentage of data once reached then cleanup all data.
     #  If None then it will be fetched from cluster(cortx specific.)
     total_storage_size: None  # Total available storage from cluster or user to be used.
     min_runtime: 30d  # Minimum execution durations to mark workload pass.
