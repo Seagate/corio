@@ -55,7 +55,7 @@ calculated.
 
 **cleanup_percentage** is Percentage(less or equal to write) of data once reached then do cleanup.
 
-**total_storage_size** Total available storage from cluster or user inout size will be used as following
+**total_storage_size** Total available storage from cluster or user input size will be used
 (MB, Mib to PB, Pib and if None will be fetched from cluster).
 
 **background_delete** Enable/Disable background delete(Cortx specific)
