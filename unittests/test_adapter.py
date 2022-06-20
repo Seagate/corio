@@ -53,11 +53,11 @@ class AdapterTest(unittest.TestCase):
         s3bench = S3benchInterface()
         objects.append(Adapter(s3bench, execution=s3bench.run))
         for obj in objects:
-            print("{obj} is {} IO",obj.run())
+            print("{obj} is {} IO", obj.run())
 
     @staticmethod
     def test_adapter_interface():
-        """ Test S3bench interface."""
+        """Test S3bench interface."""
         objects = []
         iotool = S3benchInterface()
         adapter = Adapter(iotool, execution=iotool.run)

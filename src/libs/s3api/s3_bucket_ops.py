@@ -28,13 +28,13 @@ class S3Bucket(S3RestApi):
     """Class for bucket operations."""
 
     def __init__(self, *args, **kwargs):
-        """Initializer for S3Bucket operations."""
+        """Initialize for S3Bucket operations."""
         super().__init__(*args, **kwargs)
         self.s3_url = None
 
     async def create_bucket(self, bucket_name: str) -> dict:
         """
-        Creating Bucket.
+        Create Bucket.
 
         :param bucket_name: Name of the bucket.
         :return: Response of create bucket.
@@ -48,7 +48,7 @@ class S3Bucket(S3RestApi):
 
     async def list_buckets(self) -> list:
         """
-        Listing all the buckets.
+        List all the buckets.
 
         :return: Response of bucket list.
         """
@@ -75,7 +75,7 @@ class S3Bucket(S3RestApi):
 
     async def get_bucket_location(self, bucket_name: str) -> dict:
         """
-        Getting Bucket Location.
+        Get Bucket Location.
 
         :param bucket_name: Name of the bucket.
         :return: Response of bucket location.
@@ -89,7 +89,7 @@ class S3Bucket(S3RestApi):
 
     async def delete_bucket(self, bucket_name: str, force: bool = False) -> dict:
         """
-        Deleting the empty bucket or deleting the buckets along with objects stored in it.
+        Delete the empty bucket or deleting the buckets along with objects stored in it.
 
         :param bucket_name: Name of the bucket.
         :param force: Value for delete bucket with object or without object.
@@ -115,7 +115,7 @@ class S3Bucket(S3RestApi):
 
     def create_s3_bucket(self, bucket_name: str = None) -> dict:
         """
-        Creating s3 bucket.
+        Create s3 bucket.
 
         :param bucket_name: Name of the bucket.
         :return: response.

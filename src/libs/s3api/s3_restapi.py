@@ -38,7 +38,7 @@ class S3RestApi:
 
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
-        Method initializes members of S3Lib.
+        Initialize members of S3Lib.
 
         Different instances need to be created as per different parameter values like access_key,
         secret_key etc.
@@ -109,5 +109,5 @@ class S3RestApi:
                                             retries={'max_attempts': 6}))
 
     def __repr__(self):
-        """string representation of an S3API object."""
+        """Representation of an S3API object."""
         return "S3RestApi for asyncio operations using aiobotocore."

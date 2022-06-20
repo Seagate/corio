@@ -25,18 +25,17 @@ from src.libs.tools.s3bench import S3bench
 
 # The existing interface, Adaptee
 class S3benchInterface(S3bench):
-    """S3bench Interface"""
+    """S3bench Interface."""
 
-    def __init__(self,access=None, secret=None, test_id=None):
+    def __init__(self, access=None, secret=None, test_id=None):
+        """Initialize S3bench Interface."""
         super().__init__(access, secret, test_id, seed=random.randint(1, 100))
 
     def __str__(self):
-        """Object Representation"""
+        """Object Representation."""
         return 's3bench'
 
     def run(self):
-        """run warp
-        """
-        # status, _ = self.execute_s3bench_workload()
-        # return status
-        return True
+        """Run warp."""
+        status, _ = self.execute_s3bench_workload()
+        return status

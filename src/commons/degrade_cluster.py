@@ -19,7 +19,7 @@
 #
 #
 
-"""Module to degrade cluster nodes"""
+"""Module to degrade cluster nodes."""
 import logging
 import os
 import random
@@ -39,7 +39,7 @@ LOGGER = logging.getLogger(ROOT)
 
 def get_degraded_mode():
     """
-    Function to get degraded mode.
+    Get degraded mode.
 
     :return: Credentials Tuple.
     """
@@ -100,7 +100,7 @@ def activate_degraded_mode(options: munchify):
 
 
 def get_logical_node() -> object:
-    """Create cluster services object and returns object"""
+    """Create cluster services object and returns object."""
     nodes = CLUSTER_CFG["nodes"]
     (host, user, password) = (None, None, None)
     for node in nodes:
@@ -116,6 +116,6 @@ def get_logical_node() -> object:
 
 
 def restore_pod():
-    """ Restore pod which is already degraded."""
+    """Restore pod which is already degraded."""
     logical_node = get_logical_node()
     logical_node.create_pod_replicas(num_replica=1, deploy=os.getenv('DEGRADED_PODS'))
