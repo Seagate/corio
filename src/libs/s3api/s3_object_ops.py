@@ -32,13 +32,13 @@ class S3Object(S3RestApi):
     """Class for object operations."""
 
     def __init__(self, *args, **kwargs):
-        """Initializer for S3Object operations."""
+        """Initialize S3Object operations."""
         super().__init__(*args, **kwargs)
         self.s3_url = None
 
     async def upload_object(self, bucket: str, key: str, **kwargs) -> dict:
         """
-        Uploading object to the Bucket, file_path or body is compulsory.
+        Upload object to the Bucket, file_path or body is compulsory.
 
         :param bucket: Name of the bucket.
         :param key: Name of the object.
@@ -60,7 +60,7 @@ class S3Object(S3RestApi):
 
     async def list_objects(self, bucket: str) -> list:
         """
-        Listing Objects.
+        List Objects.
 
         :param bucket: Name of the bucket.
         :return: Response of the list objects.
@@ -77,7 +77,7 @@ class S3Object(S3RestApi):
 
     async def delete_object(self, bucket: str, key: str) -> dict:
         """
-        Deleting object.
+        Delete object.
 
         :param bucket: Name of the bucket.
         :param key: Name of object.
@@ -92,7 +92,7 @@ class S3Object(S3RestApi):
 
     async def delete_objects(self, bucket: str, keys: List[str]) -> dict:
         """
-        Deleting object.
+        Delete object.
 
         :param bucket: Name of the bucket.
         :param keys: List of object names.
@@ -124,7 +124,7 @@ class S3Object(S3RestApi):
 
     async def get_object(self, bucket: str, key: str, ranges: str = None) -> dict:
         """
-        Getting object or byte range of the object.
+        Getobject or byte range of the object.
 
         :param bucket: Name of the bucket.
         :param key: Name of object.
@@ -144,7 +144,7 @@ class S3Object(S3RestApi):
     async def download_object(self, bucket: str, key: str, file_path: str,
                               chunk_size: int = 1024) -> dict:
         """
-        Downloading Object of the required Bucket.
+        Download Object of the required Bucket.
 
         :param bucket: Name of the bucket.
         :param key: Name of object.

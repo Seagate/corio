@@ -28,7 +28,7 @@ class S3MultiParts(S3RestApi):
     """Class for Multipart operations."""
 
     def __init__(self, *args, **kwargs):
-        """Initializer for S3MultiParts operations."""
+        """Initialize S3MultiParts operations."""
         super().__init__(*args, **kwargs)
         self.s3_url = None
 
@@ -71,7 +71,7 @@ class S3MultiParts(S3RestApi):
 
     async def list_parts(self, mpu_id: str, bucket_name: str, object_name: str) -> list:
         """
-        list parts of a specific multipart upload.
+        List parts of a specific multipart upload.
 
         :param mpu_id: Multipart upload ID.
         :param bucket_name: Name of the bucket.

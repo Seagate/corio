@@ -29,7 +29,7 @@ from src.libs.tools.s3bench import S3bench
 
 
 class S3benchTestCase(unittest.TestCase):
-    """S3bench library tests"""
+    """S3bench library tests."""
 
     @mock.patch("src.libs.tools.s3bench.S3bench.install_s3bench")
     def test_check_log_file_error_report(self, mock_install_s3bench):

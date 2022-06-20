@@ -23,18 +23,17 @@ from src.libs.tools.warp import Warp
 
 # The existing interface, Adaptee
 class WarpInterface(Warp):
-    """S3bench Interface"""
+    """S3bench Interface."""
 
     def __init__(self, operation: str = None, access: str = None, secret: str = None):
+        """Initialize warp interface."""
         super().__init__(operation, access, secret)
 
     def __str__(self):
-        """Object Representation"""
+        """Object Representation."""
         return 'warp'
 
     def run(self):
-        """run warp
-        """
-        # status, _ = self.execute_workload()
-        # return status
-        return True
+        """Run warp."""
+        status, _ = self.execute_workload()
+        return status

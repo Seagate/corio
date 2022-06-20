@@ -50,7 +50,7 @@ def yaml_parser(yaml_file) -> dict:
 
 def convert_to_bytes(size):
     """
-    function to convert any size to bytes.
+    Convert any size to bytes.
 
     :param size: object size
     can be provided as byte(s), kb, kib, mb, mib, gb, gib, tb, tib
@@ -82,7 +82,7 @@ def convert_to_bytes(size):
 
 def convert_to_time_delta(time):
     """
-    function to convert execution time in time delta format.
+    Convert execution time in time delta format.
 
     :param time : accepts time in format 0d0h0m0s
     :return python timedelta object.
@@ -106,7 +106,7 @@ def convert_to_time_delta(time):
 
 def test_parser(yaml_file, number_of_nodes):
     """
-    parse a workload yaml file.
+    Parse a workload yaml file.
 
     :param yaml_file: accepts and parses a test YAML file.
     :param number_of_nodes: accepts number of nodes to calculate sessions (default=1).
@@ -128,7 +128,7 @@ def test_parser(yaml_file, number_of_nodes):
 
 
 def convert_min_runtime_to_time_delta(test, delta_list, data):
-    """convert min_runtime to time_delta."""
+    """Convert min_runtime to time_delta."""
     if test.lower() == "test_1":
         data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
         delta_list.append(convert_to_time_delta(data['min_runtime']))
@@ -139,7 +139,7 @@ def convert_min_runtime_to_time_delta(test, delta_list, data):
 
 
 def convert_object_part_size_to_bytes(data):
-    """convert object_size, part_size to bytes."""
+    """Convert object_size, part_size to bytes."""
     for size_type in ["object_size", "part_size", "total_storage_size"]:
         if size_type in data:
             if isinstance(data[size_type], dict):

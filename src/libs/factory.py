@@ -19,28 +19,29 @@
 #
 #
 
-"""Python Library to implement factory pattern for tools"""
+"""Python Library to implement factory pattern for tools."""
 
 
 class ToolsFactory:
-    """ Tools Factory"""
+    """Tools Factory."""
 
     def __init__(self, tool):
+        """Initialize tools factory."""
         self.tool = tool
 
     def __str__(self):
-        """Object representation"""
+        """Object representation."""
         return f'Tool name is {self.tool}'
 
     def __repr__(self):
-        """Object name"""
+        """Object name."""
         return f'Tool:{self.tool}'
 
     def __call__(self):
-        """Get Created object"""
+        """Get Created object."""
         return self.get_tool_object()
 
     def get_tool_object(self):
-        """create tools objects as per client requirements. """
+        """Create tools objects as per client requirements."""
         target_tool = self.tool.capitalize()
         return globals()[target_tool]()
