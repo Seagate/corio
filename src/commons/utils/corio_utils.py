@@ -26,6 +26,7 @@ import logging
 import math
 import os
 import shutil
+import time
 from base64 import b64encode
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
@@ -35,6 +36,7 @@ import paramiko
 import psutil as ps
 
 from config import CORIO_CFG, CLUSTER_CFG
+from config import S3_CFG
 from src.commons import commands as cmd
 from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR
 from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
@@ -314,6 +316,47 @@ def get_master_details() -> tuple:
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
     return host, user, passwd
+
+
+# pylint: disable=broad-except
+def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
+    """
+    Retry/polling in case all types of failures.
+
+    :param asyncio: True if wrapper used for asyncio else for normal function.
+    :param max_retry: Max number of times retires on failure.
+    :param retry_delay: Delay between two retries.
+    """
+    def outer_wrapper(fun):
+        """Outer wrapper method."""
+        if asyncio:
+            async def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for i in range(max_retry + 1):
+                    try:
+                        return await fun(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.exception(err)
+                        if i <= 1:
+                            raise err
+                    # Two seconds delay between each retry.
+                    time.sleep(retry_delay)
+                return await fun(*args, **kwargs)
+        else:
+            def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for i in range(max_retry + 1):
+                    try:
+                        return fun(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.exception(err)
+                        if i <= 1:
+                            raise err
+                    # Two seconds delay between each retry.
+                    time.sleep(retry_delay)
+                return fun(*args, **kwargs)
+        return inner_wrapper
+    return outer_wrapper
 
 
 class RemoteHost:
