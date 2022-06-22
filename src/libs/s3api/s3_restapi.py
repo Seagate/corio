@@ -75,8 +75,8 @@ class S3RestApi:
                                      endpoint_url=self.endpoint_url,
                                      region_name=self.region,
                                      aws_session_token=self.aws_session_token,
-                                     config=AioConfig(connect_timeout=300,
-                                                      read_timeout=300,
+                                     config=AioConfig(connect_timeout=S3_CFG.connect_timeout,
+                                                      read_timeout=S3_CFG.read_timeout,
                                                       retries={"max_attempts":
                                                                S3_CFG.s3api_retry}))
 
@@ -90,9 +90,9 @@ class S3RestApi:
                             endpoint_url=self.endpoint_url,
                             region_name=self.region,
                             aws_session_token=self.aws_session_token,
-                            config=Config(connect_timeout=300,
-                                          read_timeout=300,
-                                          retries={'max_attempts': 6}))
+                            config=Config(connect_timeout=S3_CFG.connect_timeout,
+                                          read_timeout=S3_CFG.read_timeout,
+                                          retries={'max_attempts': S3_CFG.s3api_retry}))
 
     def get_boto3_resource(self):
         """Create s3 resource for without asyncio operations."""
@@ -104,9 +104,9 @@ class S3RestApi:
                               endpoint_url=self.endpoint_url,
                               region_name=self.region,
                               aws_session_token=self.aws_session_token,
-                              config=Config(connect_timeout=300,
-                                            read_timeout=300,
-                                            retries={'max_attempts': 6}))
+                              config=Config(connect_timeout=S3_CFG.connect_timeout,
+                                            read_timeout=S3_CFG.read_timeout,
+                                            retries={'max_attempts': S3_CFG.s3api_retry}))
 
     def __repr__(self):
         """Representation of an S3API object."""

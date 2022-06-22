@@ -10,4 +10,9 @@ debug: False
 # Specifies a time limit in Minutes for requests made by Client. Default is 3 minutes.
 http_client_timeout: 3
 # Maximum number of times that a request will be retried for failures. Default is 5.
-s3max_retry: 5
+s3api_retry: 6 # Number of retries in case boto api.
+retry_delay: 2 # in seconds.
+# The time in seconds till a timeout exception is thrown when attempting to make a connection.
+connect_timeout: 300
+# The time in seconds till a timeout exception is thrown when attempting to read from a connection.
+read_timeout: 300
