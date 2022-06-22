@@ -332,27 +332,27 @@ def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry
         if asyncio:
             async def inner_wrapper(*args, **kwargs):
                 """Inner wrapper method."""
-                for i in range(max_retry + 1):
+                for i in reversed(range(max_retry + 1)):
                     try:
                         return await fun(*args, **kwargs)
                     except Exception as err:
                         LOGGER.exception(err)
                         if i <= 1:
                             raise err
-                    # Two seconds delay between each retry.
+                    # Delay between each retry in seconds.
                     time.sleep(retry_delay)
                 return await fun(*args, **kwargs)
         else:
             def inner_wrapper(*args, **kwargs):
                 """Inner wrapper method."""
-                for i in range(max_retry + 1):
+                for j in reversed(range(max_retry + 1)):
                     try:
                         return fun(*args, **kwargs)
                     except Exception as err:
                         LOGGER.exception(err)
-                        if i <= 1:
+                        if j <= 1:
                             raise err
-                    # Two seconds delay between each retry.
+                    # Delay between each retry in seconds.
                     time.sleep(retry_delay)
                 return fun(*args, **kwargs)
         return inner_wrapper

@@ -23,13 +23,11 @@ from datetime import datetime, timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestBucketOps(S3Object, S3Bucket):
+class TestBucketOps(S3Api):
     """S3 Bucket Operations class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -95,8 +93,9 @@ class TestBucketOps(S3Object, S3Bucket):
         self.log.info("Upload %s number of objects to bucket %s", self.object_per_iter, bucket_name)
         for i in range(0, self.object_per_iter):
             file_name = f'object-{i}-{perf_counter_ns()}'
-            self.log.info("Object '%s', object size %s", file_name, convert_size(file_size))
-            file_path = create_file(file_name, file_size)
+            self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
+                file_size))
+            file_path = corio_utils.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
             self.log.info("'%s' uploaded successfully.", self.s3_url)
             self.log.info("Delete generated file")
