@@ -35,18 +35,25 @@ from src.commons.constants import FORMATTER
 class StreamToLogger:
     """logger class for corio."""
 
-    def __init__(self, file_path, logger, stream=False):
-        """Initialize root logger.
-
-        :param file_path: File path of the logger.
-        :param logger: logger object from logging.getLogger(__name__).
-        :param stream: To enable/disable stream handler/logging.
+    def __init__(self, file_path, logger, **kwargs):
         """
+        Initialize root logger.
+
+        :param file_path: File path of the logger
+        :param logger: logger object from logging.getLogger(__name__)
+        :keyword stream: To enable/disable stream handler/logging
+        :keyword max_byte: Rollover occurs whenever the current logfile is nearly maxBytes in length
+        :keyword backup_count: count of the max rotation/rollover of logs
+        :keyword log_rotate: Rotate log once reached the max_bytes
+        """
+        self.log_rotate = kwargs.get("log_rotate", True)
+        self.max_byte = kwargs.get("max_byte", CORIO_CFG["log_size"])
+        self.backup_count = kwargs.get("backup_count", CORIO_CFG["log_backup_count"])
         self.file_path = file_path
         self.logger = logger
         self.formatter = FORMATTER
         self.make_logdir()
-        if stream:
+        if kwargs.get("stream", False):
             self.set_stream_logger()
         self.set_filehandler_logger()
 
@@ -63,16 +70,13 @@ class StreamToLogger:
         handler.setFormatter(formatter)
         self.logger.addHandler(handler)
 
-    def set_filehandler_logger(self, max_byte=0, backup_count=5):
-        """
-        Add a file handler for the logging module. this logs all messages to ``file_name``.
-
-        :param max_byte: Rollover occurs whenever the current log file is nearly maxBytes in length.
-        :param backup_count: count of the max rotation/rollover of logs.
-        """
-        maxbyte = max_byte if max_byte else CORIO_CFG["log_size"]
-        handler = CorIORotatingFileHandler(
-            self.file_path, maxbyte=maxbyte, backupcount=backup_count)
+    def set_filehandler_logger(self):
+        """Add a file handler for the logging module. this logs all messages to ``file_name``."""
+        if self.log_rotate:
+            handler = CorIORotatingFileHandler(
+                self.file_path, maxbyte=self.max_byte, backupcount=self.backup_count)
+        else:
+            handler = logging.FileHandler(filename=self.file_path)
         formatter = logging.Formatter(self.formatter)
         handler.setLevel(logging.getLevelName(self.logger.level))
         handler.setFormatter(formatter)
