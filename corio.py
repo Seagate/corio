@@ -110,7 +110,7 @@ def parse_args():
     parser.add_argument("-dm", "--degraded_mode", type=lambda x: bool(strtobool(str(x))),
                         default=False,
                         help="Degraded Mode, True/False")
-    parser.add_argument("-mr", "--s3max_retry", type=int, default=1,
+    parser.add_argument("-mr", "--s3max_retry", type=int, default=0,
                         help="Max number of retries in case of any type of failure.")
     return parser.parse_args()
 
