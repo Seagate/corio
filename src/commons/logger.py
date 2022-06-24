@@ -46,7 +46,7 @@ class StreamToLogger:
         :keyword backup_count: count of the max rotation/rollover of logs
         :keyword log_rotate: Rotate log once reached the max_bytes
         """
-        self.log_rotate = kwargs.get("log_rotate", True)
+        self.log_rotate = kwargs.get("log_rotate", False)
         self.max_byte = kwargs.get("max_byte", CORIO_CFG["log_size"])
         self.backup_count = kwargs.get("backup_count", CORIO_CFG["log_backup_count"])
         self.file_path = file_path

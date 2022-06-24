@@ -32,6 +32,6 @@ class S3Api(S3Bucket, S3Object, S3MultiParts):
         """Initialize members of S3Api."""
         super().__init__(*args, **kwargs)
 
-    def __repr__(self):
+    def __str__(self):
         """Representation of an S3API object."""
         return "S3RestApi for s3 operations using aiobotocore and boto3."

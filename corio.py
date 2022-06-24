@@ -78,7 +78,7 @@ def initialize_loghandler(opt):
         name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
-    StreamToLogger(name, LOGGER, stream=True)
+    StreamToLogger(name, LOGGER, stream=True, log_rotate=True)
 
 
 def parse_args():

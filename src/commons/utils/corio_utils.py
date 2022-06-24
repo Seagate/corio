@@ -327,34 +327,36 @@ def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry
     :param max_retry: Max number of times retires on failure.
     :param retry_delay: Delay between two retries.
     """
-    def outer_wrapper(fun):
+    def outer_wrapper(func):
         """Outer wrapper method."""
         if asyncio:
             async def inner_wrapper(*args, **kwargs):
                 """Inner wrapper method."""
                 for i in reversed(range(max_retry + 1)):
                     try:
-                        return await fun(*args, **kwargs)
+                        return await func(*args, **kwargs)
                     except Exception as err:
-                        LOGGER.exception(err)
+                        LOGGER.info("AsyncIO Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
                         if i <= 1:
                             raise err
                     # Delay between each retry in seconds.
                     time.sleep(retry_delay)
-                return await fun(*args, **kwargs)
+                return await func(*args, **kwargs)
         else:
             def inner_wrapper(*args, **kwargs):
                 """Inner wrapper method."""
                 for j in reversed(range(max_retry + 1)):
                     try:
-                        return fun(*args, **kwargs)
+                        return func(*args, **kwargs)
                     except Exception as err:
-                        LOGGER.exception(err)
+                        LOGGER.info("Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
                         if j <= 1:
                             raise err
                     # Delay between each retry in seconds.
                     time.sleep(retry_delay)
-                return fun(*args, **kwargs)
+                return func(*args, **kwargs)
         return inner_wrapper
     return outer_wrapper
 
