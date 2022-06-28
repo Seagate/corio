@@ -18,3 +18,20 @@
 #
 
 """s3api package."""
+
+
+from src.libs.s3api.s3_bucket_ops import S3Bucket
+from src.libs.s3api.s3_multipart_ops import S3MultiParts
+from src.libs.s3api.s3_object_ops import S3Object
+
+
+class S3Api(S3Bucket, S3Object, S3MultiParts):
+    """Common class for all aiobotocore, boto3 api."""
+
+    def __int__(self, *args, **kwargs):
+        """Initialize members of S3Api."""
+        super().__init__(*args, **kwargs)
+
+    def __str__(self):
+        """Representation of an S3API object."""
+        return "S3RestApi for s3 operations using aiobotocore and boto3."

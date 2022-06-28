@@ -26,6 +26,7 @@ import logging
 import math
 import os
 import shutil
+import time
 from base64 import b64encode
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
@@ -35,6 +36,7 @@ import paramiko
 import psutil as ps
 
 from config import CORIO_CFG, CLUSTER_CFG
+from config import S3_CFG
 from src.commons import commands as cmd
 from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR
 from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
@@ -314,6 +316,49 @@ def get_master_details() -> tuple:
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
     return host, user, passwd
+
+
+# pylint: disable=broad-except
+def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
+    """
+    Retry/polling in case all types of failures.
+
+    :param asyncio: True if wrapper used for asyncio else for normal function.
+    :param max_retry: Max number of times retires on failure.
+    :param retry_delay: Delay between two retries.
+    """
+    def outer_wrapper(func):
+        """Outer wrapper method."""
+        if asyncio:
+            async def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for i in reversed(range(max_retry + 1)):
+                    try:
+                        return await func(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.info("AsyncIO Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
+                        if i <= 1:
+                            raise err
+                    # Delay between each retry in seconds.
+                    time.sleep(retry_delay)
+                return await func(*args, **kwargs)
+        else:
+            def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for j in reversed(range(max_retry + 1)):
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.info("Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
+                        if j <= 1:
+                            raise err
+                    # Delay between each retry in seconds.
+                    time.sleep(retry_delay)
+                return func(*args, **kwargs)
+        return inner_wrapper
+    return outer_wrapper
 
 
 class RemoteHost:

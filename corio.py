@@ -78,7 +78,7 @@ def initialize_loghandler(opt):
         name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
-    StreamToLogger(name, LOGGER, stream=True)
+    StreamToLogger(name, LOGGER, stream=True, log_rotate=True)
 
 
 def parse_args():
@@ -110,6 +110,8 @@ def parse_args():
     parser.add_argument("-dm", "--degraded_mode", type=lambda x: bool(strtobool(str(x))),
                         default=False,
                         help="Degraded Mode, True/False")
+    parser.add_argument("-mr", "--s3max_retry", type=int, default=0,
+                        help="Max number of retries in case of any type of failure.")
     return parser.parse_args()
 
 

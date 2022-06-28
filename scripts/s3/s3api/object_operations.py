@@ -24,13 +24,11 @@ from datetime import timedelta, datetime
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestS3Object(S3Bucket, S3Object):
+class TestS3Object(S3Api):
     """Class for bucket operations."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -82,8 +80,9 @@ class TestS3Object(S3Bucket, S3Object):
                 else:
                     range_read = self.range_read
                 file_name = f'object-bucket-op-{perf_counter_ns()}'
-                file_path = create_file(file_name, file_size)
-                self.log.info("Object '%s', object size %s", file_name, convert_size(file_size))
+                file_path = corio_utils.create_file(file_name, file_size)
+                self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
+                    file_size))
                 checksum_in = self.checksum_file(file_path)
                 self.log.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_path)

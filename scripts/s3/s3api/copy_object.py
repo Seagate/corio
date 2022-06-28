@@ -25,13 +25,11 @@ from datetime import timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestS3CopyObjects(S3Object, S3Bucket):
+class TestS3CopyObjects(S3Api):
     """S3 Copy Object class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -82,9 +80,9 @@ class TestS3CopyObjects(S3Object, S3Bucket):
             try:
                 # Put object in self.bucket_name1
                 file_size = await self.get_workload_size()
-                file_path = create_file(self.object_name1, file_size)
-                self.log.info("Object1 '%s', object size %s", self.object_name1, convert_size(
-                    file_size))
+                file_path = corio_utils.create_file(self.object_name1, file_size)
+                self.log.info("Object1 '%s', object size %s", self.object_name1,
+                              corio_utils.convert_size(file_size))
                 await self.upload_object(self.bucket_name1, self.object_name1, file_path=file_path)
                 self.log.info("Objects '%s' uploaded successfully.", self.s3_url)
                 ret1 = await self.head_object(self.bucket_name1, self.object_name1)

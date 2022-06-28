@@ -21,6 +21,7 @@
 
 """Python Library to perform bucket operations using aiobotocore module."""
 
+from src.commons.utils.corio_utils import retries
 from src.libs.s3api.s3_restapi import S3RestApi
 
 
@@ -32,6 +33,7 @@ class S3Bucket(S3RestApi):
         super().__init__(*args, **kwargs)
         self.s3_url = None
 
+    @retries()
     async def create_bucket(self, bucket_name: str) -> dict:
         """
         Create Bucket.
@@ -46,6 +48,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries()
     async def list_buckets(self) -> list:
         """
         List all the buckets.
@@ -59,6 +62,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries()
     async def head_bucket(self, bucket_name: str) -> dict:
         """
         To determine if a bucket exists and have a permission to access it.
@@ -73,6 +77,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries()
     async def get_bucket_location(self, bucket_name: str) -> dict:
         """
         Get Bucket Location.
@@ -87,6 +92,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries()
     async def delete_bucket(self, bucket_name: str, force: bool = False) -> dict:
         """
         Delete the empty bucket or deleting the buckets along with objects stored in it.
@@ -113,6 +119,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries(asyncio=False)
     def create_s3_bucket(self, bucket_name: str = None) -> dict:
         """
         Create s3 bucket.
@@ -125,6 +132,7 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries(asyncio=False)
     def list_s3_buckets(self) -> list:
         """
         List all s3 buckets.
@@ -136,6 +144,7 @@ class S3Bucket(S3RestApi):
         bucket_list = [bucket['Name'] for bucket in response['Buckets']]
         return bucket_list
 
+    @retries(asyncio=False)
     def delete_s3_bucket(self, bucket_name: str = None, force: bool = False) -> dict:
         """
         Delete the empty bucket or delete the bucket along with objects stored in it.

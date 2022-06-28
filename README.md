@@ -143,3 +143,6 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
       -tp, --test_plan (optonal)
                 jira xray test plan id.
+
+      -mr, --s3max_retry
+                Max number of retries in case of any type of failure.
