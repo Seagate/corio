@@ -25,6 +25,7 @@ import hashlib
 import os
 from typing import List
 
+from src.commons.utils.corio_utils import retries
 from src.libs.s3api.s3_restapi import S3RestApi
 
 
@@ -36,6 +37,7 @@ class S3Object(S3RestApi):
         super().__init__(*args, **kwargs)
         self.s3_url = None
 
+    @retries()
     async def upload_object(self, bucket: str, key: str, **kwargs) -> dict:
         """
         Upload object to the Bucket, file_path or body is compulsory.
@@ -58,6 +60,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def list_objects(self, bucket: str) -> list:
         """
         List Objects.
@@ -75,6 +78,7 @@ class S3Object(S3RestApi):
 
         return objects
 
+    @retries()
     async def delete_object(self, bucket: str, key: str) -> dict:
         """
         Delete object.
@@ -90,6 +94,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def delete_objects(self, bucket: str, keys: List[str]) -> dict:
         """
         Delete object.
@@ -107,6 +112,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def head_object(self, bucket: str, key: str) -> dict:
         """
         Retrieve metadata from an object without returning the object itself.
@@ -122,6 +128,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def get_object(self, bucket: str, key: str, ranges: str = None) -> dict:
         """
         Getobject or byte range of the object.
@@ -141,6 +148,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def download_object(self, bucket: str, key: str, file_path: str,
                               chunk_size: int = 1024) -> dict:
         """
@@ -169,6 +177,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def copy_object(self, src_bucket: str, src_key: str, des_bucket: str, des_key: str,
                           **kwargs) -> dict:
         """
@@ -189,6 +198,7 @@ class S3Object(S3RestApi):
 
         return response
 
+    @retries()
     async def get_s3object_checksum(self, bucket: str, key: str, chunk_size: int = 1024,
                                     ranges: str = None) -> str:
         """
@@ -261,6 +271,7 @@ class S3Object(S3RestApi):
 
         return file_hash.hexdigest()
 
+    @retries(asyncio=False)
     def delete_s3_objects(self, bucket_name, object_prefix=None):
         """
         Delete all s3 objects based on prefix if given.

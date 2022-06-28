@@ -27,13 +27,11 @@ from datetime import datetime, timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_multipart_ops import S3MultiParts
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
+class TestMultiParts(S3Api):
     """Multipart class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -83,7 +81,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 number_of_parts = await self.get_random_number_of_parts()
                 file_size = await self.get_workload_size()
                 single_part_size = round(file_size / number_of_parts)
-                self.log.info("single part size: %s", convert_size(single_part_size))
+                self.log.info("single part size: %s", corio_utils.convert_size(single_part_size))
                 upload_obj_checksum = await self.create_upload_list_completed_mpart(
                     number_of_parts, mpart_bucket, s3mpart_object, s3_object)
                 all_object = await self.list_objects(mpart_bucket)
@@ -115,7 +113,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
             file_size = random.randrange(self.object_size["start"], self.object_size["end"])
         else:
             file_size = self.object_size
-        self.log.info("File size: %s", convert_size(file_size))
+        self.log.info("File size: %s", corio_utils.convert_size(file_size))
         return file_size
 
     async def get_random_number_of_parts(self):
