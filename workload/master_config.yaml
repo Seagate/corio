@@ -1,4 +1,4 @@
-s3api:
+s3api: # basic_io
   # TEST_ID: TEST-35748
   object_size:
     start: 0Kib
@@ -10,7 +10,8 @@ s3api:
   sessions_per_node: 1
   range_read: 100bytes
   tool: s3api
-  operation: bucket/object_range_read/object_fix_size/object_random_size/copy_object/multipart/multipart_partcopy
+  operation: bucket # select any operation from list below
+  # [bucket, object_range_read,object_fix_size,object_random_size,copy_object,multipart,multipart_partcopy]
   wait_on_operation: True/False # True: Wait till operation completes to mark pass,
   #if False , test will be marked pass as per minimum run time
 
@@ -27,17 +28,19 @@ mix_io:
   #  If None then it will be fetched from cluster(cortx specific.)
   total_storage_size: None  # Total available storage from cluster or user to be used.
   min_runtime_to_pass: 30d  # Minimum execution durations to mark workload pass.
-  sessions_per_node: 20  # Number of sessions per node.
+  sessions_per_node: 1  # Number of sessions per node.
   background_delete: False  # Enable/Disable background delete(Cortx specific).
   sample_size: 10000 # int (any user defined numbers) # samples should be user configurable like 10000
-  tool: s3api/s3bench
+  tool: s3bench # s3api/s3bench, any supported tool or s3 api operations
   operation: "mix_object_ops"
 
 degraded_io:
   pod_downtime: 20s #time taken to degraded pods (IO sleep/halt time), shutdown time #i.e. 20s
-  pod_downtime_schedule: 2h #time when nodes/pods need to be degraded [Time Delta in (HH:MM:SS)], before this IO will be in happy path
-  schedule_frequency: 1 #once or repetitive (after every schedule time interval) --> repetition will happen as per schedule time interval
-  pod_uptime_schedule: 2  #time when pods need to be active back since downtime. # when pods need to be reverted online[Time Delta in (HH:MM:SS) ]
-  inflight_mode: on/off #(Continuous IO once support is there for server handles the degraded nodes/pods)
-  ignore_io_failures : True/False #(IO failure may be ignored while IO continue with POD shutdown), Default is False
-  wait_on_operation: True/False # True: Wait till pending operation completes to mark it pass
+  pod_downtime_schedule: 2h #time when nodes/pods need to be degraded [Time Delta in (HH:MM:SS)],
+  #before downtime schedule this IO will be in happy path.
+  schedule_frequency: 1 #Once or repetitive (after every schedule time interval) --> repetition will happen as per schedule time interval
+  pod_uptime_schedule: None  #<None, int(5m,2h,1d etc...)time when pods need to be active back since downtime.
+  #if None it will never come back for permanent failure,when pods need to be reverted online[Time Delta in (HH:MM:SS) ]
+  inflight_mode: off #<on/off> (Continuous IO once support is there for server handles the degraded nodes/pods)
+  ignore_io_failures : True #<True/False>(IO failure may be ignored while IO continue with POD shutdown), Default is False
+  wait_on_operation: False #<True/False> True: Wait till pending operation completes to mark it pass,
