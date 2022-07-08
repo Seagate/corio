@@ -51,6 +51,7 @@ from src.commons.scheduler import schedule_test_status_update
 from src.commons.scheduler import terminate_update_test_status
 from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.support_bundle import support_bundle_process
+from src.commons.utils.alerts import send_mail_notification
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.utils.corio_utils import setup_environment
@@ -281,6 +282,10 @@ def main(options):
     processes = schedule_execution_plan(parsed_input, options)
     sched = schedule_test_status_update(parsed_input, corio_start_time,
                                         CORIO_CFG.report_interval_mins)
+    receivers = os.getenv("RECEIVER_MAIL_ID")
+    sender = os.getenv("SENDER_MAIL_ID")
+    if receivers and sender:
+        mail_notify = send_mail_notification(sender, receivers, options.test_plan, corio_start_time)
     terminated_tp, test_ids = None, []
     try:
         if options.degraded_mode:
@@ -297,6 +302,9 @@ def main(options):
             terminated_tp = monitor_processes(processes)
             if terminated_tp:
                 test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
+                if receivers and sender:
+                    mail_notify.event_fail.set()
+                    mail_notify.join()
                 sys.exit()
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
@@ -310,6 +318,9 @@ def main(options):
                                         terminated_tests=test_ids)
         if options.support_bundle:
             collect_upload_rotate_support_bundles(CMN_LOG_DIR)
+        if receivers and sender:
+            mail_notify.event_fail.set()
+            mail_notify.join()
         collect_resource_utilisation(action="stop")
         store_logs_to_nfs_local_server()
         if options.degraded_mode:
