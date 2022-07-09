@@ -258,7 +258,8 @@ def setup_environment() -> None:
     """Prepare client for workload execution with CORIO."""
     LOGGER.info("Setting up environment to start execution!!")
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
-    assert ret, "Error while Mounting NFS directory"
+    if not ret:
+        raise AssertionError(f"Error while Mounting NFS directory: {MOUNT_DIR}.")
     if os.path.exists(DATA_DIR_PATH):
         shutil.rmtree(DATA_DIR_PATH)
     os.makedirs(DATA_DIR_PATH, exist_ok=True)

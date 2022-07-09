@@ -20,6 +20,7 @@
 
 """Report module to generate the execution details."""
 
+import ast
 import logging
 from datetime import datetime
 from typing import Union
@@ -104,6 +105,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
         if datetime.now() > (test_start_time + value['min_runtime']):
             pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
             input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
+            total_execution_time = value['min_runtime'] if ast.literal_eval(os.getenv(
+                "sequential_run")) else datetime.now() - test_start_time
         else:
             # Report In Progress, Fail, Aborted and update status.
             if input_dict["TEST_ID"] in terminated_tests:
@@ -113,7 +116,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                 input_dict["RESULT_UPDATE"] = "Aborted"
             else:
                 input_dict["RESULT_UPDATE"] = "In Progress"
-        input_dict["TOTAL_TEST_EXECUTION"] = datetime.now() - test_start_time
+            total_execution_time = datetime.now() - test_start_time
+        input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
     else:
         input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "Not Triggered"

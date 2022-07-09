@@ -56,7 +56,7 @@ K8S_RE_SCRIPTS_PATH = "/root/cortx-k8s/k8_cortx_cloud"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.
-MIN_DURATION = 20  # Minimum execution duration in seconds.
+MIN_DURATION = 10  # Minimum execution duration in seconds.
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
 # Supported type of object size.

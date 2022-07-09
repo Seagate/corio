@@ -21,6 +21,7 @@
 
 """Scheduler module."""
 
+import ast
 import asyncio
 import datetime
 import logging
@@ -60,6 +61,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
+    seq_exe = ast.literal_eval(os.getenv("sequential_run"))
+    if seq_exe:
+        LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     tasks = []
     for _, each in test_plan_value.items():
         params = {"test_id": each["TEST_ID"], "object_size": each["object_size"]}
@@ -69,6 +73,11 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["range_read"] = each["range_read"]
         if "part_copy" in each.keys():
             params["part_copy"] = each["part_copy"]
+        if seq_exe:
+            min_runtime = each.get("min_runtime", 0)
+            if not min_runtime:
+                raise AssertionError(f"Minimum run time is not defined for sequential run. {each}")
+            params["duration"] = min_runtime
         params.update(common_params)
         if each["tool"] == "s3api":
             for i in range(1, int(each["sessions"]) + 1):
@@ -84,13 +93,15 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
                                         start_time=each["start_time"].total_seconds(), **params))
         else:
             raise NotImplementedError(f"Tool is not supported: {each['tool']}")
-    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-    LOGGER.critical("Terminating process & pending task: %s", process_name)
-    for task in pending:
-        task.cancel()
-    LOGGER.critical(done)
-    for task in done:
-        task.result()
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    if pending:
+        LOGGER.critical("Terminating process: %s & pending tasks: %s", process_name, pending)
+        for task in pending:
+            task.cancel()
+    if done:
+        LOGGER.info("Completed tasks: %s", done)
+        for task in done:
+            task.result()
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
@@ -107,10 +118,10 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     try:
         loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        LOGGER.warning("%s Loop interrupted", process_name)
+        LOGGER.critical("%s Loop interrupted", process_name)
     finally:
         loop.stop()
-        LOGGER.critical("%s terminated", process_name)
+        LOGGER.warning("%s terminated", process_name)
 
 
 def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
