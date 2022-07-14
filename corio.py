@@ -26,7 +26,6 @@ import logging
 import multiprocessing
 import os
 import random
-import time
 from ast import literal_eval
 from collections import Counter
 from datetime import datetime
@@ -35,6 +34,7 @@ from pprint import pformat
 
 import munch
 import schedule
+import time
 
 from config import S3_CFG, CORIO_CFG
 from src.commons.cluster_health import check_health
@@ -194,8 +194,8 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
                       "secret_key": S3_CFG.secret_key,
                       "endpoint_url": S3_CFG.endpoint,
                       "use_ssl": S3_CFG.use_ssl,
-                      "seed": options.seed}
-    os.environ["sequential_run"] = str(options.sequential_run)
+                      "seed": options.seed,
+                      "sequential_run": options.sequential_run}
     for test_plan, test_plan_value in parsed_input.items():
         processes[test_plan] = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
                                                        args=(test_plan, test_plan_value,
@@ -285,7 +285,8 @@ def main(options):
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     processes = schedule_execution_plan(parsed_input, options)
     sched = schedule_test_status_update(parsed_input, corio_start_time,
-                                        CORIO_CFG.report_interval_mins)
+                                        CORIO_CFG.report_interval_mins,
+                                        sequential_run=options.sequential_run)
     receivers = os.getenv("RECEIVER_MAIL_ID")
     sender = os.getenv("SENDER_MAIL_ID")
     if receivers and sender:
