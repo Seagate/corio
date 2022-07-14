@@ -99,7 +99,7 @@ def activate_degraded_mode(options: munchify):
         logical_node.degrade_nodes(pod_prefix)
 
 
-def get_logical_node() -> object:
+def get_logical_node() -> ClusterServices:
     """Create cluster services object and returns object."""
     nodes = CLUSTER_CFG["nodes"]
     (host, user, password) = (None, None, None)
