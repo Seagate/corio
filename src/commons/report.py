@@ -21,14 +21,13 @@
 """Report module to generate the execution details."""
 
 import logging
-import os
 from datetime import datetime
 from typing import Union
 
 import pandas as pd
 
-from src.commons.constants import ROOT, REPORTS_DIR
-from src.commons.utils.corio_utils import convert_size
+from src.commons.constants import ROOT
+from src.commons.utils.corio_utils import convert_size, get_report_file_path
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -43,8 +42,7 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
     # :param terminated_tests: terminated tests from workload.
     """
     test_failed = kwargs.get("test_failed")
-    status_fpath = os.path.join(
-        REPORTS_DIR, f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
+    status_fpath = get_report_file_path(corio_start_time)
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, 'w', encoding="utf-8") as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")

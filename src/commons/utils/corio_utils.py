@@ -318,6 +318,16 @@ def get_master_details() -> tuple:
     return host, user, passwd
 
 
+def get_report_file_path(corio_start_time) -> str:
+    """
+    Returns Corio Report file path
+
+    :param corio_start_time: Start time for main process.
+    """
+    return os.path.join(REPORTS_DIR,
+                        f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
+
+
 # pylint: disable=broad-except
 def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
     """

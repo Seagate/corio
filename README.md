@@ -146,3 +146,11 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
       -mr, --s3max_retry
                 Max number of retries in case of any type of failure.
+
+#### Email Notifications
+By default, email notifications are turned off. To get the email notifications on execution status, set following environmental variables:
+
+    - RECEIVER_MAIL_ID (Receiver email ID/s)
+    - SENDER_MAIL_ID (Sender email ID)
+    - EMAIL_HOST (SMTP email server hostname)
+    - EMAIL_PORT (SMTP email server port number)
