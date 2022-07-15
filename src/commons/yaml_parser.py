@@ -19,7 +19,7 @@
 #
 
 """Yaml Parser for IO stability."""
-
+import copy
 import datetime
 import logging
 
@@ -30,6 +30,37 @@ from src.commons.constants import KIB
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
+
+
+def apply_master_config(workload: dict, master_cfg: dict) -> dict:
+    """
+    Add missing parameters to tests based on operation and tool mentioned in the test
+    :param workload: Parsed test config
+    :param master_cfg: Parsed master config
+    :return: dict: Final test dictionary to be scheduled.
+    """
+    for test, config in workload.items():
+        # Check for tests with no parameters
+        if not config:
+            raise AssertionError(f"No parameter for a {test}.")
+        existing_params = config.keys()
+        # Check for minimum required parameters (TestID, Tool, Operation)
+        required = master_cfg['common']
+        if not existing_params or (set(required) - set(existing_params) != set()):
+            raise AssertionError(f"Minimum required parameters are missing {required} for {test}")
+        tool = config['tool']
+        operation = config['operation']
+        required_params = list(master_cfg[tool][operation].keys()) + required
+        # Check for unknown parameters
+        for param in existing_params:
+            if param not in required_params:
+                raise AssertionError(f"Wrong parameter {param} in {test} test.")
+        to_be_added = required_params - existing_params
+        # Add missing parameters from master config file
+        for param in to_be_added:
+            config[param] = copy.deepcopy(master_cfg[tool][operation][param])
+        LOGGER.info("Added %s parameters to %s test", to_be_added, test)
+    return workload
 
 
 def yaml_parser(yaml_file) -> dict:
@@ -113,6 +144,8 @@ def test_parser(yaml_file, number_of_nodes):
     :return python dictionary containing file contents.
     """
     workload_data = yaml_parser(yaml_file)
+    master_config = yaml_parser("workload/master_config.yaml")
+    workload_data = apply_master_config(workload_data, master_config)
     delta_list = []
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.

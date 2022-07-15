@@ -10,7 +10,7 @@ test_1:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_2:
     TEST_ID: TEST-36537
@@ -24,7 +24,7 @@ test_2:
         start: 100byte
         end: 200byte
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_3:
     TEST_ID: TEST-36538
@@ -38,7 +38,7 @@ test_3:
     range_read:
         start: 200byte
         end: 500byte
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_4:
     TEST_ID: TEST-36539
@@ -52,7 +52,7 @@ test_4:
         start: 500byte
         end: 1Kb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_5:
     TEST_ID: TEST-36540
@@ -66,7 +66,7 @@ test_5:
         start: 1Kb
         end: 10Kb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_6:
     TEST_ID: TEST-36541
@@ -80,7 +80,7 @@ test_6:
         start: 10Kb
         end: 100Kb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_7:
     TEST_ID: TEST-36542
@@ -94,7 +94,7 @@ test_7:
         start: 100Kb
         end: 1Mb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_8:
     TEST_ID: TEST-36543
@@ -108,7 +108,7 @@ test_8:
         start: 1Mb
         end: 10Mb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_9:
     TEST_ID: TEST-36544
@@ -122,7 +122,7 @@ test_9:
         start: 10Mb
         end: 100Mb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_10:
     TEST_ID: TEST-36545
@@ -136,7 +136,7 @@ test_10:
         start: 100Mb
         end: 150Mb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_11:
     TEST_ID: TEST-36546
@@ -150,7 +150,7 @@ test_11:
         start: 150Mb
         end: 200Mb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read
 
 test_12:
     TEST_ID: TEST-36547
@@ -164,4 +164,4 @@ test_12:
         start: 200Mb
         end: 1Gb
     tool: s3api
-    operation: multipart_partcopy
+    operation: multipart_partcopy_range_read

@@ -10,7 +10,7 @@ test_1:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_2:
     TEST_ID: TEST-37368
@@ -24,7 +24,7 @@ test_2:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_3:
     TEST_ID: TEST-37369
@@ -38,7 +38,7 @@ test_3:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_4:
     TEST_ID: TEST-37370
@@ -52,7 +52,7 @@ test_4:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_5:
     TEST_ID: TEST-37371
@@ -66,7 +66,7 @@ test_5:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_6:
     TEST_ID: TEST-37372
@@ -80,7 +80,7 @@ test_6:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_7:
     TEST_ID: TEST-37373
@@ -94,7 +94,7 @@ test_7:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_8:
     TEST_ID: TEST-37374
@@ -108,7 +108,7 @@ test_8:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_9:
     TEST_ID: TEST-37375
@@ -122,7 +122,7 @@ test_9:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_10:
     TEST_ID: TEST-37376
@@ -136,7 +136,7 @@ test_10:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_11:
     TEST_ID: TEST-37377
@@ -150,7 +150,7 @@ test_11:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
 
 test_12:
     TEST_ID: TEST-37378
@@ -164,4 +164,4 @@ test_12:
         start: 1byte
         end: 100byte
     tool: s3api
-    operation: multipart
+    operation: multipart_range_read
