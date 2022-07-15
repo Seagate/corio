@@ -26,8 +26,6 @@ import logging
 import multiprocessing
 import os
 import random
-import sys
-import time
 from ast import literal_eval
 from collections import Counter
 from datetime import datetime
@@ -36,6 +34,7 @@ from pprint import pformat
 
 import munch
 import schedule
+import time
 
 from config import S3_CFG, CORIO_CFG
 from src.commons.cluster_health import check_health
@@ -79,7 +78,7 @@ def initialize_loghandler(opt):
         name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
-    StreamToLogger(name, LOGGER, stream=True, log_rotate=True)
+    StreamToLogger(name, LOGGER, stream=True)
 
 
 def parse_args():
@@ -113,6 +112,8 @@ def parse_args():
                         help="Degraded Mode, True/False")
     parser.add_argument("-mr", "--s3max_retry", type=int, default=0,
                         help="Max number of retries in case of any type of failure.")
+    parser.add_argument("-sr", "--sequential_run", action="store_true",
+                        help="Run test sequentially from workload.")
     return parser.parse_args()
 
 
@@ -174,11 +175,13 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
     duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
-    assert (not duplicate_ids), f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
+    if duplicate_ids:
+        raise AssertionError(f"Found duplicate ids in workload files. ids {set(duplicate_ids)}")
     if tests_details:
         # If jira update selected then will report missing workload test ids from jira TP.
-        assert (not missing_jira_ids), f"List of workload test ids {missing_jira_ids} " \
-                                       f"which are missing from jira tp: {tests_details.key()}"
+        if missing_jira_ids:
+            raise AssertionError(f"List of workload test ids {missing_jira_ids} which are missing"
+                                 f" from jira tp: {tests_details.key()}")
     if tests_to_execute:
         LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
     return tests_to_execute
@@ -191,7 +194,8 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
                       "secret_key": S3_CFG.secret_key,
                       "endpoint_url": S3_CFG.endpoint,
                       "use_ssl": S3_CFG.use_ssl,
-                      "seed": options.seed}
+                      "seed": options.seed,
+                      "sequential_run": options.sequential_run}
     for test_plan, test_plan_value in parsed_input.items():
         processes[test_plan] = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
                                                        args=(test_plan, test_plan_value,
@@ -281,7 +285,8 @@ def main(options):
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     processes = schedule_execution_plan(parsed_input, options)
     sched = schedule_test_status_update(parsed_input, corio_start_time,
-                                        CORIO_CFG.report_interval_mins)
+                                        CORIO_CFG.report_interval_mins,
+                                        sequential_run=options.sequential_run)
     receivers = os.getenv("RECEIVER_MAIL_ID")
     sender = os.getenv("SENDER_MAIL_ID")
     if receivers and sender:
@@ -305,7 +310,7 @@ def main(options):
                 if receivers and sender:
                     mail_notify.event_fail.set()
                     mail_notify.join()
-                sys.exit()
+                break
     except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminated_tp = type(error).__name__

@@ -124,15 +124,19 @@ class ClusterServices(RemoteHost):
               self.list_dirs(const.K8S_RE_SCRIPTS_PATH)):
             script_path = const.K8S_RE_SCRIPTS_PATH
         else:
-            assert script_path, f"Script {const.K8S_SB_SCRIPT} missing to collect SB log's in: " \
-                                f"'CFT:{const.K8S_CFT_SCRIPTS_PATH}/RE:{const.K8S_RE_SCRIPTS_PATH}"
+            if not script_path:
+                raise AssertionError(
+                    f"Script {const.K8S_SB_SCRIPT} missing to collect SB log's in: CFT"
+                    f":{const.K8S_CFT_SCRIPTS_PATH}/RE:{const.K8S_RE_SCRIPTS_PATH}")
         status, response = self.exec_k8s_command(cmd.CMD_GENERATE_CLSTR_LOGS.format(
             script_path, const.K8S_SB_SCRIPT), read_lines=True)
-        assert status, f"Failed to generate support bundle: {response}"
+        if not status:
+            raise AssertionError(f"Failed to generate support bundle: {response}")
         for line in response:
             if ".tar" in line:
                 file_name = line.split()[1].strip('\"')
-        assert file_name, f"Failed to generate support bundles. Response: {response}"
+        if not file_name:
+            raise AssertionError(f"Failed to generate support bundles. Response: {response}")
         remote_path = os.path.join(script_path, file_name)
         local_path = os.path.join(dir_path, file_name)
         self.download_file(local_path, remote_path)

@@ -147,6 +147,9 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
       -mr, --s3max_retry
                 Max number of retries in case of any type of failure.
 
+      -sr, --sequential_run
+                Run test sequentially from workload.
+
 #### Email Notifications
 By default, email notifications are turned off. To get the email notifications on execution status, set following environmental variables:
 

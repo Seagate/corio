@@ -46,7 +46,7 @@ class StreamToLogger:
         :keyword backup_count: count of the max rotation/rollover of logs
         :keyword log_rotate: Rotate log once reached the max_bytes
         """
-        self.log_rotate = kwargs.get("log_rotate", False)
+        self.log_rotate = kwargs.get("log_rotate", True)
         self.max_byte = kwargs.get("max_byte", CORIO_CFG["log_size"])
         self.backup_count = kwargs.get("backup_count", CORIO_CFG["log_backup_count"])
         self.file_path = file_path
@@ -119,7 +119,7 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
         os.remove(source)
 
 
-def get_logger(level, name) -> object:
+def get_logger(level, name, **kwargs) -> object:
     """
     Initialize and get the logger object.
 
@@ -138,11 +138,11 @@ def get_logger(level, name) -> object:
         logger = logging.getLogger()
         for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
             logging.getLogger(pkg).setLevel(logging.DEBUG)
-            fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
+        fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
     else:
         logger = logging.getLogger(name)
         fpath = os.path.join(dir_path, f"{name}_console.INFO")
     logger.setLevel(level)
-    StreamToLogger(fpath, logger)
+    StreamToLogger(fpath, logger, **kwargs)
 
     return logger
