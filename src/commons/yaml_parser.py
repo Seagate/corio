@@ -116,8 +116,9 @@ def test_parser(yaml_file, number_of_nodes):
     delta_list = []
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.
-        assert "object_size" in data, f"Object size is compulsory, which is missing in " \
-            f"workload {yaml_file}"
+        if "object_size" not in data:
+            raise AssertionError(
+                f"Object size is compulsory, which is missing in workload {yaml_file}")
         convert_object_part_size_to_bytes(data)
         convert_range_read_to_bytes(data)
         convert_min_runtime_to_time_delta(test, delta_list, data)
@@ -143,9 +144,9 @@ def convert_object_part_size_to_bytes(data):
     for size_type in ["object_size", "part_size", "total_storage_size"]:
         if size_type in data:
             if isinstance(data[size_type], dict):
-                assert "start" in data[size_type] or "end" in data[size_type], \
-                    f"Range using start and end keys for '{data[size_type]}' missing in" \
-                    f" workload '{data}'"
+                if "start" not in data[size_type] or "end" not in data[size_type]:
+                    raise AssertionError(f"Range using start and end keys for '{data[size_type]}'"
+                                         f"missing in workload '{data}'")
                 data[size_type]["start"] = convert_to_bytes(data[size_type]["start"])
                 data[size_type]["end"] = convert_to_bytes(data[size_type]["end"])
             elif isinstance(data[size_type], list):
@@ -158,8 +159,9 @@ def convert_range_read_to_bytes(data):
     """Convert range_read to bytes."""
     if "range_read" in data:
         if isinstance(data["range_read"], dict):
-            assert "start" in data["range_read"] or "end" in data["range_read"], \
-                f"Please define range using start and end keys: {data['range_read']}"
+            if "start" not in data["range_read"] or "end" not in data["range_read"]:
+                raise AssertionError(
+                    f"Please define range using start and end keys: {data['range_read']}")
             data["range_read"]["start"] = convert_to_bytes(data["range_read"]["start"])
             data["range_read"]["end"] = convert_to_bytes(data["range_read"]["end"])
         elif isinstance(data["range_read"], str):

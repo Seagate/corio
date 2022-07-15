@@ -57,7 +57,8 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> tup
             return False, f"Failed to collect support bundles for {nodes}."
         cluster_obj = ClusterServices(host, user, password)
         status, response = cluster_obj.collect_support_bundles(sb_dir)
-        assert status, IOError("Failed to generate support bundles. Response: %s", response)
+        if not status:
+            raise AssertionError(f"Failed to generate support bundles. Response: {response}")
         rotate_logs(sb_dir, max_sb)
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
