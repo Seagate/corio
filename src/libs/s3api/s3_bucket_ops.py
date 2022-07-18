@@ -73,7 +73,7 @@ class S3Bucket(S3RestApi):
         async with self.get_client() as client:
             self.s3_url = f"s3://{bucket_name}"
             response = await client.head_bucket(Bucket=bucket_name)
-            self.log.info("head_bucket: %s, Response: %s", self.s3_url, response)
+            self.log.info("head_bucket: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -88,7 +88,7 @@ class S3Bucket(S3RestApi):
         async with self.get_client() as client:
             self.s3_url = f"s3://{bucket_name}"
             response = await client.get_bucket_location(Bucket=bucket_name)
-            self.log.info("get_bucket_location: %s, Response: %s", self.s3_url, response)
+            self.log.info("get_bucket_location: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -115,7 +115,7 @@ class S3Bucket(S3RestApi):
                 self.log.info("All objects deleted successfully.")
             self.s3_url = f"s3://{bucket_name}"
             response = await client.delete_bucket(Bucket=bucket_name)
-            self.log.info("Bucket '%s' deleted successfully. Response: %s", self.s3_url, response)
+            self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
 
@@ -128,7 +128,7 @@ class S3Bucket(S3RestApi):
         :return: response.
         """
         response = self.get_boto3_client().create_bucket(Bucket=bucket_name)
-        self.log.info("Response: %s", str(response))
+        self.log.info("Bucket: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -140,8 +140,9 @@ class S3Bucket(S3RestApi):
         :return: response.
         """
         response = self.get_boto3_client().list_buckets()
-        self.log.info("Response: %s", str(response))
+        self.log.debug("Response: %s", response)
         bucket_list = [bucket['Name'] for bucket in response['Buckets']]
+        self.log.info("List s3 buckets: %s", bucket_list)
         return bucket_list
 
     @retries(asyncio=False)

@@ -24,6 +24,7 @@ import hashlib
 import os
 import random
 from datetime import datetime, timedelta
+
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
@@ -131,8 +132,7 @@ class TestMultiParts(S3Api):
         resp = await self.get_object(bucket=s3bucket, key=s3object,
                                      ranges=f"bytes={self.range_read['start']}"
                                             f"-{self.range_read['end']}")
-        assert resp['Body'].read(), f"Failed to read bytes {self.range_read} from " \
-                                    f"s3://{s3bucket}/{s3object}"
+        assert resp, f"Failed to read bytes {self.range_read} from s3://{s3bucket}/{s3object}"
 
     async def create_upload_list_completed_mpart(self, number_of_parts, mpart_bucket,
                                                  s3mpart_object, s3_object) -> None:
