@@ -131,7 +131,7 @@ class S3Object(S3RestApi):
     @retries()
     async def get_object(self, bucket: str, key: str, ranges: str = None) -> dict:
         """
-        Getobject or byte range of the object.
+        Get object or byte range of the object.
 
         :param bucket: Name of the bucket.
         :param key: Name of object.
@@ -144,6 +144,9 @@ class S3Object(S3RestApi):
                 response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
             else:
                 response = await s3client.get_object(Bucket=bucket, Key=key)
+            async with response['Body'] as stream:
+                chunk = await stream.read()
+                self.log.debug("Reading length: %s", len(chunk))
             self.log.info("get_object %s Response: %s", s3_url, response)
 
         return response
@@ -210,17 +213,21 @@ class S3Object(S3RestApi):
         :param chunk_size: size to read the content of s3 object.
         :param ranges: number of bytes to be read
         """
-        self.s3_url = s3_url = f"s3://{bucket}/{key}"
-        file_hash = hashlib.sha256()
-        response = await self.get_object(bucket=bucket, key=key, ranges=ranges)
-        self.log.info("get_s3object_checksum %s Response %s", s3_url, response)
-        async with response['Body'] as stream:
-            chunk = await stream.read(chunk_size)
-            self.log.debug("Reading chunk length: %s", len(chunk))
-            while len(chunk) > 0:
-                file_hash.update(chunk)
+        async with self.get_client() as s3client:
+            self.s3_url = s3_url = f"s3://{bucket}/{key}"
+            file_hash = hashlib.sha256()
+            if ranges:
+                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+            else:
+                response = await s3client.get_object(Bucket=bucket, Key=key)
+            self.log.info("get_s3object_checksum %s Response %s", s3_url, response)
+            async with response['Body'] as stream:
                 chunk = await stream.read(chunk_size)
-        sha256_digest = file_hash.hexdigest()
+                self.log.debug("Reading chunk length: %s", len(chunk))
+                while len(chunk) > 0:
+                    file_hash.update(chunk)
+                    chunk = await stream.read(chunk_size)
+            sha256_digest = file_hash.hexdigest()
         self.log.debug("get_s3object_checksum %s, SHA-256: %s", s3_url, sha256_digest)
 
         return sha256_digest
