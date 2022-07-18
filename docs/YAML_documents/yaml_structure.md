@@ -71,6 +71,8 @@ calculated.
 **operation** should be specified according to type of workload and need to map it in corio.py with
 appropriate test script.
 
+**total_samples** Total number of samples given by user to define object size distribution.
+
 ---
 
 Sample YAML file can be found at [sample file](sample_file.yaml)

@@ -119,9 +119,12 @@ def test_parser(yaml_file, number_of_nodes):
         if "object_size" not in data:
             raise AssertionError(
                 f"Object size is compulsory, which is missing in workload {yaml_file}")
-        convert_object_part_size_to_bytes(data)
-        convert_range_read_to_bytes(data)
-        convert_min_runtime_to_time_delta(test, delta_list, data)
+        if "total_samples" in data and isinstance(data["object_size"], dict):
+            convert_object_size_to_bytes_samples(data)
+        else:
+            convert_object_part_size_to_bytes(data)
+            convert_range_read_to_bytes(data)
+            convert_min_runtime_to_time_delta(test, delta_list, data)
         if 'sessions_per_node' in data.keys():
             data['sessions'] = data['sessions_per_node'] * number_of_nodes
     LOGGER.debug("test object %s: ", workload_data)
@@ -166,3 +169,41 @@ def convert_range_read_to_bytes(data):
             data["range_read"]["end"] = convert_to_bytes(data["range_read"]["end"])
         elif isinstance(data["range_read"], str):
             data["range_read"] = convert_to_bytes(data["range_read"])
+
+
+def convert_object_size_to_bytes_samples(data):
+    """Convert object_operations_type1 to bytes and distribution to samples.
+    sample data:
+    test_1:
+      TEST_ID: TEST-40039
+      object_size:
+        0Kb: 2%
+        1Kb: 24.79%
+        10Kb: 18.84%
+        100Kb: 17.87%
+        1Mb: 18.2%
+        10Mb: 16.7%
+        100Mb: 1.56%
+        1Gb: 0.03%
+        2Gb: 0.01%
+      total_samples: 10000
+    """
+    object_size, distribution = zip(*data['object_size'].items())
+    object_size = convert_object_size_to_bytes(object_size)
+    samples = data["total_samples"]
+    distribution = list(distribution)
+    distribution = convert_distribution_to_sample(distribution, samples)
+    new_data = dict(zip(object_size, distribution))
+    data['object_size'] = new_data
+
+
+def convert_object_size_to_bytes(object_size: tuple) -> tuple:
+    """Convert object size of object_operations_type1 to bytes."""
+    return tuple(convert_to_bytes(item) for item in object_size)
+
+
+def convert_distribution_to_sample(distribution: list, samples: int) -> tuple:
+    """Convert object size distribution to samples."""
+    for sample, _ in enumerate(distribution):
+        distribution[sample] = int(round(((float(distribution[sample][:-1]) / 100.0) * samples), 2))
+    return tuple(distribution)
