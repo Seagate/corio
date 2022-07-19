@@ -59,6 +59,8 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
         if kwargs.get("total_storage_size"):
             self.initialize_variables(**kwargs)
+        else:
+            self.distribution = kwargs.get("distribution")
 
     @classmethod
     def initialize_variables(cls, **kwargs):
@@ -99,6 +101,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         cls.file_size = 0
 
     # pylint: disable=broad-except
+
     def execute_mix_object_workload(self):
         """Execute mix object operations workload for specific duration."""
         while True:
@@ -199,3 +202,37 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         else:
             self.log.info(sample_msg, self.delete_samples, "delete")
         return self.write_samples, self.read_samples, self.delete_samples
+
+    def execute_object_crud_workload(self):
+        """Execute Plain object operations workload  for given distribution for specific duration."""
+        distribution = self.distribution
+        while True:
+            crud_iter = 0
+            try:
+                self.log.info("iteration %s is started...", self.iteration)
+                # Write data to fill storage as per write percentage/distribution.
+                self.execute_workload(operations="write",
+                                      distribution=self.distribution,
+                                      sessions=self.sessions)
+                self.log.info("Able to write %s of data samples from cluster in %s iterations.",
+                              self.write_samples, crud_iter)
+                # Read data as per read percentage/distribution.
+                self.execute_workload(operations="read",
+                                      distribution=self.distribution,
+                                      sessions=self.sessions, validate=True)
+                self.log.info("Able to read %s of data from cluster in %s iterations.",
+                              self.read_samples, crud_iter)
+                # Delete data as per delete percentage.
+                self.execute_workload(operations="delete",
+                                      distribution=self.distribution,
+                                      sessions=self.sessions)
+                self.log.info("Able to delete %s of data samples from cluster in %s iterations.",
+                              self.delete_samples, crud_iter)
+            except Exception as err:
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
+            if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
+                self.execute_workload(operations="cleanup", sessions=self.sessions)
+                return True, "Bucket operation execution completed successfully."
+            self.log.info("iteration %s is completed...", self.iteration)
+            self.iteration += 1
