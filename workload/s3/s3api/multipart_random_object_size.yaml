@@ -9,7 +9,7 @@ test_1:
     min_runtime: 2h
     sessions: 5  # One object per session.
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_2:
     TEST_ID: TEST-36216
@@ -22,7 +22,7 @@ test_2:
     min_runtime: 2h
     sessions: 5
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_3:
     TEST_ID: TEST-36217
@@ -35,7 +35,7 @@ test_3:
     min_runtime: 20h
     sessions: 10
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_4:
     TEST_ID: TEST-36218
@@ -48,7 +48,7 @@ test_4:
     min_runtime: 1d
     sessions: 10
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_5:
     TEST_ID: TEST-36219
@@ -61,7 +61,7 @@ test_5:
     min_runtime: 1d
     sessions: 15
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_6:
     TEST_ID: TEST-36220
@@ -74,7 +74,7 @@ test_6:
     min_runtime: 2d
     sessions: 15
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_7:
     TEST_ID: TEST-36221
@@ -87,7 +87,7 @@ test_7:
     min_runtime: 2d
     sessions: 20
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_8:
     TEST_ID: TEST-36222
@@ -100,7 +100,7 @@ test_8:
     min_runtime: 4d
     sessions: 20
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_9:
     TEST_ID: TEST-36223
@@ -113,7 +113,7 @@ test_9:
     min_runtime: 5d
     sessions: 25
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_10:
     TEST_ID: TEST-36224
@@ -126,7 +126,7 @@ test_10:
     min_runtime: 5d
     sessions: 25
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_11:
     TEST_ID: TEST-36225
@@ -139,7 +139,7 @@ test_11:
     min_runtime: 5d
     sessions: 30
     tool: s3api
-    operation: multipart
+    operation: multipart_random
 
 test_12:
     TEST_ID: TEST-36226
@@ -152,4 +152,4 @@ test_12:
     min_runtime: 5d
     sessions: 30
     tool: s3api
-    operation: multipart
+    operation: multipart_random
