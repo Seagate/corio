@@ -46,6 +46,7 @@ class S3ApiParallelIO(S3Api):
         self.validated_files = []
         self.delete_keys = []
         self.s3_buckets = []
+        self.write_cnt = 0
 
     async def read_data(self, bucket_name: str, object_size: int, sessions: int,
                         object_prefix: str, validate=False) -> None:
@@ -175,14 +176,14 @@ class S3ApiParallelIO(S3Api):
             object_size))
         checksum_in = self.checksum_file(file_path)
         self.log.debug("Checksum of '%s' = %s", file_name, checksum_in)
+        kcnt = (len(self.io_ops_dict[bucket_name]) if bucket_name in self.io_ops_dict else 0) + 1
 
         async def upload_object(**kwargs):
-            """upload s3 object"""
-            i = kwargs.get("iter")
-            key = f"{object_prefix}-{perf_counter_ns()}-{checksum_in}-{i}"
-            response = await self.upload_object(bucket_name, key, file_path=file_path)
+            """upload s3 object."""
+            key = f"{object_prefix}-{perf_counter_ns()}-{checksum_in}-{kwargs.get('cntr')}"
             s3_url = f"s3://{bucket_name}/{key}"
-            self.log.info("Uploaded s3 url: %s", s3_url)
+            response = await self.upload_object(bucket_name, key, file_path=file_path)
+            self.log.info("Uploaded s3 object: url: %s", s3_url)
             if bucket_name not in self.io_ops_dict:
                 self.io_ops_dict[bucket_name] = {key: {"s3url": s3_url, "key_size": object_size,
                                                        "key_checksum": checksum_in, "bucket":
@@ -197,7 +198,7 @@ class S3ApiParallelIO(S3Api):
 
         self.log.info("Scheduling to upload file %s, size %s, for samples %s ",
                       object_prefix, file_path, sessions)
-        await self.schedule_api_sessions(sessions, upload_object)
+        await self.schedule_api_sessions(sessions, upload_object, cntr=kcnt)
         os.remove(file_path)
 
     @staticmethod
@@ -213,11 +214,10 @@ class S3ApiParallelIO(S3Api):
     async def schedule_api_sessions(self, sessions, func, **kwargs):
         """schedule api sessions."""
         tasks = []
-        i = 0
+        kwargs["cntr"] = kwargs.get("cntr", 0)
         for _ in range(1, sessions + 1):
-            kwargs["iter"] = i
             tasks.append(func(**kwargs))
-            i += 1
+            kwargs["cntr"] += 1
         if tasks:
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
             if pending:
