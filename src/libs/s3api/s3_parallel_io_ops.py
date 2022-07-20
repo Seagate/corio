@@ -208,7 +208,8 @@ class S3ApiParallelIO(S3Api):
             distribution_list = [samples]
         else:
             distribution_list = [sessions for _ in range(int(samples / sessions))]
-            distribution_list.extend([samples % sessions])
+            if samples % sessions:
+                distribution_list.extend([samples % sessions])
         return distribution_list
 
     async def schedule_api_sessions(self, sessions, func, **kwargs):
@@ -237,10 +238,11 @@ class S3ApiParallelIO(S3Api):
             loop.run_until_complete(func(**kwargs))
         except Exception as error:
             self.log.exception(error)
-            loop.stop()
+            if loop.is_running():
+                loop.stop()
             raise error from Exception
         finally:
-            if loop.is_running():
+            if loop.is_closed():
                 loop.close()
         self.log.info("Execution completed: %s", not loop.is_running())
 
