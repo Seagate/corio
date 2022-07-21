@@ -156,6 +156,7 @@ def test_parser(yaml_file, number_of_nodes):
                 f"Object size is compulsory, which is missing in workload {yaml_file}")
         if "total_samples" in data and isinstance(data["object_size"], dict):
             convert_object_size_to_bytes_samples(data)
+            convert_min_runtime_to_time_delta(test, delta_list, data)
         else:
             convert_object_part_size_to_bytes(data)
             convert_range_read_to_bytes(data)
