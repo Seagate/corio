@@ -80,8 +80,12 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
     if isinstance(value['object_size'], list):
         input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
     elif isinstance(value['object_size'], dict):
-        input_dict.update({"OBJECT_SIZE_START": convert_size(value['object_size']['start']),
-                           "OBJECT_SIZE_END": convert_size(value['object_size']['end'])})
+        if 'start' in value['object_size']:
+            input_dict.update({"OBJECT_SIZE_START": convert_size(value['object_size']['start']),
+                               "OBJECT_SIZE_END": convert_size(value['object_size']['end'])})
+        else:
+            for key, value in value['object_size'].items():
+                input_dict.update({convert_size(key): value })
     else:
         input_dict["OBJECT_SIZE"] = convert_size(value['object_size'])
 
