@@ -44,6 +44,7 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         if not config:
             raise AssertionError(f"No parameter for a {test}.")
         existing_params = config.keys()
+        LOGGER.debug("Existing params are %s", existing_params)
         # Check for minimum required parameters (TestID, Tool, Operation)
         required = master_cfg['common']
         if not existing_params or (set(required) - set(existing_params) != set()):
@@ -51,6 +52,7 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         tool = config['tool']
         operation = config['operation']
         required_params = list(master_cfg[tool][operation].keys()) + required
+        LOGGER.debug("Required params are %s", required_params)
         # Check for unknown parameters
         for param in existing_params:
             if param not in required_params:
