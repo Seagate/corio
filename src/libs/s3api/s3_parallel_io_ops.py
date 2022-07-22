@@ -44,7 +44,7 @@ class S3ApiParallelIO(S3Api):
         self.io_ops_dict = {}
         self.read_files = {}
         self.validated_files = {}
-        self.delete_keys = {}
+        self.deleted_files = {}
 
     async def read_data(self, bucket_name: str, object_size: int, sessions: int,
                         object_prefix: str, validate=False) -> None:
@@ -60,12 +60,18 @@ class S3ApiParallelIO(S3Api):
         """
         self.log.info("Reading data...")
         self.log.info("Object size: %s, Number of samples: %s", object_size, sessions)
-        if (bucket_name not in self.read_files or len(self.read_files[bucket_name]) + sessions >
+        if bucket_name not in self.read_files:
+            self.read_files[bucket_name] = {}
+            if "keys" not in self.read_files[bucket_name]:
+                self.read_files[bucket_name]["keys"] = []
+            if "total_count" not in self.read_files[bucket_name]:
+                self.read_files[bucket_name]["total_count"] = 0
+        if (len(self.read_files[bucket_name]["keys"]) + sessions >
                 len(self.io_ops_dict[bucket_name])):
-            self.read_files[bucket_name] = []
-        rkey_cntr = len(self.read_files[bucket_name])
+            self.read_files[bucket_name]["keys"] = []
+        rkey_cntr = len(self.read_files[bucket_name]["keys"])
 
-        async def read_object(**kwargs):
+        async def read_s3object(**kwargs):
             """Read s3 object."""
             self.log.info("Get Object and check data integrity.")
             key = list(self.io_ops_dict[bucket_name].keys())[kwargs.get("cntr")]
@@ -78,9 +84,11 @@ class S3ApiParallelIO(S3Api):
                         raise AssertionError("Checksum are not equal.")
                 else:
                     await self.get_object(bucket_name, key)
-                self.read_files[bucket_name].append(key)
+                if key not in self.read_files[bucket_name]["keys"]:
+                    self.read_files[bucket_name]["keys"].append(key)
 
-        await self.schedule_api_sessions(sessions, read_object, cntr=rkey_cntr)
+        await self.schedule_api_sessions(sessions, read_s3object, cntr=rkey_cntr)
+        self.read_files[bucket_name]["total_count"] += sessions
         self.log.info("Reading completed...")
 
     async def delete_data(self, bucket_name: str, object_size: int, sessions: int,
@@ -96,10 +104,15 @@ class S3ApiParallelIO(S3Api):
         """
         self.log.info("Deleting data...")
         self.log.info("Single object size: %s, Number of samples: %s", object_size, sessions)
-        self.delete_keys[bucket_name] = []
-        del_key_cnt = len(self.delete_keys[bucket_name])
-        if del_key_cnt + sessions > len(self.io_ops_dict[bucket_name]):
-            raise AssertionError(f"Opted deletion keys count '{del_key_cnt + sessions}' is greater"
+        if bucket_name not in self.deleted_files:
+            self.deleted_files[bucket_name] = {}
+            if "keys" not in self.deleted_files[bucket_name]:
+                self.deleted_files[bucket_name]["keys"] = []
+            if "total_count" not in self.deleted_files[bucket_name]:
+                self.deleted_files[bucket_name]["total_count"] = 0
+        dkey_cntr = 0
+        if dkey_cntr + sessions > len(self.io_ops_dict[bucket_name]):
+            raise AssertionError(f"Deletion keys count '{dkey_cntr + sessions}' is greater"
                                  f" than actual keys '{self.io_ops_dict[bucket_name].keys()}'")
 
         async def delete_s3object(**kwargs):
@@ -108,9 +121,10 @@ class S3ApiParallelIO(S3Api):
             if key.startswith(object_prefix) and self.io_ops_dict[bucket_name][key][
                     "key_size"] == object_size:
                 await self.delete_object(bucket_name, key)
-                self.delete_keys[bucket_name].append(key)
+                self.deleted_files[bucket_name]["keys"].append(key)
 
-        await self.schedule_api_sessions(sessions, delete_s3object, cntr=del_key_cnt)
+        await self.schedule_api_sessions(sessions, delete_s3object, cntr=dkey_cntr)
+        self.deleted_files[bucket_name]["total_count"] += sessions
         self.log.info("Deletion completed...")
 
     async def validate_data(self, bucket_name: str, object_size: int, sessions: int,
@@ -127,12 +141,18 @@ class S3ApiParallelIO(S3Api):
         self.log.info("Validating data...")
         self.log.info("Single object size: %s, Object prefix: %s,  Number of samples: %s",
                       object_size, object_prefix, sessions)
-        if (bucket_name not in self.validated_files or len(self.validated_files[bucket_name]) +
-                sessions > len(self.io_ops_dict[bucket_name])):
-            self.validated_files[bucket_name] = []
-        vkey_cntr = len(self.validated_files[bucket_name])
+        if bucket_name not in self.validated_files:
+            self.validated_files[bucket_name] = {}
+            if "keys" not in self.validated_files[bucket_name]:
+                self.validated_files[bucket_name]["keys"] = []
+            if "total_count" not in self.validated_files[bucket_name]:
+                self.validated_files[bucket_name]["total_count"] = 0
+        if (len(self.validated_files[bucket_name]["keys"]) + sessions >
+                len(self.io_ops_dict[bucket_name])):
+            self.validated_files[bucket_name]["keys"] = []
+        vkey_cntr = len(self.validated_files[bucket_name]["keys"])
 
-        async def validate_object(**kwargs):
+        async def validate_s3object(**kwargs):
             """Validate object."""
             key = list(self.io_ops_dict[bucket_name].keys())[kwargs.get("cntr")]
             if key.startswith(object_prefix) and self.io_ops_dict[bucket_name][key][
@@ -143,7 +163,11 @@ class S3ApiParallelIO(S3Api):
                     f"Checksum are not equal for {key}: checksum_in: {checksum_in}, "
                     f"checksum_down: {checksum_dwn}.")
                 self.log.info("Check sum matched for object %s", key)
-        await self.schedule_api_sessions(sessions, validate_object, cntr=vkey_cntr)
+                if key not in self.validated_files[bucket_name]["keys"]:
+                    self.validated_files[bucket_name]["keys"].append(key)
+
+        await self.schedule_api_sessions(sessions, validate_s3object, cntr=vkey_cntr)
+        self.validated_files[bucket_name]["total_count"] += sessions
         self.log.info("Validation completed...")
 
     async def cleanup_data(self, sessions: int) -> None:
@@ -187,12 +211,12 @@ class S3ApiParallelIO(S3Api):
         self.log.debug("Checksum of '%s' = %s", file_name, checksum_in)
         kcnt = (len(self.io_ops_dict[bucket_name]) if bucket_name in self.io_ops_dict else 0) + 1
 
-        async def upload_object(**kwargs):
+        async def upload_s3object(**kwargs):
             """Upload s3 object."""
             key = f"{object_prefix}-{perf_counter_ns()}-{checksum_in}-{kwargs.get('cntr')}"
-            s3_url = f"s3://{bucket_name}/{key}"
+            self.s3_url = s3_url = f"s3://{bucket_name}/{key}"
             response = await self.upload_object(bucket_name, key, file_path=file_path)
-            self.log.info("Uploaded s3 object: url: %s", s3_url)
+            self.log.info("Uploading s3 object: url: %s", s3_url)
             if bucket_name not in self.io_ops_dict:
                 self.io_ops_dict[bucket_name] = {
                     key: {"s3url": s3_url, "key_size": object_size, "key_checksum": checksum_in,
@@ -205,7 +229,7 @@ class S3ApiParallelIO(S3Api):
 
         self.log.info("Scheduling to upload file %s, size %s, for samples %s ",
                       object_prefix, file_path, sessions)
-        await self.schedule_api_sessions(sessions, upload_object, cntr=kcnt)
+        await self.schedule_api_sessions(sessions, upload_s3object, cntr=kcnt)
         os.remove(file_path)
 
     @staticmethod
@@ -243,7 +267,7 @@ class S3ApiParallelIO(S3Api):
 
         :param func: Name of the function.
         """
-        self.log.info("Execution started for %s", func)
+        self.log.info("Execution started for %s", func.__name__)
         loop = asyncio.get_event_loop()
         try:
             loop.run_until_complete(func(*args, **kwargs))
@@ -255,7 +279,7 @@ class S3ApiParallelIO(S3Api):
         finally:
             if loop.is_closed():
                 loop.close()
-        self.log.info("Execution completed: %s", not loop.is_running())
+        self.log.info("Execution completed for %s", func.__name__)
 
     def get_s3bucket(self, operations: str, bucket_name: str, obj_size: int):
         """Get/Create the s3 io bucket."""
@@ -263,7 +287,7 @@ class S3ApiParallelIO(S3Api):
             if bucket_name not in self.list_s3_buckets():
                 self.create_s3_bucket(bucket_name)
         else:
-            bucket_name = [bkt for bkt in self.io_ops_dict
+            bucket_name = [bkt for bkt in self.list_s3_buckets()
                            if (bucket_name == bkt or
                                bkt.startswith(f"iobkt-size{obj_size}"))][-1]
             if not bucket_name:
@@ -271,7 +295,7 @@ class S3ApiParallelIO(S3Api):
 
         return bucket_name
 
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches, too-many-nested-blocks
     def execute_workload(self, operations, sessions=1, **kwargs):
         """
         Execute s3 workload distribution.
@@ -315,9 +339,11 @@ class S3ApiParallelIO(S3Api):
                         self.create_sessions(self.delete_data, bucket_name=bucket_name,
                                              object_size=obj_size, object_prefix=object_prefix,
                                              sessions=clients)
-                        for key in self.delete_keys[bucket_name]:
-                            self.io_ops_dict[bucket_name].pop(key)
-                        self.log.info("Bucket: %s, Deleted keys: %s", bucket_name, self.delete_keys)
+                        for key in self.deleted_files[bucket_name]["keys"]:
+                            if key in self.io_ops_dict[bucket_name]:
+                                self.io_ops_dict[bucket_name].pop(key)
+                    self.log.info("Bucket: %s, Deleted keys: %s", bucket_name,
+                                  self.deleted_files[bucket_name]["keys"])
         if operations == "cleanup":
             for clients in self.get_session_distributions(len(self.io_ops_dict), sessions):
                 self.create_sessions(self.cleanup_data, sessions=clients)
