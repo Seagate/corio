@@ -15,7 +15,7 @@
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
-"""object crud operations in parallel for io stability."""
+"""Object crud operations in parallel for io stability workload using aiobotocore."""
 
 import asyncio
 import os
@@ -27,13 +27,13 @@ from src.libs.s3api import S3Api
 
 
 class S3ApiParallelIO(S3Api):
-    """S3 mix object operations class for executing given io stability workload."""
+    """S3 object operations class for executing given io stability workload."""
 
     # pylint: disable=too-many-arguments
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, **kwargs) -> None:
         """
-        s3 Mix object operations init class.
+        S3 object operations init.
 
         :param access_key: access key.
         :param secret_key: secret key.
@@ -49,7 +49,8 @@ class S3ApiParallelIO(S3Api):
     async def read_data(self, bucket_name: str, object_size: int, sessions: int,
                         object_prefix: str, validate=False) -> None:
         """
-        Read data from s3 bucket.
+        Read data from s3 bucket as per object size, object prefix and number of samples in
+        parallel as per sessions.
 
         :param bucket_name: Name of the s3 bucket.
         :param object_size: Object size per sample.
@@ -85,7 +86,8 @@ class S3ApiParallelIO(S3Api):
     async def delete_data(self, bucket_name: str, object_size: int, sessions: int,
                           object_prefix: str) -> None:
         """
-        delete data from s3.
+        Delete data from s3 bucket as per object size, object prefix and number of samples in
+        parallel as per sessions.
 
         :param bucket_name: Name of the bucket.
         :param object_size: Object size per sample.
@@ -114,7 +116,8 @@ class S3ApiParallelIO(S3Api):
     async def validate_data(self, bucket_name: str, object_size: int, sessions: int,
                             object_prefix: str) -> None:
         """
-        Validate data from s3.
+        Validate data from s3 bucket as per object size, object prefix and number of samples in
+        parallel as per sessions.
 
         :param bucket_name: Name of the s3 bucket.
         :param object_size: Object size per sample.
@@ -145,7 +148,7 @@ class S3ApiParallelIO(S3Api):
 
     async def cleanup_data(self, sessions: int) -> None:
         """
-        delete s3 bucket with all objects in it.
+        Delete s3 buckets along with all s3 objects in parallel as per sessions.
 
         :param sessions: Number of parallel session.
         """
@@ -167,7 +170,8 @@ class S3ApiParallelIO(S3Api):
     async def write_data(self, bucket_name: str, object_size: int, object_prefix: str,
                          sessions: int) -> None:
         """
-        Write data to s3.
+        Write data to s3 bucket as per object size, object prefix and number of samples in
+        parallel as per sessions.
 
         :param object_prefix: Object name prefix used while creating unique object.
         :param bucket_name: Name of the s3 bucket.
@@ -184,7 +188,7 @@ class S3ApiParallelIO(S3Api):
         kcnt = (len(self.io_ops_dict[bucket_name]) if bucket_name in self.io_ops_dict else 0) + 1
 
         async def upload_object(**kwargs):
-            """upload s3 object."""
+            """Upload s3 object."""
             key = f"{object_prefix}-{perf_counter_ns()}-{checksum_in}-{kwargs.get('cntr')}"
             s3_url = f"s3://{bucket_name}/{key}"
             response = await self.upload_object(bucket_name, key, file_path=file_path)
@@ -206,21 +210,21 @@ class S3ApiParallelIO(S3Api):
 
     @staticmethod
     def get_session_distributions(samples, sessions):
-        """get session distributions as per samples."""
+        """Get session distributions as per samples."""
         if samples < sessions:
-            distribution_list = [samples]
+            sessions_distributions = [samples]
         else:
-            distribution_list = [sessions for _ in range(int(samples / sessions))]
+            sessions_distributions = [sessions for _ in range(int(samples / sessions))]
             if samples % sessions:
-                distribution_list.extend([samples % sessions])
-        return distribution_list
+                sessions_distributions.extend([samples % sessions])
+        return sessions_distributions
 
-    async def schedule_api_sessions(self, sessions, func, **kwargs):
-        """schedule api sessions."""
+    async def schedule_api_sessions(self, sessions, func, *args, **kwargs):
+        """Schedule session for function as per sessions."""
         tasks = []
         kwargs["cntr"] = kwargs.get("cntr", 0)
         for _ in range(1, sessions + 1):
-            tasks.append(func(**kwargs))
+            tasks.append(func(*args, **kwargs))
             kwargs["cntr"] += 1
         if tasks:
             done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
@@ -233,12 +237,16 @@ class S3ApiParallelIO(S3Api):
                 task.result()
 
     # pylint: disable=broad-except
-    def create_sessions(self, func, **kwargs):
-        """start workload execution."""
+    def create_sessions(self, func, *args, **kwargs):
+        """
+        Start workload execution.
+
+        :param func: Name of the function.
+        """
         self.log.info("Execution started for %s", func)
         loop = asyncio.get_event_loop()
         try:
-            loop.run_until_complete(func(**kwargs))
+            loop.run_until_complete(func(*args, **kwargs))
         except Exception as error:
             self.log.exception(error)
             if loop.is_running():
@@ -250,9 +258,9 @@ class S3ApiParallelIO(S3Api):
         self.log.info("Execution completed: %s", not loop.is_running())
 
     def get_s3bucket(self, operations: str, bucket_name: str, obj_size: int):
-        """Get the s3 parallel io bucket."""
+        """Get/Create the s3 io bucket."""
         if operations == "write":
-            if bucket_name not in self.io_ops_dict:
+            if bucket_name not in self.list_s3_buckets():
                 self.create_s3_bucket(bucket_name)
         else:
             bucket_name = [bkt for bkt in self.io_ops_dict
@@ -265,12 +273,23 @@ class S3ApiParallelIO(S3Api):
 
     # pylint: disable=too-many-branches
     def execute_workload(self, operations, sessions=1, **kwargs):
-        """Execute s3 workload."""
+        """
+        Execute s3 workload distribution.
+
+        :param operations: Supported operations are 'write', 'read', 'delete', 'validate' and
+        'cleanup' in parallel as per sessions and distribution.
+        :param sessions: Number of sessions.
+        :keyword distribution: Distribution of object size and number of samples.
+            ex: {1024: 115, 2048: 100, 4096: 225}
+        :keyword validate: Optional and used in case of read operations.
+        :keyword bucket_name: Name of s3 bucket. format: "iobkt-size{obj_size}-samples{num_sample}".
+        :keyword object_prefix: Object prefix of the s3 object. format: "object-{obj_size}".
+        """
         distribution = kwargs.get("distribution")
         if distribution:
             for obj_size, num_sample in distribution.items():
                 bucket_name = kwargs.get("bucket_name", f"iobkt-size{obj_size}-samples{num_sample}")
-                object_prefix = kwargs.get("object_prefix", f'object-{obj_size}')
+                object_prefix = kwargs.get("object_prefix", f"object-{obj_size}")
                 if operations == "write":
                     bucket_name = self.get_s3bucket(operations, bucket_name, obj_size)
                     for clients in self.get_session_distributions(num_sample, sessions):
