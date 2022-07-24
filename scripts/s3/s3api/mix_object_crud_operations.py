@@ -19,6 +19,7 @@
 import asyncio
 import random
 from datetime import datetime, timedelta
+from typing import Union
 
 from math import modf
 from time import perf_counter_ns
@@ -59,7 +60,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.finish_time = datetime.now() + kwargs.get("duration")
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
-        if kwargs.get("total_storage_size"):
+        if "total_storage_size" in kwargs:
             self.initialize_variables(**kwargs)
         else:
             self.distribution = kwargs.get("object_size")
@@ -94,39 +95,44 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         cls.storage_size_to_read = int(cls.total_storage / 100 * cls.read_percentage)
         cls.storage_size_to_delete = int(cls.total_storage / 100 * cls.delete_percentage)
         cls.size_to_cleanup_all_data = int(cls.total_storage / 100 * cls.cleanup_percentage)
-        cls.write_samples = 0
-        cls.read_samples = 0
-        cls.delete_samples = 0
+        cls.s3_url = None
+        cls.write_object_distribution = 0
+        cls.read_object_distribution = 0
+        cls.delete_object_distribution = 0
         cls.file_size = 0
 
-    # pylint: disable=broad-except
-
-    def execute_mix_object_workload(self):
+    # pylint: disable=broad-except, too-many-branches
+    async def execute_mix_object_workload(self):
         """Execute mix object operations workload for specific duration."""
         while True:
             self.log.info("iteration %s is started...", self.iteration)
             try:
-                if int(self.total_written_data / self.total_storage * 100) < 100:
+                if int(self.total_written_data / self.total_storage * 100) < 95:
                     if isinstance(self.object_size, dict):
                         self.object_size = random.randrange(
                             self.object_size["start"], self.object_size["end"])
-                    self.log.info("Single object size: %s bytes", self.object_size)
-                    self.get_sample_details(self.object_size)
+                        self.log.info("Single object size: %s bytes", self.object_size)
+                        await self.get_object_distribution(self.object_size)
+                    elif isinstance(self.object_size, list):
+                        await self.get_object_distribution(self.object_size)
+                    else:
+                        raise AssertionError(
+                            f"Unsupported object size type: {type(self.object_size)}")
                     # Write data to fill storage as per write percentage.
                     written_data = 0
                     while self.storage_size_to_fill > written_data:
                         self.execute_workload(operations="write",
-                                              distribution={self.object_size: self.write_samples},
+                                              distribution=self.write_object_distribution,
                                               sessions=self.sessions)
-                        written_data += self.write_samples * self.object_size
-                    self.display_storage_consumed()
+                        written_data += self.write_object_distribution * self.object_size
+                    await self.display_storage_consumed()
                 # Read data as per read percentage.
                 read_data, read_iter = 0, 0
                 while self.storage_size_to_read > read_data:
                     self.execute_workload(operations="read",
-                                          distribution={self.object_size: self.read_samples},
+                                          distribution=self.read_object_distribution,
                                           sessions=self.sessions, validate=True)
-                    read_data += self.read_samples * self.object_size
+                    read_data += self.read_object_distribution * self.object_size
                     read_iter += 1
                 read_percentage = int(read_data / self.total_storage * 100)
                 self.log.info("Able to read %s%% of data from cluster in %s iterations.",
@@ -136,10 +142,10 @@ class TestTypeXObjectOps(S3ApiParallelIO):
                     deleted_data = 0
                     while self.storage_size_to_delete > deleted_data:
                         self.execute_workload(operations="delete",
-                                              distribution={self.object_size: self.delete_samples},
+                                              distribution=self.delete_object_distribution,
                                               sessions=self.sessions)
-                        deleted_data += self.object_size * self.delete_samples
-                    self.display_storage_consumed(operation="delete")
+                        deleted_data += self.object_size * self.delete_object_distribution
+                    await self.display_storage_consumed(operation="delete")
                 # Cleanup data as per cleanup percentage.
                 if self.size_to_cleanup_all_data:
                     if self.total_written_data >= self.size_to_cleanup_all_data:
@@ -148,7 +154,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
                         self.execute_workload(operations="cleanup", sessions=self.sessions)
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
-                self.display_storage_consumed(operation="")
+                await self.display_storage_consumed(operation="")
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
@@ -158,7 +164,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.log.info("iteration %s is completed...", self.iteration)
             self.iteration += 1
 
-    def display_storage_consumed(self, operation="write"):
+    async def display_storage_consumed(self, operation="write"):
         """Display storage consumed after specified operation."""
         consumed_per = int(self.total_written_data / self.total_storage * 100)
         storage_consumed = 100 if consumed_per > 100 else consumed_per
@@ -167,40 +173,42 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         else:
             self.log.info("Storage consumed %s%% after iteration %s.", storage_consumed,
                           self.iteration)
+        await asyncio.sleep(1)
 
-    def get_sample_details(self, file_size: int) -> tuple:
+    async def get_object_distribution(self, file_size: Union[int, list]) -> None:
         """
         Get samples for write, read, delete operation to be used in IO.
 
         :param file_size: Single object size used to calculate the number of sample.
         """
-        err_str = "Number of samples '%s' should be greater/equal to number of sessions '%s'."
-        sample_msg = "Number of samples '%s' will be used for %s operation."
         per_limit = "%s percentage should be less than or equal to 100%"
         # Logic behind adding extra 1 sample is to cover fractional part.
         assert self.write_percentage <= 100, per_limit.format("Write")
         assert self.delete_percentage <= 100, per_limit.format("Delete")
-        w_chunks = modf(self.storage_size_to_fill / file_size)
-        self.write_samples = int(w_chunks[1]) + 1 if w_chunks[0] else int(w_chunks[1])
-        if self.write_samples < self.sessions:
-            self.log.warning(err_str, self.write_samples, self.sessions)
+        if isinstance(file_size, int):
+            w_chunks = modf(self.storage_size_to_fill / file_size)
+            self.write_object_distribution = int(
+                w_chunks[1]) + 1 if w_chunks[0] else int(w_chunks[1])
+            r_chunks = modf(self.storage_size_to_read / file_size)
+            self.read_object_distribution = int(
+                r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
+            d_chunks = modf(self.storage_size_to_delete / file_size)
+            self.delete_object_distribution = int(
+                d_chunks[1]) + 1 if d_chunks[0] else int(d_chunks[1])
+        elif isinstance(file_size, list):
+            write_workload_byte = self.storage_size_to_fill / len(file_size)
+            self.write_object_distribution = {fsize: int(write_workload_byte / fsize)
+                                              for fsize in file_size}
+            read_workload_byte = self.storage_size_to_read / len(file_size)
+            self.read_object_distribution = {fsize: int(read_workload_byte / fsize)
+                                              for fsize in file_size}
+            delete_workload_bype = self.storage_size_to_delete / len(file_size)
+            self.delete_object_distribution = {fsize: int(delete_workload_bype / fsize)
+                                             for fsize in file_size}
         else:
-            self.log.info(sample_msg, self.write_samples, "write")
-        r_chunks = modf(self.storage_size_to_read / file_size)
-        self.read_samples = int(r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
-        # Added if we are reading data in iteration more than 100 percent.
-        self.read_samples = self.read_samples if self.read_percentage <= 100 else self.write_samples
-        if self.read_samples < self.sessions:
-            self.log.warning(err_str, self.read_samples, self.sessions)
-        else:
-            self.log.info(sample_msg, self.read_samples, "read")
-        d_chunks = modf(self.storage_size_to_delete / file_size)
-        self.delete_samples = int(d_chunks[1]) + 1 if d_chunks[0] else int(d_chunks[1])
-        if self.delete_samples < self.sessions:
-            self.log.warning(err_str, self.delete_samples, self.sessions)
-        else:
-            self.log.info(sample_msg, self.delete_samples, "delete")
-        return self.write_samples, self.read_samples, self.delete_samples
+            raise Exception(
+                f"Unable to generate distribution due to unsupported file size: {file_size}")
+        await asyncio.sleep(1)
 
     async def execute_object_crud_workload(self):
         """Execute Plain object operations workload  for given distribution for specific duration."""
@@ -208,7 +216,6 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             try:
                 self.log.info("iteration %s is started...", self.iteration)
                 # Write data to fill storage as per write percentage/distribution.
-
                 self.execute_workload(operations="write",
                                       distribution=self.distribution,
                                       sessions=self.sessions)
