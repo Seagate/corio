@@ -55,7 +55,6 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
-
     :param test_plan: YAML file name for specific S3 operation
     :param test_plan_value: Parsed test_plan values
     :param common_params: Common arguments to be sent to function
@@ -63,7 +62,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
     tasks = []
     for _, each in test_plan_value.items():
-        params = {"test_id": each["TEST_ID"], "object_size": each["object_size"]}
+        test_id = each.pop("TEST_ID")
+        start_time = each.pop("start_time")
+        params = {"test_id": test_id, "object_size": each["object_size"]}
         if "part_range" in each.keys():
             params["part_range"] = each["part_range"]
         if "range_read" in each.keys():
@@ -77,18 +78,21 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
                 raise AssertionError(f"Minimum run time is not defined for sequential run. {each}")
             params["duration"] = min_runtime
         params.update(common_params)
+        params.update(each)
         if each["tool"] == "s3api":
-            for i in range(1, int(each["sessions"]) + 1):
-                params["session"] = f"{each['TEST_ID']}_session{i}"
+            if "TestTypeXObjectOps" in str(each.get("operation")[0]):
                 tasks.append(create_session(funct=each["operation"],
-                                            start_time=each["start_time"].total_seconds(),
+                                            start_time=start_time.total_seconds(),
                                             **params))
+            else:
+                for i in range(1, int(each["sessions"]) + 1):
+                    params["session"] = f"{test_id}_session{i}"
+                    tasks.append(create_session(funct=each["operation"],
+                                                start_time=start_time.total_seconds(),
+                                                **params))
         elif each["tool"] == "s3bench":
-            params.update(each)
-            params.pop("start_time")
-            params.pop("TEST_ID")
             tasks.append(create_session(funct=each["operation"],
-                                        start_time=each["start_time"].total_seconds(), **params))
+                                        start_time=start_time.total_seconds(), **params))
         else:
             raise NotImplementedError(f"Tool is not supported: {each['tool']}")
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)

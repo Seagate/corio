@@ -45,5 +45,5 @@ SCRIPT_MAPPING = {
     'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
     'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'mix_object_ops': [mix_object_operations.TestMixObjectOps, 'execute_mix_object_workload'],
-    'type1_object_ops': [mix_object_crud_operations.TestTypeXObjectOps,'execute_object_crud_workload']
-}
+    'type1_object_ops': [mix_object_crud_operations.TestTypeXObjectOps, 'execute_object_crud_workload']
+    }
