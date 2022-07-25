@@ -44,6 +44,7 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         if not config:
             raise AssertionError(f"No parameter for a {test}.")
         existing_params = config.keys()
+        LOGGER.debug("Existing params are %s", existing_params)
         # Check for minimum required parameters (TestID, Tool, Operation)
         required = master_cfg['common']
         if not existing_params or (set(required) - set(existing_params) != set()):
@@ -51,6 +52,7 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         tool = config['tool']
         operation = config['operation']
         required_params = list(master_cfg[tool][operation].keys()) + required
+        LOGGER.debug("Required params are %s", required_params)
         # Check for unknown parameters
         for param in existing_params:
             if param not in required_params:
@@ -154,6 +156,7 @@ def test_parser(yaml_file, number_of_nodes):
                 f"Object size is compulsory, which is missing in workload {yaml_file}")
         if "total_samples" in data and isinstance(data["object_size"], dict):
             convert_object_size_to_bytes_samples(data)
+            convert_min_runtime_to_time_delta(test, delta_list, data)
         else:
             convert_object_part_size_to_bytes(data)
             convert_range_read_to_bytes(data)

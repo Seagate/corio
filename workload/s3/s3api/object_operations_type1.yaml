@@ -12,7 +12,6 @@ test_1:
     1Gb: 0.03%
     2Gb: 0.01%
   total_samples: 10000
-  exeution_type: 'sequence' #workload distribution will run in sequence
   #  If None then it will be fetched from cluster(cortx specific.)
   min_runtime: 30d  # Minimum execution durations to mark workload pass.
   sessions_per_node: 20  # Number of sessions per node.

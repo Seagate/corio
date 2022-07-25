@@ -16,7 +16,7 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 """Mix(Write, Read, Validate, Delete in percentage) object operation workload for io stability."""
-
+import asyncio
 import random
 from datetime import datetime, timedelta
 
@@ -54,6 +54,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         self.secret_key = secret_key
         self.endpoint_url = endpoint_url
         self.iteration = 0
+        self.sessions = kwargs.get("sessions")
         if kwargs.get("duration"):
             self.finish_time = datetime.now() + kwargs.get("duration")
         else:
@@ -61,7 +62,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         if kwargs.get("total_storage_size"):
             self.initialize_variables(**kwargs)
         else:
-            self.distribution = kwargs.get("distribution")
+            self.distribution = kwargs.get("object_size")
 
     @classmethod
     def initialize_variables(cls, **kwargs):
@@ -82,7 +83,6 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         cls.cleanup_percentage = kwargs.get("cleanup_percentage")
         cls.total_storage = kwargs.get("total_storage_size")
         cls.object_size = kwargs.get("object_size")
-        cls.sessions = kwargs.get("sessions")
         if not cls.total_storage:
             host, user, password = get_master_details()
             cluster_obj = ClusterServices(host, user, password)
@@ -94,7 +94,6 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         cls.storage_size_to_read = int(cls.total_storage / 100 * cls.read_percentage)
         cls.storage_size_to_delete = int(cls.total_storage / 100 * cls.delete_percentage)
         cls.size_to_cleanup_all_data = int(cls.total_storage / 100 * cls.cleanup_percentage)
-        cls.s3_url = None
         cls.write_samples = 0
         cls.read_samples = 0
         cls.delete_samples = 0
@@ -203,29 +202,31 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.log.info(sample_msg, self.delete_samples, "delete")
         return self.write_samples, self.read_samples, self.delete_samples
 
-    def execute_object_crud_workload(self):
+    async def execute_object_crud_workload(self):
         """Execute Plain object operations workload  for given distribution for specific duration."""
         while True:
             try:
                 self.log.info("iteration %s is started...", self.iteration)
                 # Write data to fill storage as per write percentage/distribution.
+
                 self.execute_workload(operations="write",
                                       distribution=self.distribution,
                                       sessions=self.sessions)
                 self.log.info("Able to write %s of data samples from cluster in %s iterations.",
-                              self.write_samples, self.iteration)
+                              self.distribution.keys(), self.distribution.values())
                 # Read data as per read percentage/distribution.
                 self.execute_workload(operations="read",
                                       distribution=self.distribution,
                                       sessions=self.sessions, validate=True)
                 self.log.info("Able to read %s of data from cluster in %s iterations.",
-                              self.read_samples, self.iteration)
+                              self.distribution.keys(), self.distribution.values())
                 # Delete data as per delete percentage.
                 self.execute_workload(operations="delete",
                                       distribution=self.distribution,
                                       sessions=self.sessions)
                 self.log.info("Able to delete %s of data samples from cluster in %s iterations.",
-                              self.delete_samples, self.iteration)
+                              self.distribution.keys(), self.distribution.values())
+                await asyncio.sleep(0)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"

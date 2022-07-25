@@ -311,7 +311,7 @@ def main(options):
                     mail_notify.event_fail.set()
                     mail_notify.join()
                 break
-    except (KeyboardInterrupt, MemoryError, HealthCheckError) as error:
+    except (KeyboardInterrupt, MemoryError, HealthCheckError, Exception) as error:
         LOGGER.exception(error)
         terminated_tp = type(error).__name__
     finally:
