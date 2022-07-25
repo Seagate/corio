@@ -121,7 +121,12 @@ s3api: # basic_io
       - 512Mb
       - 1Gb
       - 2Gb
-    min_runtime: 30d  # Minimum execution durations to mark workload pass.
+    write_percentage: 95
+    read_percentage: 100
+    delete_percentage: 0
+    cleanup_percentage: 0
+    total_storage_size: None
+    min_runtime: 30d
     sessions_per_node: 2
   wait_on_operation: True/False # True: Wait till operation completes to mark pass,
   #if False , test will be marked pass as per minimum run time
