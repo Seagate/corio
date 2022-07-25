@@ -100,6 +100,20 @@ s3api: # basic_io
       end: 100Kib
     min_runtime: 2h
     sessions_per_node: 1
+  type1_object_ops:
+    object_size:
+      0Kb: 2%
+      1Kb: 24.79%
+      10Kb: 18.84%
+      100Kb: 17.87%
+      1Mb: 18.2%
+      10Mb: 16.7%
+      100Mb: 1.56%
+      1Gb: 0.03%
+      2Gb: 0.01%
+    total_samples: 10000
+    sessions_per_node: 20
+    min_runtime: 30d
   wait_on_operation: True/False # True: Wait till operation completes to mark pass,
   #if False , test will be marked pass as per minimum run time
 
