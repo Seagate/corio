@@ -44,11 +44,12 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
     :param kwargs: session name from each test and test parameters.
     """
     await asyncio.sleep(start_time)
-    LOGGER.info("Starting Session %s, PID - %s", kwargs.get("session"), os.getpid())
+    active_session = kwargs.pop("session", None)
+    LOGGER.info("Starting Session %s, PID - %s", active_session, os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
     await func()
-    LOGGER.info("Ended Session %s, PID - %s", kwargs.get("session"), os.getpid())
+    LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
 
 
 # pylint: disable=too-many-branches
