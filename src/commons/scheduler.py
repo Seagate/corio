@@ -81,6 +81,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         params.update(each)
         if each["tool"] == "s3api":
             if "TestTypeXObjectOps" in str(each.get("operation")[0]):
+                params["session"] = f"{test_id}_session_main"
                 tasks.append(create_session(funct=each["operation"],
                                             start_time=start_time.total_seconds(),
                                             **params))
