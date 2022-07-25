@@ -268,17 +268,18 @@ class S3ApiParallelIO(S3Api):
         :param func: Name of the function.
         """
         self.log.info("Execution started for %s", func.__name__)
-        loop = asyncio.get_event_loop()
+        new_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(new_loop)
         try:
-            loop.run_until_complete(func(*args, **kwargs))
+            new_loop.run_until_complete(func(*args, **kwargs))
         except Exception as error:
             self.log.exception(error)
-            if loop.is_running():
-                loop.stop()
+            if new_loop.is_running():
+                new_loop.stop()
             raise error from Exception
         finally:
-            if loop.is_closed():
-                loop.close()
+            if not new_loop.is_closed():
+                new_loop.close()
         self.log.info("Execution completed for %s", func.__name__)
 
     def get_s3bucket(self, operations: str, bucket_name: str, obj_size: int):
