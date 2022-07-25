@@ -91,7 +91,7 @@ def cpu_memory_details() -> None:
     if cpu_usages > 85.0:
         LOGGER.warning("Client: CPU Usages are: %s", cpu_usages)
         if cpu_usages > 98.0:
-            LOGGER.critical("Client: CPU usages are greater then %s, hence tool may stop execution",
+            LOGGER.critical("Client: CPU usages are greater than %s, hence tool may stop execution",
                             cpu_usages)
     memory_usages = ps.virtual_memory().percent
     if memory_usages > 85.0:
@@ -99,9 +99,9 @@ def cpu_memory_details() -> None:
         available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
         LOGGER.warning("Available Memory is: %s", available_memory)
         if memory_usages > 98.0:
-            LOGGER.critical("Client: Memory usages greater then %s, hence tool may stop execution",
+            LOGGER.critical("Client: Memory usages greater than %s, hence tool may stop execution",
                             memory_usages)
-            raise MemoryError(memory_usages)
+            # raise MemoryError(memory_usages)
         run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
 
 
