@@ -48,14 +48,18 @@ class S3Object(S3RestApi):
         :keyword body: Content of Object
         :return: Response of the upload s3 object.
         """
-        body = kwargs.get('body', None)
-        file_path = kwargs.get("file_path", None)
-        if file_path:
-            with open(file_path, "rb") as f_obj:
-                body = f_obj.read()
         self.s3_url = s3_url = f"s3://{bucket}/{key}"
         async with self.get_client() as s3client:
-            response = await s3client.put_object(Body=body, Bucket=bucket, Key=key)
+            body = kwargs.get('body', None)
+            file_path = kwargs.get("file_path", None)
+            if body:
+                response = await s3client.put_object(Body=body, Bucket=bucket, Key=key)
+            elif file_path:
+                with open(file_path, "rb") as rb_obj:
+                    response = await s3client.put_object(Body=rb_obj, Bucket=bucket, Key=key)
+            else:
+                raise AssertionError(
+                    f"Required parameter body/file_path is missing in kwargs: {kwargs}")
             self.log.info("upload_object %s Response: %s", s3_url, response)
 
         return response
