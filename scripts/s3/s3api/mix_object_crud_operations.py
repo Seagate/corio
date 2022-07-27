@@ -226,6 +226,8 @@ class TestTypeXObjectOps(S3ApiParallelIO):
                                       sessions=self.sessions)
                 self.log.info("Able to delete %s of data samples from cluster in %s iterations.",
                               self.distribution.keys(), self.distribution.values())
+                self.log.info("Cleaning up remaining buckets and objects")
+                self.execute_workload(operations="cleanup", sessions=self.sessions)
                 await asyncio.sleep(0)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
