@@ -18,9 +18,9 @@
 """Object crud operations in parallel for io stability workload using aiobotocore."""
 
 import asyncio
-import nest_asyncio
 import os
 
+import nest_asyncio
 from time import perf_counter_ns
 
 from src.commons.utils import corio_utils
@@ -50,7 +50,7 @@ class S3ApiParallelIO(S3Api):
         self.deleted_files = {}
 
     async def read_data(self, bucket_name: str, object_size: int, sessions: int,
-            object_prefix: str, validate=False) -> None:
+                        object_prefix: str, validate=False) -> None:
         """
         Read data from s3 bucket as per object size, object prefix and number of samples in
         parallel as per sessions.
@@ -95,7 +95,7 @@ class S3ApiParallelIO(S3Api):
         self.log.info("Reading completed...")
 
     async def delete_data(self, bucket_name: str, object_size: int, sessions: int,
-            object_prefix: str) -> None:
+                          object_prefix: str) -> None:
         """
         Delete data from s3 bucket as per object size, object prefix and number of samples in
         parallel as per sessions.
@@ -122,7 +122,7 @@ class S3ApiParallelIO(S3Api):
             """Delete s3 object."""
             key = list(self.io_ops_dict[bucket_name])[kwargs.get("cntr")]
             if key.startswith(object_prefix) and self.io_ops_dict[bucket_name][key][
-                "key_size"] == object_size:
+                    "key_size"] == object_size:
                 await self.delete_object(bucket_name, key)
                 self.deleted_files[bucket_name]["keys"].append(key)
 
@@ -131,7 +131,7 @@ class S3ApiParallelIO(S3Api):
         self.log.info("Deletion completed...")
 
     async def validate_data(self, bucket_name: str, object_size: int, sessions: int,
-            object_prefix: str) -> None:
+                            object_prefix: str) -> None:
         """
         Validate data from s3 bucket as per object size, object prefix and number of samples in
         parallel as per sessions.
@@ -159,7 +159,7 @@ class S3ApiParallelIO(S3Api):
             """Validate object."""
             key = list(self.io_ops_dict[bucket_name].keys())[kwargs.get("cntr")]
             if key.startswith(object_prefix) and self.io_ops_dict[bucket_name][key][
-                "key_size"] == object_size:
+                    "key_size"] == object_size:
                 checksum_in = self.io_ops_dict[bucket_name][key]["key_checksum"]
                 checksum_dwn = await self.get_s3object_checksum(bucket_name, key)
                 assert checksum_in == checksum_dwn, (
@@ -196,7 +196,7 @@ class S3ApiParallelIO(S3Api):
         self.log.info("Deleted buckets: %s", deleted_buckets)
 
     async def write_data(self, bucket_name: str, object_size: int, object_prefix: str,
-            sessions: int) -> None:
+                         sessions: int) -> None:
         """
         Write data to s3 bucket as per object size, object prefix and number of samples in
         parallel as per sessions.
@@ -288,16 +288,15 @@ class S3ApiParallelIO(S3Api):
 
     def get_s3bucket(self, operations: str, bucket_name: str, obj_size: int):
         """Get/Create the s3 io bucket."""
-        if operations == "write":
-            if bucket_name not in self.list_s3_buckets():
-                self.create_s3_bucket(bucket_name)
+        buckets = [bkt for bkt in self.list_s3_buckets()
+                   if (bucket_name == bkt or
+                       bkt.startswith(f"iobkt-size{obj_size}-samples"))]
+        if operations == "write" and not buckets:
+            self.create_s3_bucket(bucket_name)
         else:
-            bucket_name = [bkt for bkt in self.list_s3_buckets()
-                           if (bucket_name == bkt or
-                               bkt.startswith(f"iobkt-size{obj_size}-samples"))][-1]
-            if not bucket_name:
+            if not buckets:
                 raise AssertionError(f"Bucket does not exists: {bucket_name}")
-
+            bucket_name = buckets[-1]
         return bucket_name
 
     # pylint: disable=too-many-branches, too-many-nested-blocks
