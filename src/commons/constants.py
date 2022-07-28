@@ -23,8 +23,8 @@
 
 import os
 import socket
+import tempfile
 from datetime import datetime
-
 
 CORIO_ROOT = os.getcwd()  # Fetches you CWD of the runner.
 CONFIG_DIR = 'config'
@@ -65,6 +65,10 @@ KIB = 1024
 
 # resource utilization package.
 NMON = "nmon"
+
+# Config path.
+LOCAL_CONF_PATH = os.path.join(tempfile.gettempdir(), "cluster.conf")
+CLUSTER_CONF_PATH = "/etc/cortx/cluster.conf"
 
 # SB extensions
 EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]

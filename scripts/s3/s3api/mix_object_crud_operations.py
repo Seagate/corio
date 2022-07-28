@@ -94,9 +94,8 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         if not cluster_storage_size:
             host, user, password = get_master_details()
             cluster_obj = ClusterServices(host, user, password)
-            status, resp = cluster_obj.check_cluster_storage()
-            assert status, f"Failed to get storage details: {resp}"
-            cluster_storage_size = resp["total_capacity"]
+            status, cluster_storage_size = cluster_obj.get_user_quota_in_bytes()
+            assert status, f"Failed to get user quota: {cluster_storage_size}"
         return cluster_storage_size
 
     @staticmethod
@@ -176,6 +175,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.log.info("iteration %s is started...", self.iteration)
             try:
                 self.log.info("Object size in bytes: %s", self.object_size)
+                written_percentage = int(self.total_written_data / self.cluster_storage * 100)
                 if isinstance(self.object_size, dict):
                     object_size = random.randrange(
                         self.object_size["start"], self.object_size["end"])
@@ -183,8 +183,9 @@ class TestTypeXObjectOps(S3ApiParallelIO):
                     object_size = self.object_size
                 else:
                     raise AssertionError(f"Unsupported object size type: {type(self.object_size)}")
-                # Write data to fill storage as per write percentage.
-                if int(self.total_written_data / self.cluster_storage * 100) <= 95:
+                # Write data to fill storage as per write percentage. 3% delta added as fractions
+                # of bytes might be missed during calculation of sample distribution.
+                if written_percentage + 3 < self.write_percentage:
                     write_object_distribution = await self.get_object_distribution(
                         object_size, operation="write")
                     self.execute_workload(operations="write",
