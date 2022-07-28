@@ -23,6 +23,7 @@
 
 # K8s commands for cortx.
 # Parameters: pod_name, container_name, command.
+K8S_CP_TO_LOCAL_CMD = "kubectl cp {}:{} {} -c {}"
 KUBECTL_CMD = "kubectl {} {} -n {} {}"
 KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
 KUBECTL_GET_WORKERS_NAME = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{" \

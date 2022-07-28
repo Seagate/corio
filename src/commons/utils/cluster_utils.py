@@ -31,6 +31,7 @@ from src.commons import constants as const
 from src.commons.constants import ROOT
 from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import PodReplicaError, DeployReplicasetError, NumReplicaError
+from src.commons.utils.config_utils import get_config_yaml
 from src.commons.utils.corio_utils import RemoteHost
 from src.commons.utils.corio_utils import convert_size
 
@@ -418,3 +419,54 @@ class ClusterServices(RemoteHost):
             resp = resp[1].strip().split("\n")[1:]
             LOGGER.info("worker nodes: %s", resp)
         return resp
+
+    def get_cluster_config(self, pod_list=None) -> dict:
+        """
+        Function to fetch data from file (e.g. conf files).
+
+        :param pod_list: Data pod name list to get the cluster.conf File.
+        """
+        if pod_list is None:
+            pod_list = self.get_all_pods(pod_prefix=const.DATA_POD_NAME_PREFIX)
+        pod_name = random.sample(pod_list, 1)[0]
+        conf_cp = cmd.K8S_CP_TO_LOCAL_CMD.format(pod_name, const.CLUSTER_CONF_PATH,
+                                                 const.LOCAL_CONF_PATH, const.HAX_CONTAINER_NAME)
+        resp_node = self.execute_command(command=conf_cp)
+        LOGGER.debug("%s response %s ", conf_cp, resp_node)
+        local_conf = os.path.join(os.getcwd(), "cluster.conf")
+        if os.path.exists(local_conf):
+            os.remove(local_conf)
+        self.download_file(local_path=local_conf, remote_path=const.LOCAL_CONF_PATH)
+
+        return get_config_yaml(local_conf)
+
+    def retrieve_durability_values(self, dur_type: str = 'sns') -> dict:
+        """
+        Return the durability Configuration for Data/Metadata (SNS/DIX) for the cluster.
+
+        :param dur_type: sns/dix
+        :return : dict of format { 'data': '1','parity': '4','spare': '0'}
+        """
+        resp = self.get_cluster_config()['cluster']['storage_set'][0]['durability'][
+            dur_type.lower()]
+        LOGGER.info(resp)
+        return resp
+
+    def get_user_quota_in_bytes(self):
+        """Get available user quota in bytes"""
+        status, cluster_stat = self.check_cluster_storage()
+        if not status:
+            raise AssertionError(f"Failed to get cluster storage details: {cluster_stat}")
+        total_capacity = cluster_stat.get("total_capacity")
+        avail_capacity = cluster_stat.get("avail_capacity")
+        used_capacity = cluster_stat.get("used_capacity")
+        LOGGER.info("Total Capacity: %s Available Capacity: %s Used Capacity: %s", total_capacity,
+                    avail_capacity, used_capacity)
+        # Get SNS configuration to retrieve available user data space
+        durability_values = self.retrieve_durability_values('sns')
+        sns_values = {key: int(value) for key, value in durability_values.items()}
+        LOGGER.debug("Durability Values (SNS) %s", sns_values)
+        user_quota_to_writes = int(sns_values['data'] / sum(sns_values.values()) * avail_capacity)
+        LOGGER.info("User writes to be performed %s bytes to attain the disk full space",
+                    user_quota_to_writes)
+        return True, user_quota_to_writes
