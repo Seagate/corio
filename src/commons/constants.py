@@ -65,3 +65,6 @@ KIB = 1024
 
 # resource utilization package.
 NMON = "nmon"
+
+# SB extensions
+EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]

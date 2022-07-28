@@ -23,6 +23,8 @@ import json
 import logging
 import os
 import random
+from datetime import datetime
+
 import time
 
 from src.commons import commands as cmd
@@ -133,7 +135,7 @@ class ClusterServices(RemoteHost):
         if not status:
             raise AssertionError(f"Failed to generate support bundle: {response}")
         for line in response:
-            if ".tar" in line:
+            if [line for ext in const.EXTS if ext in line] or str(datetime.now().date()) in line:
                 file_name = line.split()[1].strip('\"')
         if not file_name:
             raise AssertionError(f"Failed to generate support bundles. Response: {response}")
