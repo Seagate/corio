@@ -134,9 +134,12 @@ class ClusterServices(RemoteHost):
             script_path, const.K8S_SB_SCRIPT), read_lines=True)
         if not status:
             raise AssertionError(f"Failed to generate support bundle: {response}")
-        for line in response:
-            if [line for ext in const.EXTS if ext in line] or str(datetime.now().date()) in line:
-                file_name = line.split()[1].strip('\"')
+        file_list = self.list_dirs(remote_path=script_path)
+        for f_name in reversed(file_list):
+            if ([f_name for ext in const.EXTS if f_name.endswith(ext)] or str(datetime.now().date())
+                    in f_name):
+                file_name = f_name
+                break
         if not file_name:
             raise AssertionError(f"Failed to generate support bundles. Response: {response}")
         remote_path = os.path.join(script_path, file_name)
