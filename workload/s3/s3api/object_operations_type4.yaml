@@ -15,4 +15,4 @@ test_1:
     min_runtime: 30d  # Minimum execution durations(m, h, d) to mark workload pass.
     sessions_per_node: 2  # Number of sessions per node.
     tool: s3api
-    operation: "type4_object_partial_crud_ops" # Partial Write, Read, Delete,and Cleanup in percentages.
+    operation: "type4_object_ops" # Partial Write, Read, Delete,and Cleanup in percentages.
