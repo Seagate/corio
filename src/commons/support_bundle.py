@@ -22,6 +22,7 @@
 
 import logging
 import os
+
 import time
 
 from config import CLUSTER_CFG
@@ -34,7 +35,7 @@ from src.commons.utils.corio_utils import rotate_logs
 LOGGER = logging.getLogger(ROOT)
 
 
-def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> tuple:
+def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> None:
     """Collect support bundle log and copy to NFS/LOCAL server and keep SB logs as per max_sb count.
 
     :param dir_path: Path of common log directory.
@@ -45,16 +46,11 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> tup
         max_sb = max_sb if max_sb else CORIO_CFG["max_no_of_sb"]
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
-        nodes = CLUSTER_CFG["nodes"]
-        host, user, password = None, None, None
-        for node in nodes:
-            if node["node_type"] == "master":
-                host, user, password = node["hostname"], node["username"], node["password"]
-                break
+        master = [node for node in CLUSTER_CFG["nodes"] if node["node_type"] == "master"][-1]
+        host, user, password = master["hostname"], master["username"], master["password"]
         if not host:
-            LOGGER.critical(
-                "Failed to collect support bundles as cluster details are missing: %s", nodes)
-            return False, f"Failed to collect support bundles for {nodes}."
+            raise AssertionError(f"Failed to collect support bundles as cluster details are"
+                                 f" missing: {CLUSTER_CFG['nodes']}")
         cluster_obj = ClusterServices(host, user, password)
         status, response = cluster_obj.collect_support_bundles(sb_dir)
         if not status:
@@ -62,10 +58,8 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> tup
         rotate_logs(sb_dir, max_sb)
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
-        return bool(sb_files), sb_files
     except IOError as error:
-        LOGGER.error(error)
-        return False, error
+        LOGGER.exception(error)
 
 
 def support_bundle_process(interval: int) -> None:
@@ -76,5 +70,4 @@ def support_bundle_process(interval: int) -> None:
     """
     while True:
         time.sleep(interval)
-        resp = collect_upload_rotate_support_bundles(CMN_LOG_DIR, max_sb=CORIO_CFG["max_no_of_sb"])
-        LOGGER.debug(resp)
+        collect_upload_rotate_support_bundles(CMN_LOG_DIR, max_sb=CORIO_CFG["max_no_of_sb"])

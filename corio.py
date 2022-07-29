@@ -226,11 +226,13 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 
 def monitor_processes(processes: dict) -> str or None:
     """Monitor the process."""
+    skip_process = []
     for tp_key, process in processes.items():
         if not process.is_alive():
             if tp_key == "support_bundle":
-                LOGGER.warning("Process with PID %s stopped Support bundle collection"
-                               " error.", process.pid)
+                LOGGER.critical("Process with PID %s stopped Support bundle collection"
+                                " error.", process.pid)
+                skip_process.append(tp_key)
                 continue
             if tp_key == "health_check":
                 raise HealthCheckError(f"Process with PID {process.pid} stopped."
@@ -238,6 +240,10 @@ def monitor_processes(processes: dict) -> str or None:
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                             process.pid, process.name)
             return tp_key
+    for proc in skip_process:
+        LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
+        processes.pop(proc)
+
     return None
 
 
