@@ -25,12 +25,15 @@ import logging
 import os
 
 import boto3
+import urllib3
 from aiobotocore.config import AioConfig
 from aiobotocore.session import get_session
 from botocore.config import Config
 
 from config import S3_CFG
 from src.commons.logger import get_logger
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 # pylint: disable=too-many-instance-attributes
