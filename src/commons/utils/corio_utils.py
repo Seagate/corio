@@ -23,17 +23,17 @@
 
 import glob
 import logging
-import math
 import os
 import shutil
-import time
 from base64 import b64encode
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 from typing import Union
 
+import math
 import paramiko
 import psutil as ps
+import time
 
 from config import CORIO_CFG, CLUSTER_CFG
 from config import S3_CFG
@@ -206,7 +206,6 @@ def rotate_logs(dpath: str, max_count: int = 0) -> None:
                 if os.path.isdir(fpath):
                     shutil.rmtree(fpath)
                     LOGGER.debug("Removed: Old log directory: %s", fpath)
-
     if len(os.listdir(dpath)) > max_count:
         raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
 
