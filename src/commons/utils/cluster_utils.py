@@ -23,7 +23,6 @@ import json
 import logging
 import os
 import random
-from datetime import datetime
 
 import time
 
@@ -135,9 +134,9 @@ class ClusterServices(RemoteHost):
         if not status:
             raise AssertionError(f"Failed to generate support bundle: {response}")
         file_list = self.list_dirs(remote_path=script_path)
-        for f_name in reversed(file_list):
-            if ([f_name for ext in const.EXTS if f_name.endswith(ext)] or str(datetime.now().date())
-                    in f_name):
+        LOGGER.debug(file_list)
+        for f_name in file_list:
+            if f_name in str(response):
                 file_name = f_name
                 break
         if not file_name:
