@@ -23,6 +23,7 @@
 from scripts.s3.mixs3io import mix_object_operations
 from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
+from scripts.s3.s3api import mix_object_crud_operations
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
 from scripts.s3.s3api import mix_object_crud_operations
@@ -46,5 +47,8 @@ SCRIPT_MAPPING = {
     'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'mix_object_ops': [mix_object_operations.TestMixObjectOps, 'execute_mix_object_workload'],
     'type1_object_ops': [mix_object_crud_operations.TestTypeXObjectOps, 'execute_object_crud_workload'],
-    'type4_object_ops': [mix_object_crud_operations.TestTypeXObjectOps,  'execute_mix_object_workload']
+    'type4_object_ops': [mix_object_crud_operations.TestTypeXObjectOps,
+                         'execute_mix_object_workload'],
+    'type3_write_once_read_iterations': [mix_object_crud_operations.TestTypeXObjectOps,
+                                        'execute_mix_object_workload']
     }
