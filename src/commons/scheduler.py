@@ -116,16 +116,19 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     :param test_plan_values: Parsed yaml file values.
     :param common_params: Common arguments to be passed to function.
     """
-    process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
+    process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
     loop = asyncio.get_event_loop()
     try:
         loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
         LOGGER.critical("%s Loop interrupted", process_name)
+        if loop.is_running():
+            loop.stop()
     finally:
-        loop.stop()
-        LOGGER.warning("%s terminated", process_name)
+        if not loop.close():
+            loop.close()
+    LOGGER.info("%s completed successfully", process_name)
 
 
 def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,

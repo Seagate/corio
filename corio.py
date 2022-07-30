@@ -53,6 +53,7 @@ from src.commons.support_bundle import support_bundle_process
 from src.commons.utils.alerts import send_mail_notification
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.corio_utils import log_cleanup
+from src.commons.utils.corio_utils import run_local_cmd
 from src.commons.utils.corio_utils import setup_environment
 from src.commons.utils.corio_utils import store_logs_to_nfs_local_server
 from src.commons.utils.jira_utils import JiraApp
@@ -72,13 +73,14 @@ def initialize_loghandler(opt):
     name = os.path.splitext(os.path.basename(__file__))[0]
     if opt.verbose:
         level = logging.getLevelName(logging.DEBUG)
-        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.DEBUG")
+        log_path = os.path.join(dir_path, f"{name}_console_{DT_STRING}.DEBUG")
     else:
         level = logging.getLevelName(logging.INFO)
-        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
+        log_path = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
-    StreamToLogger(name, LOGGER, stream=True)
+    StreamToLogger(log_path, LOGGER, stream=True)
+    globals()['log_path'] = log_path
 
 
 def parse_args():
@@ -227,6 +229,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 def monitor_processes(processes: dict) -> str or None:
     """Monitor the process."""
     skip_process = []
+    l_path = globals().get("log_path")
     for tp_key, process in processes.items():
         if not process.is_alive():
             if tp_key == "support_bundle":
@@ -237,12 +240,16 @@ def monitor_processes(processes: dict) -> str or None:
             if tp_key == "health_check":
                 raise HealthCheckError(f"Process with PID {process.pid} stopped."
                                        f" Health Check collection error.")
+            if os.path.exists(l_path):
+                response = run_local_cmd(f"grep 'topic {tp_key} completed successfully' {l_path} ")
+                if response[1]:
+                    skip_process.append(tp_key)
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                             process.pid, process.name)
             return tp_key
     for proc in skip_process:
-        LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
         processes.pop(proc)
+        LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
 
     return None
 
@@ -317,7 +324,10 @@ def main(options):
                     mail_notify.event_fail.set()
                     mail_notify.join()
                 break
-    except (KeyboardInterrupt, MemoryError, HealthCheckError, Exception) as error:
+            if list(processes.keys()) in [("support_bundle", "health_check"), "support_bundle",
+                                          "health_check", []]:
+                break
+    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminated_tp = type(error).__name__
     finally:
