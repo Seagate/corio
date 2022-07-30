@@ -72,3 +72,6 @@ CLUSTER_CONF_PATH = "/etc/cortx/cluster.conf"
 
 # SB extensions
 EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]
+
+# Terminate processes if execution completed and only health check and support bundle remaining.
+terminate_process_list = [("support_bundle", "health_check"), "support_bundle", "health_check", ()]

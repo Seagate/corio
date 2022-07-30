@@ -37,6 +37,7 @@ import schedule
 import time
 
 from config import S3_CFG, CORIO_CFG
+from src.commons import constants as const
 from src.commons.cluster_health import check_health
 from src.commons.cluster_health import health_check_process
 from src.commons.constants import CMN_LOG_DIR, LOG_DIR
@@ -324,8 +325,7 @@ def main(options):
                     mail_notify.event_fail.set()
                     mail_notify.join()
                 break
-            if list(processes.keys()) in [("support_bundle", "health_check"), "support_bundle",
-                                          "health_check", []]:
+            if tuple(processes.keys()) in const.terminate_process_list:
                 break
     except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
