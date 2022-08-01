@@ -157,7 +157,7 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                             flag = False
                         else:
                             LOGGER.info("Wait for iteration to complete and check again")
-                            time.sleep(30) 
+                            time.sleep(30)
         else:
             input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
             input_dict["RESULT_UPDATE"] = "Not Triggered"
