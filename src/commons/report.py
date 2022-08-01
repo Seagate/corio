@@ -120,7 +120,7 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
         yaml_dict.update(data)
     LOGGER.debug("YAML file data: %s", yaml_dict)
     if yaml_dict['s3api']['wait_on_operation'] is True:
-        with open(fpath, 'r') as test_log_file:                  
+        with open(fpath, 'r') as test_log_file:
             lines = test_log_file.readlines()
             for line in lines:
                 if 'iteration' in line.lower():
@@ -153,18 +153,16 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                             input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
                             total_execution_time = value['min_runtime'] if sequential_run \
                                                  else datetime.now() - test_start_time
-                        elif re.search(r"\wError") in line:
+                        elif re.search(r"\wError", line):
                             flag = False
                         else:
                             LOGGER.info("Wait for iteration to complete and check again")
-                            time.sleep(30)
-                            
+                            time.sleep(30) 
         else:
             input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
             input_dict["RESULT_UPDATE"] = "Not Triggered"
             input_dict["TOTAL_TEST_EXECUTION"] = "NA"
     else:
-        LOGGER.info("Checking for wait on operation False")
         if datetime.now() > test_start_time:
             input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
             if datetime.now() > (test_start_time + value['min_runtime']):
