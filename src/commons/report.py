@@ -84,8 +84,8 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
             input_dict.update({"OBJECT_SIZE_START": convert_size(value['object_size']['start']),
                                "OBJECT_SIZE_END": convert_size(value['object_size']['end'])})
         else:
-            for key, value in value['object_size'].items():
-                input_dict.update({convert_size(key): value })
+            for key, _value in value['object_size'].items():
+                input_dict.update({convert_size(key): _value })
     else:
         input_dict["OBJECT_SIZE"] = convert_size(value['object_size'])
 

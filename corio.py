@@ -78,7 +78,7 @@ def initialize_loghandler(opt):
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
     StreamToLogger(log_path, LOGGER, stream=True)
-    globals()['log_path'] = log_path
+    globals()['_LOG_PATH'] = log_path
 
 
 def parse_args():
@@ -227,7 +227,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 def monitor_processes(processes: dict) -> str or None:
     """Monitor the process."""
     skip_process = []
-    l_path = globals().get("log_path")
+    log_path = globals().get("_LOG_PATH")
     for tp_key, process in processes.items():
         if not process.is_alive():
             if tp_key == "support_bundle":
@@ -238,16 +238,17 @@ def monitor_processes(processes: dict) -> str or None:
             if tp_key == "health_check":
                 raise HealthCheckError(f"Process with PID {process.pid} stopped."
                                        f" Health Check collection error.")
-            if os.path.exists(l_path):
-                resp = run_local_cmd(f"grep 'topic {tp_key} completed successfully' {l_path} ")
+            if os.path.exists(log_path):
+                resp = run_local_cmd(f"grep 'topic {tp_key} completed successfully' {log_path} ")
                 if resp[0] and resp[1]:
                     skip_process.append(tp_key)
+                    continue
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                             process.pid, process.name)
             return tp_key
     for proc in skip_process:
-        processes.pop(proc)
         LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
+        processes.pop(proc)
 
     return None
 
@@ -309,7 +310,7 @@ def main(options):
             activate_degraded_mode(options)
             options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
         start_processes(processes)
-        while True:
+        while processes:
             time.sleep(1)
             cpu_memory_details()
             schedule.run_pending()
@@ -330,7 +331,8 @@ def main(options):
         terminated_tp = type(error).__name__
     finally:
         terminate_processes(processes)
-        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids, sched)
+        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids,
+                                     sched, sequential_run=options.sequential_run)
         if jira_obj:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True,

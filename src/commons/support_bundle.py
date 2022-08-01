@@ -59,7 +59,7 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> Non
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
     except IOError as error:
-        LOGGER.exception(error)
+        LOGGER.error(error)
 
 
 def support_bundle_process(interval: int) -> None:

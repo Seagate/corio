@@ -52,7 +52,7 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
     LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
 
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-locals
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
@@ -61,6 +61,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
+    seq_run = common_params.pop("sequential_run", False)
+    if seq_run:
+        LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     tasks = []
     for _, each in test_plan_value.items():
         test_id = each.pop("TEST_ID")
@@ -72,8 +75,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["range_read"] = each["range_read"]
         if "part_copy" in each.keys():
             params["part_copy"] = each["part_copy"]
-        if common_params.get("sequential_run"):
-            LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
+        if seq_run:
             min_runtime = each.get("min_runtime", 0)
             if not min_runtime:
                 raise AssertionError(f"Minimum run time is not defined for sequential run. {each}")
@@ -126,8 +128,7 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
         if loop.is_running():
             loop.stop()
     finally:
-        if not loop.close():
-            loop.close()
+        LOGGER.info("Event loop closed: %s", loop.is_closed())
     LOGGER.info("%s completed successfully", process_name)
 
 
@@ -151,7 +152,8 @@ def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
 
 
 def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
-                                 terminated_tp: str, test_ids: list, sched_job: Job) -> None:
+                                 terminated_tp: str, test_ids: list, sched_job: Job,
+                                 **kwargs) -> None:
     """
     Terminate the scheduler and update the test status.
 
@@ -160,6 +162,8 @@ def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
     :param terminated_tp: Reason for failure is any.
     :param test_ids: Terminated tests from workload.
     :param sched_job: scheduled test status update job.
+    :keyword sequential_run: Execute tests sequentially.
     """
     schedule.cancel_job(sched_job)
-    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)
+    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
+               **kwargs)
