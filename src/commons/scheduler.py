@@ -35,7 +35,7 @@ from src.commons.report import log_status
 LOGGER = logging.getLogger(ROOT)
 
 
-async def create_session(funct: list, start_time: float, **kwargs) -> None:
+async def create_session(funct: list, start_time: float, **kwargs) -> tuple:
     """
     Execute the test function in sessions.
 
@@ -48,9 +48,10 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
     LOGGER.info("Starting Session %s, PID - %s", active_session, os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
-    await func()
+    resp = await func()
+    LOGGER.info(resp)
     LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
-
+    return resp
 
 # pylint: disable=too-many-branches, too-many-locals
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
@@ -120,15 +121,22 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     """
     process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
-    loop = asyncio.get_event_loop()
+    main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(main_loop)
     try:
-        loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
+        main_loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        LOGGER.critical("%s Loop interrupted", process_name)
-        if loop.is_running():
-            loop.stop()
+        LOGGER.warning("%s Loop interrupted", process_name)
+    except Exception as err:
+        LOGGER.exception(err)
+        raise err from Exception
     finally:
-        LOGGER.info("Event loop closed: %s", loop.is_closed())
+        if main_loop.is_running():
+            main_loop.stop()
+            LOGGER.warning("Event loop stopped: %s", not main_loop.is_running())
+        if not main_loop.is_closed():
+            main_loop.close()
+            LOGGER.info("Event loop closed: %s", main_loop.is_closed())
     LOGGER.info("%s completed successfully", process_name)
 
 
