@@ -327,6 +327,18 @@ def get_report_file_path(corio_start_time) -> str:
     return os.path.join(REPORTS_DIR,
                         f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
 
+def get_test_file_path(corio_start_time, test_id) -> str:
+    """
+    Returns test log file path
+
+    :param corio_start_time: Start time for main process.
+    """
+    test_list = []
+    dir_path = LOG_DIR + '/latest/'
+    test_list = os.listdir(dir_path)
+    for test_file in test_list:
+        if test_file.startswith(test_id):
+            return os.path.join(dir_path, test_file)
 
 # pylint: disable=broad-except
 def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):

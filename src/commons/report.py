@@ -24,10 +24,15 @@ import logging
 from datetime import datetime
 from typing import Union
 
+import time
+import yaml
+import re
+
 import pandas as pd
 
 from src.commons.constants import ROOT
 from src.commons.utils.corio_utils import convert_size, get_report_file_path
+from src.commons.utils.corio_utils import get_test_file_path
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -89,7 +94,7 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
     else:
         input_dict["OBJECT_SIZE"] = convert_size(value['object_size'])
 
-
+# pylint: disable-msg=too-many-locals
 def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dict, **kwargs):
     """
     Update tests status in report.
@@ -104,25 +109,81 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
     # Reason of the test execution failure.
     test_failed = kwargs.get("test_failed", '')
     test_start_time = corio_start_time + value['start_time']
-    if datetime.now() > test_start_time:
-        input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
-        if datetime.now() > (test_start_time + value['min_runtime']):
-            pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
-            input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
-            total_execution_time = value['min_runtime'] if sequential_run else datetime.now(
-            ) - test_start_time
-        else:
-            # Report In Progress, Fail, Aborted and update status.
-            if input_dict["TEST_ID"] in terminated_tests:
-                LOGGER.error("Test execution terminated due to error in %s.", input_dict["TEST_ID"])
-                input_dict["RESULT_UPDATE"] = "Fail"
-            elif test_failed:
-                input_dict["RESULT_UPDATE"] = "Aborted"
+    start_iterations_count = 0
+    completed_iterations_count = 0
+    fpath = get_test_file_path(corio_start_time, input_dict['TEST_ID'])
+    yaml_file = '/root/corio/workload/master_config.yaml'
+    LOGGER.debug("YAML file selected for parse: %s", yaml_file)
+    yaml_dict = {}
+    with open(yaml_file, "r", encoding="utf-8") as obj:
+        data = yaml.safe_load(obj)
+        yaml_dict.update(data)
+    LOGGER.debug("YAML file data: %s", yaml_dict)
+    if yaml_dict['s3api']['wait_on_operation'] is True:
+        with open(fpath, 'r') as test_log_file:                  
+            lines = test_log_file.readlines()
+            for line in lines:
+                if 'iteration' in line.lower():
+                    line = line.split()
+                    if 'started' in line:
+                        start_iterations_count+=1
+                    if 'completed' in line:
+                        completed_iterations_count+=1
+            LOGGER.info(start_iterations_count)
+            LOGGER.info(completed_iterations_count)
+        test_log_file.close()
+        if datetime.now() > test_start_time:
+            input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            if datetime.now() > (test_start_time + value['min_runtime']) and \
+                            start_iterations_count == completed_iterations_count:
+                pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
+                input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
+                total_execution_time = value['min_runtime'] if sequential_run else datetime.now(
+                ) - test_start_time
             else:
                 input_dict["RESULT_UPDATE"] = "In Progress"
-            total_execution_time = datetime.now() - test_start_time
-        input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
+                LOGGER.info("Open and parse log file to check if condition recursively")
+                flag = True
+                while flag:
+                    for line in reversed(open(fpath).readlines()):
+                        if 'iteration {}'.format(start_iterations_count) and \
+                                               'completed' in line.lower():
+                            flag = False
+                            pass_time = (test_start_time + datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+                            input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
+                            total_execution_time = value['min_runtime'] if sequential_run \
+                                                 else datetime.now() - test_start_time
+                        elif re.search(r"\wError") in line:
+                            flag = False
+                        else:
+                            LOGGER.info("Wait for iteration to complete and check again")
+                            time.sleep(30)
+                            
+        else:
+            input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            input_dict["RESULT_UPDATE"] = "Not Triggered"
+            input_dict["TOTAL_TEST_EXECUTION"] = "NA"
     else:
-        input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
-        input_dict["RESULT_UPDATE"] = "Not Triggered"
-        input_dict["TOTAL_TEST_EXECUTION"] = "NA"
+        LOGGER.info("Checking for wait on operation False")
+        if datetime.now() > test_start_time:
+            input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            if datetime.now() > (test_start_time + value['min_runtime']):
+                pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
+                input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
+                total_execution_time = value['min_runtime'] if sequential_run else datetime.now(
+                ) - test_start_time
+            else:
+                # Report In Progress, Fail, Aborted and update status.
+                if input_dict["TEST_ID"] in terminated_tests:
+                    LOGGER.error("Test execution terminated due to error in %s.", input_dict["TEST_ID"])
+                    input_dict["RESULT_UPDATE"] = "Fail"
+                elif test_failed:
+                    input_dict["RESULT_UPDATE"] = "Aborted"
+                else:
+                    input_dict["RESULT_UPDATE"] = "In Progress"
+                total_execution_time = datetime.now() - test_start_time
+            input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
+        else:
+            input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            input_dict["RESULT_UPDATE"] = "Not Triggered"
+            input_dict["TOTAL_TEST_EXECUTION"] = "NA"

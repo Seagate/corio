@@ -165,3 +165,4 @@ class TestMultiParts(S3Api):
         await self.complete_multipart_upload(
             response["UploadId"], parts, mpart_bucket, s3mpart_object)
         self.log.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
+        return upload_obj_checksum
