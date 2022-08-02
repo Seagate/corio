@@ -57,10 +57,11 @@ def get_degraded_mode():
         durability_val = logical_node.retrieve_durability_values()
         sns = {key: int(value) for key, value in durability_val.items()}
         LOGGER.debug("Durability Values (SNS) %s", sns['parity'])
-        degraded_pods_cnt = sns['parity'] if degraded_pods_cnt > sns['parity'] else \
-            degraded_pods_cnt
-        LOGGER.warning("Taking MAX SNS value %s for degraded pod as given count is greater "
-                       "then supported value.", degraded_pods_cnt)
+        if degraded_pods_cnt > sns['parity']:
+            LOGGER.warning("Taking MAX SNS value %s for degraded pod as given count is greater "
+                           "then supported value.", degraded_pods_cnt)
+            degraded_pods_cnt = sns['parity']
+
         degrade_pod = input("Degrade pods with CORIO y/n, Default is n.\nDEGRADE_POD: ") or "n"
         if degrade_pod.lower() == 'y':
             pod_prefix = input("Which pod you want to degraded data/server .\nPOD_PREFIX: ")
