@@ -164,11 +164,11 @@ mix_io:
   operation: "mix_object_ops"
 
 degraded_io:
-  pod_downtime: 20s #time taken to degraded pods (IO sleep/halt time), shutdown time #i.e. 20s
-  pod_downtime_schedule: 2h #time when nodes/pods need to be degraded [Time Delta in (HH:MM:SS)],
+  keep_degraded: True #Keep cluster into degraded state without restoring
+  pod_downtime_schedule: "00:02:00" #time when nodes/pods need to be degraded [Time Delta in (HH:MM:SS)],
   #before downtime schedule this IO will be in happy path.
   schedule_frequency: 1 #Once or repetitive (after every schedule time interval) --> repetition will happen as per schedule time interval
-  pod_uptime_schedule: None  #<None, int(5m,2h,1d etc...)time when pods need to be active back since downtime.
+  pod_uptime_schedule: "00:03:00"  #<None, int(5m,2h,1d etc...)time when pods need to be active back since downtime.
   #if None it will never come back for permanent failure,when pods need to be reverted online[Time Delta in (HH:MM:SS) ]
   inflight_mode: off #<on/off> (Continuous IO once support is there for server handles the degraded nodes/pods)
   ignore_io_failures : True #<True/False>(IO failure may be ignored while IO continue with POD shutdown), Default is False
