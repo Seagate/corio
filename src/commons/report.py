@@ -26,7 +26,6 @@ from typing import Union
 
 import time
 import yaml
-import re
 
 import pandas as pd
 
