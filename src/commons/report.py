@@ -31,8 +31,10 @@ import re
 import pandas as pd
 
 from src.commons.constants import ROOT, CORIO_MASTER_CONFIG
+from src.commons.commands import GREP_CMD_ERROR, GREP_CMD_ITERATION
 from src.commons.utils.corio_utils import convert_size, get_report_file_path
 from src.commons.utils.corio_utils import get_test_file_path
+from src.commons.utils.corio_utils import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -146,19 +148,19 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                 LOGGER.info("Open and parse log file to check if condition recursively")
                 flag = True
                 while flag:
-                    for line in reversed(open(fpath).readlines()):
-                        if 'iteration {}'.format(start_iterations_count) and \
-                                               'completed' in line.lower():
-                            flag = False
-                            pass_time = (test_start_time + datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
-                            input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
-                            total_execution_time = value['min_runtime'] if sequential_run \
+                    resp = run_local_cmd(GREP_CMD_ITERATION.format(start_iterations_count, fpath))
+                    result = run_local_cmd(GREP_CMD_ERROR.format(fpath))
+                    if resp:
+                        flag = False
+                        pass_time = (test_start_time + datetime.now()).strftime('%Y-%m-%d %H:%M:%S')
+                        input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
+                        total_execution_time = value['min_runtime'] if sequential_run \
                                                  else datetime.now() - test_start_time
-                        elif re.search(r"\wError", line):
-                            flag = False
-                        else:
-                            LOGGER.info("Wait for iteration to complete and check again")
-                            time.sleep(30)
+                    elif result:
+                        flag = False
+                    else:
+                        LOGGER.info("Wait for iteration to complete and check again")
+                        time.sleep(30)
         else:
             if datetime.now() > (test_start_time + value['min_runtime']):
                 pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
