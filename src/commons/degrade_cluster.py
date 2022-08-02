@@ -23,6 +23,8 @@
 import logging
 import os
 import random
+import time
+from datetime import datetime
 from time import perf_counter_ns
 
 from munch import munchify
@@ -50,10 +52,22 @@ def get_degraded_mode():
 
     except KeyError as error:
         LOGGER.warning(error)
+        logical_node = get_logical_node()
         degraded_pods_cnt = input("Enter Number of Pods to be degraded.\nDEGRADED_PODS_CNT: ")
+        durability_val = logical_node.retrieve_durability_values()
+        sns = {key: int(value) for key, value in durability_val.items()}
+        LOGGER.debug("Durability Values (SNS) %s", sns['parity'])
+        if degraded_pods_cnt > sns['parity']:
+            LOGGER.warning("Taking MAX SNS value %s for degraded pod as given count is greater "
+                           "then supported value.", degraded_pods_cnt)
+            degraded_pods_cnt = sns['parity']
+
         degrade_pod = input("Degrade pods with CORIO y/n, Default is n.\nDEGRADE_POD: ") or "n"
         if degrade_pod.lower() == 'y':
             pod_prefix = input("Which pod you want to degraded data/server .\nPOD_PREFIX: ")
+            pod_prefix = pod_prefix.lower()
+            if pod_prefix not in ["data", "server"]:
+                pod_prefix = "server"
             os.environ['POD_PREFIX'] = pod_prefix
         else:
             try:
@@ -66,13 +80,54 @@ def get_degraded_mode():
         os.environ['DEGRADE_POD'] = degrade_pod
 
 
-def activate_degraded_mode(options: munchify):
+def activate_degraded_mode_parallel(return_dict, m_conf):
     """Create bucket and degrade node as needed .
 
-    :param options : dictionary to fetch command line params
+    :param return_dict : dictionary to share data between parallel processes.
+    :param m_conf : dictionary to fetch required info for parallel mode setup.
     :return : None
     """
     get_degraded_mode()
+    logical_node = get_logical_node()
+    os.environ["logical_node"] = str(logical_node)
+    total_t = datetime.strptime(m_conf['degraded_io']['pod_downtime_schedule'],
+                                '%H:%M:%S').time()
+    downtime = total_t.hour * 3600 + total_t.minute * 60 + total_t.second
+    total_t = datetime.strptime(m_conf['degraded_io']['pod_uptime_schedule'],
+                                '%H:%M:%S').time()
+    uptime = total_t.hour * 3600 + total_t.minute * 60 + total_t.second
+    # Set default pod_prefix
+    pod_prefix = SERVER_POD_NAME_PREFIX
+    if os.environ['POD_PREFIX'] == 'data':
+        pod_prefix = DATA_POD_NAME_PREFIX
+    return_dict.update({"degraded_done": False})
+    for cnt in range(m_conf['degraded_io']['schedule_frequency']):
+        LOGGER.info("Degrading Cluster for %s count", cnt)
+        LOGGER.info("Degraded Cluster Process Sleeping for %s sec before downtime.", downtime)
+        time.sleep(downtime)
+        return_dict.update({"is_deg_on": True})
+        LOGGER.info("***** Making Degraded Cluster *****")
+        resp = logical_node.degrade_nodes(pod_prefix)
+        deleted_pods = resp[1]
+        if not m_conf['degraded_io']['keep_degraded']:
+            LOGGER.info("Degraded Cluster Process Sleeping for %s sec before uptime", uptime)
+            time.sleep(uptime)
+            LOGGER.info("Restoring From Degraded Cluster")
+            restore_pod(deleted_pods=deleted_pods)
+            return_dict.update({"is_deg_on": False})
+            LOGGER.info("***** Cluster Back To Online *****")
+    if m_conf['degraded_io']['keep_degraded']:
+        try:
+            while True:
+                LOGGER.info("Degraded Cluster Process Sleeping for %s sec with %s pods down",
+                downtime, os.environ['DEGRADED_PODS_CNT'])
+                time.sleep(downtime)
+        except KeyboardInterrupt:
+            pass
+    return_dict.update({"degraded_done": True})
+
+
+def activate_degraded_mode(options: munchify):
     bucket_obj = S3Bucket(access_key=options.access_key,
                           secret_key=options.secret_key,
                           endpoint_url=S3_ENDPOINT,
@@ -115,7 +170,11 @@ def get_logical_node() -> ClusterServices:
     return logical_node
 
 
-def restore_pod():
+def restore_pod(deleted_pods=None):
     """Restore pod which is already degraded."""
     logical_node = get_logical_node()
-    logical_node.create_pod_replicas(num_replica=1, deploy=os.getenv('DEGRADED_PODS'))
+    if deleted_pods is not None:
+        for pod in deleted_pods:
+            logical_node.create_pod_replicas(num_replica=1, deploy=pod)
+    else:
+        logical_node.create_pod_replicas(num_replica=1, deploy=os.getenv('DEGRADED_PODS'))
