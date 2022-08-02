@@ -160,8 +160,6 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                             LOGGER.info("Wait for iteration to complete and check again")
                             time.sleep(30)
         else:
-            if datetime.now() > test_start_time:
-                input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
             if datetime.now() > (test_start_time + value['min_runtime']):
                 pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
                 input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
