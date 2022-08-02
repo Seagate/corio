@@ -39,6 +39,10 @@ class HealthCheckError(CheckError):
     """Exception class for health check error."""
 
 
+class DegradedModeError(CheckError):
+    """Exception class for degraded mode support error."""
+
+
 class PodReplicaError(CheckError):
     """Exception class for PodReplica Error"""
 
