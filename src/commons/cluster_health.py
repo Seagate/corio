@@ -30,8 +30,10 @@ from src.commons.utils.cluster_utils import ClusterServices
 LOGGER = logging.getLogger(ROOT)
 
 
-def check_health():
-    """K8s based health check."""
+def check_health(return_dict=None):
+    """K8s based health check.
+    :param return_dict : dictionary to share data between parallel processes.
+    """
     host, user, password = None, None, None
     for node in CLUSTER_CFG.nodes:
         if node["node_type"] == "master":
@@ -41,7 +43,7 @@ def check_health():
         raise HealthCheckError(f"Incorrect master details: {CLUSTER_CFG.nodes[0]} ")
     cluster_obj = ClusterServices(host, user, password)
     status, response = cluster_obj.check_cluster_health()
-    if not status:
+    if not status and not return_dict['is_deg_on']:
         raise HealthCheckError(f"Cluster is not healthy. response: {response}")
     status, response = cluster_obj.check_cluster_storage()
     if not status:
@@ -50,11 +52,11 @@ def check_health():
     LOGGER.info("Cluster is healthy, all services are up and running.")
 
 
-def health_check_process(interval):
+def health_check_process(interval, return_dict):
     """Health check wrapper.
 
     :param interval: Interval in Seconds.
     """
     while True:
         time.sleep(interval)
-        check_health()
+        check_health(return_dict)

@@ -23,7 +23,6 @@ import json
 import logging
 import os
 import random
-
 import time
 
 from src.commons import commands as cmd
@@ -231,6 +230,7 @@ class ClusterServices(RemoteHost):
         if (num_replica == 0 and status) or (num_replica == 1 and not status):
             raise PodReplicaError(output)
         os.environ['DEGRADED_PODS'] = deploy
+        return True, deploy
 
     def get_deploy_replicaset(self, pod_name):
         """
@@ -384,11 +384,12 @@ class ClusterServices(RemoteHost):
         hostname = output[0]
         return hostname
 
-    def degrade_nodes(self, pod_prefix=const.DATA_POD_NAME_PREFIX) -> bool:
+    def degrade_nodes(self, pod_prefix=const.DATA_POD_NAME_PREFIX) -> tuple:
         """
         Degrade nodes as needed for execution by shutdown/deleting pod.
 
         :param pod_prefix : pod type which needs to be degraded.
+        :return: Bool, List of down nodes
         """
         LOGGER.info("Setting the current namespace")
         k8s_cmd = cmd.KUBECTL_SET_CONTEXT.format(const.NAMESPACE)
@@ -398,18 +399,18 @@ class ClusterServices(RemoteHost):
             LOGGER.info(resp_ns)
         LOGGER.info("Shutdown the pods safely by making replicas=0")
         pod_list = self.get_all_pods(pod_prefix=pod_prefix)
-        degraded_pods_list = []
+        deleted_pod = []
         for _ in range(int(os.environ['DEGRADED_PODS_CNT'])):
             LOGGER.info("Get pod name to be deleted")
             pod_name = random.sample(pod_list, 1)[0]
             pod_list.remove(pod_name)
             hostname = self.get_pod_hostname(pod_name=pod_name)
             LOGGER.info("Deleting pod %s", pod_name)
-            self.create_pod_replicas(num_replica=0, pod_name=pod_name)
-            degraded_pods_list.append(pod_name)
+            ret = self.create_pod_replicas(num_replica=0, pod_name=pod_name)
+            deleted_pod.append(ret[1])
             LOGGER.info("Shutdown/deleted pod %s for host %s with replicas=0", pod_name, hostname)
-        LOGGER.info("%s pods shutdown successfully", degraded_pods_list)
-        return True
+        LOGGER.info("%s pods shutdown successfully", deleted_pod)
+        return True, deleted_pod
 
     def get_all_workers_details(self, names: bool = True) -> list:
         """Get all worker name from master node if names else all details."""
