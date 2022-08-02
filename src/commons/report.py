@@ -30,7 +30,7 @@ import re
 
 import pandas as pd
 
-from src.commons.constants import ROOT
+from src.commons.constants import ROOT, CORIO_MASTER_CONFIG
 from src.commons.utils.corio_utils import convert_size, get_report_file_path
 from src.commons.utils.corio_utils import get_test_file_path
 
@@ -112,28 +112,30 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
     start_iterations_count = 0
     completed_iterations_count = 0
     fpath = get_test_file_path(corio_start_time, input_dict['TEST_ID'])
-    yaml_file = '/root/corio/workload/master_config.yaml'
+    yaml_file = CORIO_MASTER_CONFIG
+    print(CORIO_MASTER_CONFIG)
     LOGGER.debug("YAML file selected for parse: %s", yaml_file)
     yaml_dict = {}
     with open(yaml_file, "r", encoding="utf-8") as obj:
         data = yaml.safe_load(obj)
         yaml_dict.update(data)
     LOGGER.debug("YAML file data: %s", yaml_dict)
-    if yaml_dict['s3api']['wait_on_operation'] is True:
-        with open(fpath, 'r') as test_log_file:
-            lines = test_log_file.readlines()
-            for line in lines:
-                if 'iteration' in line.lower():
-                    line = line.split()
-                    if 'started' in line:
-                        start_iterations_count+=1
-                    if 'completed' in line:
-                        completed_iterations_count+=1
-            LOGGER.info(start_iterations_count)
-            LOGGER.info(completed_iterations_count)
-        test_log_file.close()
-        if datetime.now() > test_start_time:
-            input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+    if datetime.now() > test_start_time:
+        input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict["RESULT_UPDATE"] = "In Progress"
+        if yaml_dict['s3api']['wait_on_operation'] is True:
+            with open(fpath, 'r') as test_log_file:
+                lines = test_log_file.readlines()
+                for line in lines:
+                    if 'iteration' in line.lower():
+                        line = line.split()
+                        if 'started' in line:
+                            start_iterations_count+=1
+                        if 'completed' in line:
+                            completed_iterations_count+=1
+                LOGGER.info(start_iterations_count)
+                LOGGER.info(completed_iterations_count)
+            test_log_file.close()
             if datetime.now() > (test_start_time + value['min_runtime']) and \
                             start_iterations_count == completed_iterations_count:
                 pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
@@ -141,7 +143,6 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                 total_execution_time = value['min_runtime'] if sequential_run else datetime.now(
                 ) - test_start_time
             else:
-                input_dict["RESULT_UPDATE"] = "In Progress"
                 LOGGER.info("Open and parse log file to check if condition recursively")
                 flag = True
                 while flag:
@@ -159,12 +160,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                             LOGGER.info("Wait for iteration to complete and check again")
                             time.sleep(30)
         else:
-            input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
-            input_dict["RESULT_UPDATE"] = "Not Triggered"
-            input_dict["TOTAL_TEST_EXECUTION"] = "NA"
-    else:
-        if datetime.now() > test_start_time:
-            input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+            if datetime.now() > test_start_time:
+                input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
             if datetime.now() > (test_start_time + value['min_runtime']):
                 pass_time = (test_start_time + value['min_runtime']).strftime('%Y-%m-%d %H:%M:%S')
                 input_dict["RESULT_UPDATE"] = f"Passed at {pass_time}"
@@ -181,7 +178,7 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                     input_dict["RESULT_UPDATE"] = "In Progress"
                 total_execution_time = datetime.now() - test_start_time
             input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
-        else:
-            input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
-            input_dict["RESULT_UPDATE"] = "Not Triggered"
-            input_dict["TOTAL_TEST_EXECUTION"] = "NA"
+    else:
+        input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict["RESULT_UPDATE"] = "Not Triggered"
+        input_dict["TOTAL_TEST_EXECUTION"] = "NA"
