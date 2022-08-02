@@ -151,7 +151,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
                 Run test sequentially from workload.
 
 #### Email Notifications
-By default, email notifications are turned off. To get the email notifications on execution status, set following environmental variables:
+By default, email notifications are turned off. To get the email notifications on IO run status, set following environmental variables:
 
     - RECEIVER_MAIL_ID (Receiver email ID/s)
     - SENDER_MAIL_ID (Sender email ID)

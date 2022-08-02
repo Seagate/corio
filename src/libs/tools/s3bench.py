@@ -135,7 +135,7 @@ class S3bench:
         :return: Subprocess completed returns False or killed due to timeout returns True
         """
         LOGGER.info("Starting: %s wait: %s", self.cmd, duration)
-        with subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid) as proc:
+        with subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid) as proc: # nosec
             pgid = os.getpgid(proc.pid)
             counter = 0
             # Poll for either process completion or for timeout

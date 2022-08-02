@@ -116,7 +116,7 @@ def run_local_cmd(command: str) -> tuple:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc: # nosec
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
