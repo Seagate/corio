@@ -61,7 +61,8 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         # Add missing parameters from master config file
         for param in to_be_added:
             config[param] = copy.deepcopy(master_cfg[tool][operation][param])
-        LOGGER.info("Added %s parameters to %s test", to_be_added, test)
+        if to_be_added:
+            LOGGER.info("Added %s parameters to %s test", to_be_added, test)
     return workload
 
 

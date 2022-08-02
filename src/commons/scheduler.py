@@ -35,7 +35,7 @@ from src.commons.report import log_status
 LOGGER = logging.getLogger(ROOT)
 
 
-async def create_session(funct: list, start_time: float, **kwargs) -> None:
+async def create_session(funct: list, start_time: float, **kwargs) -> tuple:
     """
     Execute the test function in sessions.
 
@@ -48,11 +48,12 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
     LOGGER.info("Starting Session %s, PID - %s", active_session, os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
-    await func()
+    resp = await func()
+    LOGGER.info(resp)
     LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
+    return resp
 
-
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-locals
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
@@ -61,6 +62,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
+    seq_run = common_params.pop("sequential_run", False)
+    if seq_run:
+        LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     tasks = []
     for _, each in test_plan_value.items():
         test_id = each.pop("TEST_ID")
@@ -72,8 +76,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["range_read"] = each["range_read"]
         if "part_copy" in each.keys():
             params["part_copy"] = each["part_copy"]
-        if common_params.get("sequential_run"):
-            LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
+        if seq_run:
             min_runtime = each.get("min_runtime", 0)
             if not min_runtime:
                 raise AssertionError(f"Minimum run time is not defined for sequential run. {each}")
@@ -116,16 +119,25 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     :param test_plan_values: Parsed yaml file values.
     :param common_params: Common arguments to be passed to function.
     """
-    process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
+    process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
-    loop = asyncio.get_event_loop()
+    main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(main_loop)
     try:
-        loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
+        main_loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        LOGGER.critical("%s Loop interrupted", process_name)
+        LOGGER.warning("%s Loop interrupted", process_name)
+    except Exception as err:
+        LOGGER.exception(err)
+        raise err from Exception
     finally:
-        loop.stop()
-        LOGGER.warning("%s terminated", process_name)
+        if main_loop.is_running():
+            main_loop.stop()
+            LOGGER.warning("Event loop stopped: %s", not main_loop.is_running())
+        if not main_loop.is_closed():
+            main_loop.close()
+            LOGGER.info("Event loop closed: %s", main_loop.is_closed())
+    LOGGER.info("%s completed successfully", process_name)
 
 
 def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
@@ -148,7 +160,8 @@ def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
 
 
 def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
-                                 terminated_tp: str, test_ids: list, sched_job: Job) -> None:
+                                 terminated_tp: str, test_ids: list, sched_job: Job,
+                                 **kwargs) -> None:
     """
     Terminate the scheduler and update the test status.
 
@@ -157,6 +170,8 @@ def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
     :param terminated_tp: Reason for failure is any.
     :param test_ids: Terminated tests from workload.
     :param sched_job: scheduled test status update job.
+    :keyword sequential_run: Execute tests sequentially.
     """
     schedule.cancel_job(sched_job)
-    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids)
+    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
+               **kwargs)

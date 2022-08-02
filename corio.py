@@ -37,11 +37,9 @@ import schedule
 import time
 
 from config import S3_CFG, CORIO_CFG
+from src.commons import constants as const
 from src.commons.cluster_health import check_health
 from src.commons.cluster_health import health_check_process
-from src.commons.constants import CMN_LOG_DIR, LOG_DIR
-from src.commons.constants import DT_STRING
-from src.commons.constants import ROOT
 from src.commons.degrade_cluster import activate_degraded_mode, restore_pod
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
@@ -53,6 +51,7 @@ from src.commons.support_bundle import support_bundle_process
 from src.commons.utils.alerts import send_mail_notification
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.corio_utils import log_cleanup
+from src.commons.utils.corio_utils import run_local_cmd
 from src.commons.utils.corio_utils import setup_environment
 from src.commons.utils.corio_utils import store_logs_to_nfs_local_server
 from src.commons.utils.jira_utils import JiraApp
@@ -60,25 +59,26 @@ from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.workload_mapping import SCRIPT_MAPPING
 from src.commons.yaml_parser import test_parser
 
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(const.ROOT)
 
 
 def initialize_loghandler(opt):
     """Initialize io driver runner logging with stream and file handlers."""
     # If log level provided then it will use DEBUG else will use default INFO.
-    dir_path = os.path.join(os.path.join(LOG_DIR, "latest"))
+    dir_path = os.path.join(os.path.join(const.LOG_DIR, "latest"))
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
     name = os.path.splitext(os.path.basename(__file__))[0]
     if opt.verbose:
         level = logging.getLevelName(logging.DEBUG)
-        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.DEBUG")
+        log_path = os.path.join(dir_path, f"{name}_console_{const.DT_STRING}.DEBUG")
     else:
         level = logging.getLevelName(logging.INFO)
-        name = os.path.join(dir_path, f"{name}_console_{DT_STRING}.INFO")
+        log_path = os.path.join(dir_path, f"{name}_console_{const.DT_STRING}.INFO")
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
-    StreamToLogger(name, LOGGER, stream=True)
+    StreamToLogger(log_path, LOGGER, stream=True)
+    globals()['_LOG_PATH'] = log_path
 
 
 def parse_args():
@@ -126,7 +126,7 @@ def pre_requisites(options: munch.Munch):
     # start resource utilisation.
     collect_resource_utilisation(action="start")
     # Unique id for each run.
-    os.environ["run_id"] = DT_STRING
+    os.environ["run_id"] = const.DT_STRING
 
 
 def get_parsed_input_details(flist: list, nodes: int) -> dict:
@@ -227,6 +227,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 def monitor_processes(processes: dict) -> str or None:
     """Monitor the process."""
     skip_process = []
+    log_path = globals().get("_LOG_PATH")
     for tp_key, process in processes.items():
         if not process.is_alive():
             if tp_key == "support_bundle":
@@ -237,6 +238,11 @@ def monitor_processes(processes: dict) -> str or None:
             if tp_key == "health_check":
                 raise HealthCheckError(f"Process with PID {process.pid} stopped."
                                        f" Health Check collection error.")
+            if os.path.exists(log_path):
+                resp = run_local_cmd(f"grep 'topic {tp_key} completed successfully' {log_path} ")
+                if resp[0] and resp[1]:
+                    skip_process.append(tp_key)
+                    continue
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                             process.pid, process.name)
             return tp_key
@@ -271,6 +277,7 @@ def start_processes(processes: dict) -> None:
         LOGGER.info("Process started: %s", process)
 
 
+# pylint: disable=too-many-branches, too-many-statements, broad-except
 def main(options):
     """
     Main function for CORIO.
@@ -303,7 +310,7 @@ def main(options):
             activate_degraded_mode(options)
             options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
         start_processes(processes)
-        while True:
+        while processes:
             time.sleep(1)
             cpu_memory_details()
             schedule.run_pending()
@@ -317,18 +324,21 @@ def main(options):
                     mail_notify.event_fail.set()
                     mail_notify.join()
                 break
-    except (KeyboardInterrupt, MemoryError, HealthCheckError, Exception) as error:
+            if tuple(processes.keys()) in const.terminate_process_list:
+                break
+    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as error:
         LOGGER.exception(error)
         terminated_tp = type(error).__name__
     finally:
         terminate_processes(processes)
-        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids, sched)
+        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids,
+                                     sched, sequential_run=options.sequential_run)
         if jira_obj:
             jira_obj.update_jira_status(corio_start_time=corio_start_time,
                                         tests_details=tests_to_execute, aborted=True,
                                         terminated_tests=test_ids)
         if options.support_bundle:
-            collect_upload_rotate_support_bundles(CMN_LOG_DIR)
+            collect_upload_rotate_support_bundles(const.CMN_LOG_DIR)
         if receivers and sender:
             mail_notify.event_fail.set()
             mail_notify.join()

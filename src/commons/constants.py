@@ -57,7 +57,7 @@ K8S_RE_SCRIPTS_PATH = "/root/cortx-k8s/k8_cortx_cloud"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.
-MIN_DURATION = 10  # Minimum execution duration in seconds.
+MIN_DURATION = 0.5403  # Minimum execution duration check in seconds.
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
 # Supported type of object size.
@@ -73,3 +73,7 @@ CLUSTER_CONF_PATH = "/etc/cortx/cluster.conf"
 
 # SB extensions
 EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]
+
+# Terminate processes if execution completed and only health check and support bundle remaining.
+terminate_process_list = [("support_bundle", "health_check"), ("support_bundle",),
+                          ("health_check",), ()]
