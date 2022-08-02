@@ -6,6 +6,7 @@ test_1:
   min_runtime: 1h
   sessions_per_node: 1
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_2:
   TEST_ID: TEST-37213
@@ -15,6 +16,7 @@ test_2:
   min_runtime: 4h
   sessions_per_node: 2
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_3:
   TEST_ID: TEST-37214
@@ -24,6 +26,7 @@ test_3:
   min_runtime: 1d
   sessions_per_node: 3
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_4:
   TEST_ID: TEST-37215
@@ -33,15 +36,17 @@ test_4:
   min_runtime: 1d
   sessions_per_node: 5
   tool: s3bench
+  operation: object_fix_size_s3bench
 
-test_5: TEST-37216
-  TEST_ID:
+test_5:
+  TEST_ID: TEST-37216
   object_size:
     start: 20Mb
     end: 100Mb
   min_runtime: 3d
   sessions_per_node: 8
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_6:
   TEST_ID: TEST-37217
@@ -51,6 +56,7 @@ test_6:
   min_runtime: 5d
   sessions_per_node: 13
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_7:
   TEST_ID: TEST-37218
@@ -60,6 +66,7 @@ test_7:
   min_runtime: 7d
   sessions_per_node: 21
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_8:
   TEST_ID: TEST-37219
@@ -69,6 +76,7 @@ test_8:
   min_runtime: 15d
   sessions_per_node: 34
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_9:
   TEST_ID: TEST-37220
@@ -78,6 +86,7 @@ test_9:
   min_runtime: 20d
   sessions_per_node: 55
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_10:
   TEST_ID: TEST-37221
@@ -87,6 +96,7 @@ test_10:
   min_runtime: 25d
   sessions_per_node: 89
   tool: s3bench
+  operation: object_fix_size_s3bench
 
 test_11:
   TEST_ID: TEST-37222
@@ -96,4 +106,4 @@ test_11:
   min_runtime: 30d
   sessions_per_node: 144
   tool: s3bench
-
+  operation: object_fix_size_s3bench

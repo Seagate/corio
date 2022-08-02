@@ -24,19 +24,25 @@
 import logging
 import os
 
+import boto3
+import urllib3
 from aiobotocore.config import AioConfig
 from aiobotocore.session import get_session
+from botocore.config import Config
 
 from config import S3_CFG
 from src.commons.logger import get_logger
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
+# pylint: disable=too-many-instance-attributes
 class S3RestApi:
     """Basic Class for Creating Boto3 REST API Objects."""
 
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
-        Method initializes members of S3Lib.
+        Initialize members of S3Lib.
 
         Different instances need to be created as per different parameter values like access_key,
         secret_key etc.
@@ -59,6 +65,8 @@ class S3RestApi:
             self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
         else:
             self.log = get_logger(level, kwargs.get("test_id"))
+        self.log_path = next(iter([handler.baseFilename for handler in self.log.handlers if
+                                   isinstance(handler, logging.FileHandler)]))
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""
@@ -71,11 +79,39 @@ class S3RestApi:
                                      endpoint_url=self.endpoint_url,
                                      region_name=self.region,
                                      aws_session_token=self.aws_session_token,
-                                     config=AioConfig(connect_timeout=300,
-                                                      read_timeout=300,
+                                     config=AioConfig(connect_timeout=S3_CFG.connect_timeout,
+                                                      read_timeout=S3_CFG.read_timeout,
                                                       retries={"max_attempts":
                                                                S3_CFG.s3api_retry}))
 
-    def __repr__(self):
-        """string representation of an S3API object."""
+    def get_boto3_client(self):
+        """Create s3 client for without asyncio operations."""
+        return boto3.client("s3",
+                            use_ssl=self.use_ssl,
+                            verify=False,
+                            aws_access_key_id=self.access_key,
+                            aws_secret_access_key=self.secret_key,
+                            endpoint_url=self.endpoint_url,
+                            region_name=self.region,
+                            aws_session_token=self.aws_session_token,
+                            config=Config(connect_timeout=S3_CFG.connect_timeout,
+                                          read_timeout=S3_CFG.read_timeout,
+                                          retries={'max_attempts': S3_CFG.s3api_retry}))
+
+    def get_boto3_resource(self):
+        """Create s3 resource for without asyncio operations."""
+        return boto3.resource("s3",
+                              use_ssl=self.use_ssl,
+                              verify=False,
+                              aws_access_key_id=self.access_key,
+                              aws_secret_access_key=self.secret_key,
+                              endpoint_url=self.endpoint_url,
+                              region_name=self.region,
+                              aws_session_token=self.aws_session_token,
+                              config=Config(connect_timeout=S3_CFG.connect_timeout,
+                                            read_timeout=S3_CFG.read_timeout,
+                                            retries={'max_attempts': S3_CFG.s3api_retry}))
+
+    def __str__(self):
+        """Representation of an S3API object."""
         return "S3RestApi for asyncio operations using aiobotocore."

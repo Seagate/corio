@@ -23,7 +23,6 @@
 
 import glob
 import logging
-import math
 import os
 import shutil
 from base64 import b64encode
@@ -31,15 +30,17 @@ from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 from typing import Union
 
+import math
 import paramiko
 import psutil as ps
+import time
 
-from config import CORIO_CFG
-from src.commons.commands import CMD_MOUNT
-from src.commons.constants import DATA_DIR_PATH
-from src.commons.constants import KB
-from src.commons.constants import KIB
-from src.commons.constants import MOUNT_DIR
+from config import CORIO_CFG, CLUSTER_CFG
+from config import S3_CFG
+from src.commons import commands as cmd
+from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR, LATEST_LOG_PATH
+from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
+from src.commons.constants import KB, KIB
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
@@ -53,27 +54,26 @@ def log_cleanup() -> None:
     Create directory inside reports and copy all old report's in it.
     """
     LOGGER.info("Backup all old execution logs into current timestamp directory.")
-    log_dir = os.path.join(os.getcwd(), 'log')
     now = str(datetime.now()).replace(' ', '-').replace(":", "_").replace(".", "_")
-    if os.path.isdir(log_dir):
-        latest = os.path.join(log_dir, 'latest')
+    if os.path.isdir(LOG_DIR):
+        latest = os.path.join(LOG_DIR, 'latest')
         if os.path.isdir(latest):
             log_list = glob.glob(latest + "/*")
             if log_list:
-                os.rename(latest, os.path.join(log_dir, now))
-                LOGGER.info("Backup directory: %s", os.path.join(log_dir, now))
+                os.rename(latest, os.path.join(LOG_DIR, now))
+                LOGGER.info("Backup directory: %s", os.path.join(LOG_DIR, now))
             if not os.path.isdir(latest):
                 os.makedirs(latest)
         else:
             os.makedirs(latest)
     else:
-        os.makedirs(os.path.join(log_dir, 'latest'))
+        LOGGER.info("Created log directory '%s'", )
+        os.makedirs(os.path.join(LOG_DIR, 'latest'))
     LOGGER.info("Backup all old report into current timestamp directory.")
-    reports_dir = os.path.join(os.getcwd(), "reports")
-    if os.path.isdir(reports_dir):
-        report_list = glob.glob(reports_dir + "/*")
+    if os.path.isdir(REPORTS_DIR):
+        report_list = glob.glob(REPORTS_DIR + "/*")
         if report_list:
-            now_dir = os.path.join(reports_dir, now)
+            now_dir = os.path.join(REPORTS_DIR, now)
             if not os.path.isdir(now_dir):
                 os.makedirs(now_dir)
             for file in report_list:
@@ -82,7 +82,7 @@ def log_cleanup() -> None:
                     os.rename(file, os.path.join(now_dir, os.path.basename(fpath)))
             LOGGER.info("Backup directory: %s", now_dir)
     else:
-        os.makedirs(reports_dir)
+        os.makedirs(REPORTS_DIR)
 
 
 def cpu_memory_details() -> None:
@@ -91,7 +91,7 @@ def cpu_memory_details() -> None:
     if cpu_usages > 85.0:
         LOGGER.warning("Client: CPU Usages are: %s", cpu_usages)
         if cpu_usages > 98.0:
-            LOGGER.critical("Client: CPU usages are greater then %s, hence tool may stop execution",
+            LOGGER.critical("Client: CPU usages are greater than %s, hence tool may stop execution",
                             cpu_usages)
     memory_usages = ps.virtual_memory().percent
     if memory_usages > 85.0:
@@ -99,24 +99,24 @@ def cpu_memory_details() -> None:
         available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
         LOGGER.warning("Available Memory is: %s", available_memory)
         if memory_usages > 98.0:
-            LOGGER.critical("Client: Memory usages greater then %s, hence tool may stop execution",
+            LOGGER.critical("Client: Memory usages greater than %s, hence tool may stop execution",
                             memory_usages)
-            raise MemoryError(memory_usages)
+            # raise MemoryError(memory_usages)
         run_local_cmd("top -b -o +%MEM | head -n 22 > reports/topreport.txt")
 
 
-def run_local_cmd(cmd: str) -> tuple:
+def run_local_cmd(command: str) -> tuple:
     """
     Execute any given command on local machine(Windows, Linux).
 
-    :param cmd: command to be executed.
+    :param command: command to be executed.
     :return: bool, response.
     """
-    if not cmd:
+    if not command:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        with Popen(cmd, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc: # nosec
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
@@ -185,7 +185,7 @@ def convert_size(size_bytes) -> str:
     return part_size
 
 
-def rotate_logs(dpath: str, max_count: int = 0):
+def rotate_logs(dpath: str, max_count: int = 0) -> None:
     """
     Remove old logs based on creation time and keep as per max log count, default is 5.
 
@@ -206,7 +206,6 @@ def rotate_logs(dpath: str, max_count: int = 0):
                 if os.path.isdir(fpath):
                     shutil.rmtree(fpath)
                     LOGGER.debug("Removed: Old log directory: %s", fpath)
-
     if len(os.listdir(dpath)) > max_count:
         raise IOError(f"Failed to rotate SB logs: {os.listdir(dpath)}")
 
@@ -224,7 +223,7 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
             LOGGER.debug("Created directory: %s", mnt_dir)
         if host_dir:
             if not os.path.ismount(mnt_dir):
-                resp = os.system(CMD_MOUNT.format(host_dir, mnt_dir))
+                resp = os.system(cmd.CMD_MOUNT.format(host_dir, mnt_dir))
                 if resp:
                     raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
                 LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
@@ -238,7 +237,7 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
         return False
 
 
-def decode_bytes_to_string(text):
+def decode_bytes_to_string(text) -> Union[str, list]:
     """Convert byte to string."""
     if isinstance(text, bytes):
         text = text.decode("utf-8")
@@ -254,17 +253,133 @@ def decode_bytes_to_string(text):
     return text
 
 
-def setup_environment():
+def setup_environment() -> None:
     """Prepare client for workload execution with CORIO."""
     LOGGER.info("Setting up environment to start execution!!")
-    # backup old execution logs.
     ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
-    assert ret, "Error while Mounting NFS directory"
+    if not ret:
+        raise AssertionError(f"Error while Mounting NFS directory: {MOUNT_DIR}.")
     if os.path.exists(DATA_DIR_PATH):
         shutil.rmtree(DATA_DIR_PATH)
     os.makedirs(DATA_DIR_PATH, exist_ok=True)
     LOGGER.debug("Data directory path created: %s", DATA_DIR_PATH)
     LOGGER.info("environment setup completed.")
+
+
+def store_logs_to_nfs_local_server() -> None:
+    """Copy/Store workload, support bundle and client/server resource log to local/NFS server."""
+    # Copy workload execution logs to nfs/local server.
+    latest = os.path.join(LOG_DIR, 'latest')
+    # copy s3bench run logs
+    for fpath in glob.glob(os.path.join(os.getcwd(), "s3bench*.log")):
+        if os.path.exists(fpath):
+            os.rename(fpath, os.path.join(latest, os.path.basename(fpath)))
+    if os.path.exists(latest):
+        shutil.copytree(latest, os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "log", "latest"))
+    # Copy reports to nfs/local server.
+    reports = glob.glob(f"{REPORTS_DIR}/*.*")
+    svr_report_dir = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "reports")
+    if not os.path.exists(svr_report_dir):
+        os.makedirs(svr_report_dir)
+    for report in reports:
+        shutil.copyfile(report, os.path.join(svr_report_dir, os.path.basename(report)))
+    LOGGER.info("All logs copied to %s", os.path.join(CMN_LOG_DIR, os.getenv("run_id")))
+    # Cleaning up TestData.
+    if os.path.exists(DATA_DIR_PATH):
+        shutil.rmtree(DATA_DIR_PATH)
+
+
+def install_package(package_name: str) -> tuple:
+    """Check if package installed, if not then install it."""
+    resp = run_local_cmd(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+    if package_name not in resp[1]:
+        run_local_cmd(cmd.CMD_INSTALL_PKG.format(package_name))
+    resp = run_local_cmd(cmd.CMD_PKG_HELP.format(package_name))
+    return resp
+
+
+def remove_package(package_name: str) -> tuple:
+    """Remove package, if installed."""
+    resp = run_local_cmd(cmd.CMD_PKG_HELP.format(package_name))
+    if resp[0]:
+        resp = run_local_cmd(cmd.CMD_REMOVE_PKG.format(package_name))
+    return resp
+
+
+def get_master_details() -> tuple:
+    """Get master details from cluster config."""
+    host, user, passwd = None, None, None
+    for node in CLUSTER_CFG["nodes"]:
+        if node["node_type"] == "master":
+            if not node.get("hostname", None):
+                LOGGER.critical("failed to get master details: '%s'", CLUSTER_CFG["nodes"])
+                continue
+            host, user, passwd = node["hostname"], node["username"], node["password"]
+    return host, user, passwd
+
+
+def get_report_file_path(corio_start_time) -> str:
+    """
+    Returns Corio Report file path
+
+    :param corio_start_time: Start time for main process.
+    """
+    return os.path.join(REPORTS_DIR,
+                        f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
+
+def get_test_file_path(corio_start_time, test_id) -> str:
+    """
+    Returns test log file path
+
+    :param corio_start_time: Start time for main process.
+    """
+    test_list = []
+    test_list = os.listdir(LATEST_LOG_PATH)
+    for test_file in test_list:
+        if test_file.startswith(test_id):
+            return os.path.join(LATEST_LOG_PATH, test_file)
+
+# pylint: disable=broad-except
+def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
+    """
+    Retry/polling in case all types of failures.
+
+    :param asyncio: True if wrapper used for asyncio else for normal function.
+    :param max_retry: Max number of times retires on failure.
+    :param retry_delay: Delay between two retries.
+    """
+    def outer_wrapper(func):
+        """Outer wrapper method."""
+        if asyncio:
+            async def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for i in reversed(range(max_retry + 1)):
+                    try:
+                        return await func(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.info("AsyncIO Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
+                        if i <= 1:
+                            raise err
+                    # Delay between each retry in seconds.
+                    time.sleep(retry_delay)
+                return await func(*args, **kwargs)
+        else:
+            def inner_wrapper(*args, **kwargs):
+                """Inner wrapper method."""
+                for j in reversed(range(max_retry + 1)):
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as err:
+                        LOGGER.info("Function name: %s", func.__name__)
+                        LOGGER.error(err, exc_info=True)
+                        if j <= 1:
+                            raise err
+                    # Delay between each retry in seconds.
+                    time.sleep(retry_delay)
+                return func(*args, **kwargs)
+        return inner_wrapper
+    return outer_wrapper
 
 
 class RemoteHost:
@@ -342,3 +457,57 @@ class RemoteHost:
         self.sftp_obj.remove(remote_path)
         LOGGER.info("Removed file %s", remote_path)
         self.disconnect()
+
+    def path_exists(self, remote_path: str) -> bool:
+        """
+        Check remote file/directory path exists.
+
+        :param remote_path: Remote file/directory path.
+        """
+        self.connect()
+        try:
+            self.sftp_obj.stat(remote_path)
+            return True
+        except IOError:
+            return False
+        finally:
+            self.disconnect()
+
+    def list_dirs(self, remote_path: str) -> list:
+        """List all files and directories from remote path."""
+        self.connect()
+        try:
+            return self.sftp_obj.listdir(remote_path)
+        except IOError as err:
+            LOGGER.error(err)
+            return []
+        finally:
+            self.disconnect()
+
+    def install_package(self, package_name: str) -> tuple:
+        """Install package on remote machine."""
+        self.connect()
+        resp = (False, None)
+        try:
+            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+            if package_name not in resp[1]:
+                resp = self.execute_command(cmd.CMD_INSTALL_PKG.format(package_name))
+        except IOError as err:
+            LOGGER.error(err)
+        finally:
+            self.disconnect()
+        return resp
+
+    def remove_package(self, package_name: str) -> tuple:
+        """Remove package from remote machine."""
+        self.connect()
+        resp = (False, None)
+        try:
+            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
+            if package_name in resp[1]:
+                resp = self.execute_command(cmd.CMD_REMOVE_PKG.format(package_name))
+        except IOError as err:
+            LOGGER.error(err)
+        finally:
+            self.disconnect()
+        return resp

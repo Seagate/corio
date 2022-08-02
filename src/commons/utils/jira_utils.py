@@ -24,7 +24,6 @@ import getpass
 import json
 import logging
 import os
-import sys
 import time
 from datetime import datetime
 from http import HTTPStatus
@@ -71,8 +70,7 @@ class JiraApp:
         tp_response = requests.get(f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
                                    auth=self.auth)
         if tp_response.status_code != HTTPStatus.OK:
-            LOGGER.exception("Failed to get TE details: %s", test_plan_id)
-            sys.exit(1)
+            raise AssertionError(f"Failed to get TE: {test_plan_id}, reason {tp_response.json()}")
 
         return tp_response.json()
 

@@ -2,8 +2,17 @@
 aws_cred_section: "default"
 aws_path: "/root/.aws/credentials"
 aws_config_path: "/root/.aws/config"
-region: "US"
+region: "us-east-1"
 endpoint: "https://s3.seagate.com"
 validate_certs: True
 use_ssl: True
 debug: False
+# Specifies a time limit in Minutes for requests made by Client. Default is 3 minutes.
+http_client_timeout: 3
+# Maximum number of times that a request will be retried for failures. Default is 5.
+s3api_retry: 6 # Number of retries in case boto api.
+retry_delay: 2 # in seconds.
+# The time in seconds till a timeout exception is thrown when attempting to make a connection.
+connect_timeout: 300
+# The time in seconds till a timeout exception is thrown when attempting to read from a connection.
+read_timeout: 300

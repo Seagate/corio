@@ -19,7 +19,7 @@
 #
 
 """Yaml Parser for IO stability."""
-
+import copy
 import datetime
 import logging
 
@@ -30,6 +30,40 @@ from src.commons.constants import KIB
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
+
+
+def apply_master_config(workload: dict, master_cfg: dict) -> dict:
+    """
+    Add missing parameters to tests based on operation and tool mentioned in the test
+    :param workload: Parsed test config
+    :param master_cfg: Parsed master config
+    :return: dict: Final test dictionary to be scheduled.
+    """
+    for test, config in workload.items():
+        # Check for tests with no parameters
+        if not config:
+            raise AssertionError(f"No parameter for a {test}.")
+        existing_params = config.keys()
+        LOGGER.debug("Existing params are %s", existing_params)
+        # Check for minimum required parameters (TestID, Tool, Operation)
+        required = master_cfg['common']
+        if not existing_params or (set(required) - set(existing_params) != set()):
+            raise AssertionError(f"Minimum required parameters are missing {required} for {test}")
+        tool = config['tool']
+        operation = config['operation']
+        required_params = list(master_cfg[tool][operation].keys()) + required
+        LOGGER.debug("Required params are %s", required_params)
+        # Check for unknown parameters
+        for param in existing_params:
+            if param not in required_params:
+                raise AssertionError(f"Wrong parameter {param} in {test} test.")
+        to_be_added = required_params - existing_params
+        # Add missing parameters from master config file
+        for param in to_be_added:
+            config[param] = copy.deepcopy(master_cfg[tool][operation][param])
+        if to_be_added:
+            LOGGER.info("Added %s parameters to %s test", to_be_added, test)
+    return workload
 
 
 def yaml_parser(yaml_file) -> dict:
@@ -50,7 +84,7 @@ def yaml_parser(yaml_file) -> dict:
 
 def convert_to_bytes(size):
     """
-    function to convert any size to bytes.
+    Convert any size to bytes.
 
     :param size: object size
     can be provided as byte(s), kb, kib, mb, mib, gb, gib, tb, tib
@@ -82,7 +116,7 @@ def convert_to_bytes(size):
 
 def convert_to_time_delta(time):
     """
-    function to convert execution time in time delta format.
+    Convert execution time in time delta format.
 
     :param time : accepts time in format 0d0h0m0s
     :return python timedelta object.
@@ -106,21 +140,28 @@ def convert_to_time_delta(time):
 
 def test_parser(yaml_file, number_of_nodes):
     """
-    parse a workload yaml file.
+    Parse a workload yaml file.
 
     :param yaml_file: accepts and parses a test YAML file.
     :param number_of_nodes: accepts number of nodes to calculate sessions (default=1).
     :return python dictionary containing file contents.
     """
     workload_data = yaml_parser(yaml_file)
+    master_config = yaml_parser("workload/master_config.yaml")
+    workload_data = apply_master_config(workload_data, master_config)
     delta_list = []
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.
-        assert "object_size" in data, f"Object size is compulsory, which is missing in " \
-            f"workload {yaml_file}"
-        convert_object_part_size_to_bytes(data)
-        convert_range_read_to_bytes(data)
-        convert_min_runtime_to_time_delta(test, delta_list, data)
+        if "object_size" not in data:
+            raise AssertionError(
+                f"Object size is compulsory, which is missing in workload {yaml_file}")
+        if "total_samples" in data and isinstance(data["object_size"], dict):
+            convert_object_size_to_bytes_samples(data)
+            convert_min_runtime_to_time_delta(test, delta_list, data)
+        else:
+            convert_object_part_size_to_bytes(data)
+            convert_range_read_to_bytes(data)
+            convert_min_runtime_to_time_delta(test, delta_list, data)
         if 'sessions_per_node' in data.keys():
             data['sessions'] = data['sessions_per_node'] * number_of_nodes
     LOGGER.debug("test object %s: ", workload_data)
@@ -128,7 +169,7 @@ def test_parser(yaml_file, number_of_nodes):
 
 
 def convert_min_runtime_to_time_delta(test, delta_list, data):
-    """convert min_runtime to time_delta."""
+    """Convert min_runtime to time_delta."""
     if test.lower() == "test_1":
         data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
         delta_list.append(convert_to_time_delta(data['min_runtime']))
@@ -139,13 +180,13 @@ def convert_min_runtime_to_time_delta(test, delta_list, data):
 
 
 def convert_object_part_size_to_bytes(data):
-    """convert object_size, part_size to bytes."""
-    for size_type in ["object_size", "part_size"]:
+    """Convert object_size, part_size to bytes."""
+    for size_type in ["object_size", "part_size", "total_storage_size"]:
         if size_type in data:
             if isinstance(data[size_type], dict):
-                assert "start" in data[size_type] or "end" in data[size_type], \
-                    f"Range using start and end keys for '{data[size_type]}' missing in" \
-                    f" workload '{data}'"
+                if "start" not in data[size_type] or "end" not in data[size_type]:
+                    raise AssertionError(f"Range using start and end keys for '{data[size_type]}'"
+                                         f"missing in workload '{data}'")
                 data[size_type]["start"] = convert_to_bytes(data[size_type]["start"])
                 data[size_type]["end"] = convert_to_bytes(data[size_type]["end"])
             elif isinstance(data[size_type], list):
@@ -158,9 +199,48 @@ def convert_range_read_to_bytes(data):
     """Convert range_read to bytes."""
     if "range_read" in data:
         if isinstance(data["range_read"], dict):
-            assert "start" in data["range_read"] or "end" in data["range_read"], \
-                f"Please define range using start and end keys: {data['range_read']}"
+            if "start" not in data["range_read"] or "end" not in data["range_read"]:
+                raise AssertionError(
+                    f"Please define range using start and end keys: {data['range_read']}")
             data["range_read"]["start"] = convert_to_bytes(data["range_read"]["start"])
             data["range_read"]["end"] = convert_to_bytes(data["range_read"]["end"])
         elif isinstance(data["range_read"], str):
             data["range_read"] = convert_to_bytes(data["range_read"])
+
+
+def convert_object_size_to_bytes_samples(data):
+    """Convert object_operations_type1 to bytes and distribution to samples.
+    sample data:
+    test_1:
+      TEST_ID: TEST-40039
+      object_size:
+        0Kb: 2%
+        1Kb: 24.79%
+        10Kb: 18.84%
+        100Kb: 17.87%
+        1Mb: 18.2%
+        10Mb: 16.7%
+        100Mb: 1.56%
+        1Gb: 0.03%
+        2Gb: 0.01%
+      total_samples: 10000
+    """
+    object_size, distribution = zip(*data['object_size'].items())
+    object_size = convert_object_size_to_bytes(object_size)
+    samples = data["total_samples"]
+    distribution = list(distribution)
+    distribution = convert_distribution_to_sample(distribution, samples)
+    new_data = dict(zip(object_size, distribution))
+    data['object_size'] = new_data
+
+
+def convert_object_size_to_bytes(object_size: tuple) -> tuple:
+    """Convert object size of object_operations_type1 to bytes."""
+    return tuple(convert_to_bytes(item) for item in object_size)
+
+
+def convert_distribution_to_sample(distribution: list, samples: int) -> tuple:
+    """Convert object size distribution to samples."""
+    for sample, _ in enumerate(distribution):
+        distribution[sample] = int(round(((float(distribution[sample][:-1]) / 100.0) * samples), 2))
+    return tuple(distribution)

@@ -22,8 +22,9 @@
 """All common constants and params for corio."""
 
 import os
+import socket
+import tempfile
 from datetime import datetime
-
 
 CORIO_ROOT = os.getcwd()  # Fetches you CWD of the runner.
 CONFIG_DIR = 'config'
@@ -33,28 +34,46 @@ CLUSTER_CFG = os.path.join(CONFIG_DIR, 'cluster_config.yaml')
 S3_CONFIG = os.path.join(CONFIG_DIR, 's3', 's3_config.yaml')
 CORIO_CFG_PATH = os.path.join(CONFIG_DIR, "corio_config.yaml")
 S3_TOOL_PATH = os.path.join(CONFIG_DIR, 's3', "s3_tools.yaml")
-MOUNT_DIR = os.path.join("/root", "nfs_share")
+MOUNT_DIR = os.path.join("/mnt", "nfs_share")
 DATA_DIR_PATH = os.path.join(CORIO_ROOT, DATA_DIR)
-
+LOG_DIR = os.path.join(CORIO_ROOT, "log")
+REPORTS_DIR = os.path.join(CORIO_ROOT, "reports")
+CMN_LOG_DIR = os.path.join(MOUNT_DIR, "CorIO-Execution", socket.gethostname())
+LATEST_LOG_PATH = os.path.join(LOG_DIR, "latest")
+CORIO_MASTER_CONFIG = os.path.join(CORIO_ROOT, 'workload', 'master_config.yaml')
 
 # k8s constant for cortx.
-POD_NAME_PREFIX = "cortx-server"
 HAX_CONTAINER_NAME = "cortx-hax"
-NAMESPACE = "default"
+NAMESPACE = "cortx"
+DATA_POD_NAME_PREFIX = "cortx-data"
+SERVER_POD_NAME_PREFIX = "cortx-server"
+HA_POD_NAME_PREFIX = "cortx-ha"
+CONTROL_POD_NAME_PREFIX = "cortx-control"
+CLIENT_POD_NAME_PREFIX = "cortx-client"
 
-K8S_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud/"
+K8S_SB_SCRIPT = "logs-cortx-cloud.sh"
+K8S_CFT_SCRIPTS_PATH = "/root/deploy-scripts/k8_cortx_cloud"
+K8S_RE_SCRIPTS_PATH = "/root/cortx-k8s/k8_cortx_cloud"
 FORMATTER = '[%(asctime)s] [%(process)d] [%(threadName)-6s] [%(name)s] [%(levelname)-6s] ' \
             '[%(filename)s: %(lineno)d]: %(message)s'
 ROOT = "corio"  # root logger name.
-MIN_DURATION = 20  # Minimum execution duration in seconds.
+MIN_DURATION = 0.5403  # Minimum execution duration check in seconds.
 DT_STRING = datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
 
-CMD_YUM_NMON = "yum install -y nmon"
-K8S_WORKER_NODES = "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
-CMD_RUN_NMON = "nmon -f -s 60 -TU"
-CMD_KILL_NMON = "kill -USR2 $(ps ax | grep nmon  | grep -v grep | awk '{print $1}')"
-CMD_NMON_FILE = "find . -name '*.nmon'"
-CMD_RM_NMON = "rm -f {}"
 # Supported type of object size.
 KB = 1000
 KIB = 1024
+
+# resource utilization package.
+NMON = "nmon"
+
+# Config path.
+LOCAL_CONF_PATH = os.path.join(tempfile.gettempdir(), "cluster.conf")
+CLUSTER_CONF_PATH = "/etc/cortx/cluster.conf"
+
+# SB extensions
+EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]
+
+# Terminate processes if execution completed and only health check and support bundle remaining.
+terminate_process_list = [("support_bundle", "health_check"), ("support_bundle",),
+                          ("health_check",), ()]

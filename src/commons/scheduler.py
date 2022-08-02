@@ -22,15 +22,20 @@
 """Scheduler module."""
 
 import asyncio
+import datetime
 import logging
 import os
 
+import schedule
+from schedule import Job
+
 from src.commons.constants import ROOT
+from src.commons.report import log_status
 
 LOGGER = logging.getLogger(ROOT)
 
 
-async def create_session(funct: list, start_time: float, **kwargs) -> None:
+async def create_session(funct: list, start_time: float, **kwargs) -> tuple:
     """
     Execute the test function in sessions.
 
@@ -39,43 +44,71 @@ async def create_session(funct: list, start_time: float, **kwargs) -> None:
     :param kwargs: session name from each test and test parameters.
     """
     await asyncio.sleep(start_time)
-    LOGGER.info("Starting Session %s, PID - %s", kwargs.get("session"), os.getpid())
+    active_session = kwargs.pop("session", None)
+    LOGGER.info("Starting Session %s, PID - %s", active_session, os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
-    await func()
-    LOGGER.info("Ended Session %s, PID - %s", kwargs.get("session"), os.getpid())
+    resp = await func()
+    LOGGER.info(resp)
+    LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
+    return resp
 
-
+# pylint: disable=too-many-branches, too-many-locals
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
-
     :param test_plan: YAML file name for specific S3 operation
     :param test_plan_value: Parsed test_plan values
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
+    seq_run = common_params.pop("sequential_run", False)
+    if seq_run:
+        LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     tasks = []
     for _, each in test_plan_value.items():
-        params = {"test_id": each["TEST_ID"], "object_size": each["object_size"]}
+        test_id = each.pop("TEST_ID")
+        start_time = each.pop("start_time")
+        params = {"test_id": test_id, "object_size": each["object_size"]}
         if "part_range" in each.keys():
             params["part_range"] = each["part_range"]
         if "range_read" in each.keys():
             params["range_read"] = each["range_read"]
         if "part_copy" in each.keys():
             params["part_copy"] = each["part_copy"]
+        if seq_run:
+            min_runtime = each.get("min_runtime", 0)
+            if not min_runtime:
+                raise AssertionError(f"Minimum run time is not defined for sequential run. {each}")
+            params["duration"] = min_runtime
         params.update(common_params)
-        for i in range(1, int(each["sessions"]) + 1):
-            params["session"] = f"{each['TEST_ID']}_session{i}"
+        params.update(each)
+        if each["tool"] == "s3api":
+            if "TestTypeXObjectOps" in str(each.get("operation")[0]):
+                params["session"] = f"{test_id}_session_main"
+                tasks.append(create_session(funct=each["operation"],
+                                            start_time=start_time.total_seconds(),
+                                            **params))
+            else:
+                for i in range(1, int(each["sessions"]) + 1):
+                    params["session"] = f"{test_id}_session{i}"
+                    tasks.append(create_session(funct=each["operation"],
+                                                start_time=start_time.total_seconds(),
+                                                **params))
+        elif each["tool"] == "s3bench":
             tasks.append(create_session(funct=each["operation"],
-                                        start_time=each["start_time"].total_seconds(), **params))
-    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-    LOGGER.critical("Terminating process & pending task: %s", process_name)
-    for task in pending:
-        task.cancel()
-    LOGGER.error(done)
-    for task in done:
-        task.result()
+                                        start_time=start_time.total_seconds(), **params))
+        else:
+            raise NotImplementedError(f"Tool is not supported: {each['tool']}")
+    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
+    if pending:
+        LOGGER.critical("Terminating process: %s & pending tasks: %s", process_name, pending)
+        for task in pending:
+            task.cancel()
+    if done:
+        LOGGER.info("Completed tasks: %s", done)
+        for task in done:
+            task.result()
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
@@ -86,12 +119,59 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     :param test_plan_values: Parsed yaml file values.
     :param common_params: Common arguments to be passed to function.
     """
-    process_name = f"TestPlan [Process {os.getpid()}, topic {test_plan}]"
+    process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
-    loop = asyncio.get_event_loop()
+    main_loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(main_loop)
     try:
-        loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
+        main_loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
     except KeyboardInterrupt:
-        LOGGER.info("%s Loop interrupted", process_name)
-        loop.stop()
-    LOGGER.info("%s terminating", process_name)
+        LOGGER.warning("%s Loop interrupted", process_name)
+    except Exception as err:
+        LOGGER.exception(err)
+        raise err from Exception
+    finally:
+        if main_loop.is_running():
+            main_loop.stop()
+            LOGGER.warning("Event loop stopped: %s", not main_loop.is_running())
+        if not main_loop.is_closed():
+            main_loop.close()
+            LOGGER.info("Event loop closed: %s", main_loop.is_closed())
+    LOGGER.info("%s completed successfully", process_name)
+
+
+def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
+                                periodic_time: int = 1, sequential_run=False) -> Job:
+    """
+    Schedule the test status update.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param periodic_time: Duration to update test status.
+    :param sequential_run: Execute tests sequentially.
+    """
+    sched_job = schedule.every(periodic_time).minutes.do(log_status, parsed_input=parsed_input,
+                                                         corio_start_time=corio_start_time,
+                                                         test_failed=None,
+                                                         sequential_run=sequential_run)
+    LOGGER.info("Report status update scheduled for every %s minutes", periodic_time)
+    sched_job.run()
+    return sched_job
+
+
+def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
+                                 terminated_tp: str, test_ids: list, sched_job: Job,
+                                 **kwargs) -> None:
+    """
+    Terminate the scheduler and update the test status.
+
+    :param parsed_input: Dict for all the input yaml files.
+    :param corio_start_time: Start time for main process.
+    :param terminated_tp: Reason for failure is any.
+    :param test_ids: Terminated tests from workload.
+    :param sched_job: scheduled test status update job.
+    :keyword sequential_run: Execute tests sequentially.
+    """
+    schedule.cancel_job(sched_job)
+    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
+               **kwargs)

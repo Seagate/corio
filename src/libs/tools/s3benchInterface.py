@@ -17,21 +17,25 @@
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 
-"""s3api package."""
+"""S3bench Library for IO driver."""
+import random
+
+from src.libs.tools.s3bench import S3bench
 
 
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_multipart_ops import S3MultiParts
-from src.libs.s3api.s3_object_ops import S3Object
+# The existing interface, Adaptee
+class S3benchInterface(S3bench):
+    """S3bench Interface."""
 
-
-class S3Api(S3Bucket, S3Object, S3MultiParts):
-    """Common class for all aiobotocore, boto3 api."""
-
-    def __int__(self, *args, **kwargs):
-        """Initialize members of S3Api."""
-        super().__init__(*args, **kwargs)
+    def __init__(self, access=None, secret=None, test_id=None):
+        """Initialize S3bench Interface."""
+        super().__init__(access, secret, test_id, seed=random.randint(1, 100))
 
     def __str__(self):
-        """Representation of an S3API object."""
-        return "S3RestApi for s3 operations using aiobotocore and boto3."
+        """Object Representation."""
+        return 's3bench'
+
+    def run(self):
+        """Run warp."""
+        status, _ = self.execute_s3bench_workload()
+        return status

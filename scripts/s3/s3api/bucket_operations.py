@@ -22,16 +22,12 @@ import random
 from datetime import datetime, timedelta
 from time import perf_counter_ns
 
-from botocore.exceptions import ClientError
-
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestBucketOps(S3Object, S3Bucket):
+class TestBucketOps(S3Api):
     """S3 Bucket Operations class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -54,7 +50,7 @@ class TestBucketOps(S3Object, S3Bucket):
         random.seed(kwargs.get("seed"))
         self.object_per_iter = 500
         self.object_size = kwargs.get("object_size")
-        self.test_id = test_id
+        self.test_id = test_id.lower()
         self.session_id = kwargs.get("session")
         self.iteration = 1
         if kwargs.get("duration"):
@@ -62,6 +58,7 @@ class TestBucketOps(S3Object, S3Bucket):
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=broad-except
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
         while True:
@@ -71,7 +68,7 @@ class TestBucketOps(S3Object, S3Bucket):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
                     file_size = self.object_size
-                bucket_name = f'bucket-op-{self.test_id}-{perf_counter_ns()}'.lower()
+                bucket_name = f'bucket-op-{self.test_id}-iter{self.iteration}-{perf_counter_ns()}'
                 self.log.info("Create bucket %s", bucket_name)
                 await self.create_bucket(bucket_name)
                 await self.upload_n_number_objects(bucket_name, file_size)
@@ -83,9 +80,9 @@ class TestBucketOps(S3Object, S3Bucket):
                 await self.head_bucket(bucket_name)
                 self.log.info("Delete bucket %s with all objects in it.", bucket_name)
                 await self.delete_bucket(bucket_name, True)
-            except (ClientError, IOError, AssertionError) as err:
-                self.log.exception(err)
-                raise err
+            except Exception as err:
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 return True, "Bucket operation execution completed successfully."
             self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
@@ -96,10 +93,11 @@ class TestBucketOps(S3Object, S3Bucket):
         self.log.info("Upload %s number of objects to bucket %s", self.object_per_iter, bucket_name)
         for i in range(0, self.object_per_iter):
             file_name = f'object-{i}-{perf_counter_ns()}'
-            self.log.info("Object '%s', object size %s", file_name, convert_size(file_size))
-            file_path = create_file(file_name, file_size)
+            self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
+                file_size))
+            file_path = corio_utils.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
-            self.log.info("'s3://%s/%s' uploaded successfully.", bucket_name, file_name)
+            self.log.info("'%s' uploaded successfully.", self.s3_url)
             self.log.info("Delete generated file")
             if os.path.exists(file_path):
                 os.remove(file_path)

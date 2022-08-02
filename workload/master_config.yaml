@@ -1,0 +1,176 @@
+common:
+  - TEST_ID
+  - tool
+  - operation
+s3api: # basic_io
+  bucket:
+    object_size:
+      start: 0Kib
+      end: 100Kib
+    min_runtime: 2h
+    sessions_per_node: 1
+  copy_object:
+    object_size:
+      start: 0Kib
+      end: 100Kib
+    min_runtime: 2h
+    sessions_per_node: 1
+  copy_object_fix_size:
+    object_size:
+      - 4kb
+      - 8Kb
+      - 16Kb
+    min_runtime: 2h
+    sessions_per_node: 1
+  copy_object_range_read:
+    object_size:
+      start: 0Kb
+      end: 100Kb
+    min_runtime: 2h
+    sessions_per_node: 1
+    range_read: 100bytes
+  object_fix_size:
+    object_size:
+      - 4kb
+      - 8Kb
+    min_runtime: 2h
+    sessions_per_node: 2
+  multipart:
+    object_size: 4Gib
+    part_range:
+      start: 50
+      end: 100
+    min_runtime: 2h
+    sessions: 5
+  multipart_range_read:
+    object_size: 4Gib
+    part_range:
+      start: 50
+      end: 100
+    min_runtime: 2h
+    sessions: 5
+    range_read:
+      start: 1byte
+      end: 100byte
+  multipart_partcopy:
+    object_size: 128Mb
+    part_range:
+      start: 20
+      end: 25
+    min_runtime: 4h
+    sessions: 5
+  multipart_partcopy_range_read:
+    object_size: 128Mib
+    part_range:
+      start: 20
+      end: 25
+    min_runtime: 4h
+    sessions: 5
+    range_read:
+      start: 1byte
+      end: 100byte
+  multipart_partcopy_random:
+    object_size:
+      start: 128Mb
+      end: 256Mb
+    part_range:
+      start: 20
+      end: 25
+    min_runtime: 4h
+    sessions: 5
+  multipart_random:
+    object_size:
+      start: 1Gib
+      end: 4Gib
+    part_range:
+      start: 50
+      end: 100
+    min_runtime: 2h
+    sessions: 5
+  object_range_read:
+    object_size:
+      start: 300bytes
+      end: 100Kb
+    min_runtime: 2h
+    sessions_per_node: 1
+    range_read: 100bytes
+  object_random_size:
+    object_size:
+      start: 0Kib
+      end: 100Kib
+    min_runtime: 2h
+    sessions_per_node: 1
+  type1_object_ops:
+    object_size:
+      0Kb: 2%
+      1Kb: 24.79%
+      10Kb: 18.84%
+      100Kb: 17.87%
+      1Mb: 18.2%
+      10Mb: 16.7%
+      100Mb: 1.56%
+      1Gb: 0.03%
+      2Gb: 0.01%
+    total_samples: 10000
+    sessions_per_node: 20
+    min_runtime: 30d
+  type3_write_once_read_iterations:
+    object_size:
+      - 128Mb
+      - 256Mb
+      - 512Mb
+      - 1Gb
+      - 2Gb
+    write_percentage: 95
+    read_percentage: 100
+    delete_percentage: 0
+    cleanup_percentage: 0
+    total_storage_size: None
+    min_runtime: 30d
+    sessions_per_node: 2
+  type4_object_ops:
+    object_size:
+        - 128Mb
+        - 256Mb
+        - 512Mb
+        - 1Gb
+        - 2Gb
+    write_percentage: 30
+    read_percentage: 100
+    delete_percentage: 15
+    cleanup_percentage: 85
+    total_storage_size: None
+    min_runtime: 30d
+    sessions_per_node: 2
+  wait_on_operation: False
+
+
+mix_io:
+  # TEST_ID: TEST-40042
+  object_size: #(Single input, List, and Dictionary{key:value})  object size =
+  # for 10000 samples(user configurable) and distribution input may be like {1kb :10%, 100kb: 20%, 1000kb: 30%, 10000kb: 40%}
+    start: 0bytes
+    end: 1Gib
+  write_percentage: 100  # Percentage of data to fill the storage.
+  read_percentage: 100  # Percentage of data to be used to read from storage.
+  delete_percentage: 0  # Percentage of data to be deleted from storage.
+  cleanup_percentage: 0  # Percentage of data once reached then cleanup all data.
+  #  If None then it will be fetched from cluster(cortx specific.)
+  total_storage_size: None  # Total available storage from cluster or user to be used.
+  min_runtime_to_pass: 30d  # Minimum execution durations to mark workload pass.
+  sessions_per_node: 1  # Number of sessions per node.
+  background_delete: False  # Enable/Disable background delete(Cortx specific).
+  sample_size: 10000 # int (any user defined numbers) # samples should be user configurable like 10000
+  tool: s3bench # s3api/s3bench, any supported tool or s3 api operations
+  operation: "mix_object_ops"
+
+degraded_io:
+  pod_downtime: 20s #time taken to degraded pods (IO sleep/halt time), shutdown time #i.e. 20s
+  pod_downtime_schedule: 2h #time when nodes/pods need to be degraded [Time Delta in (HH:MM:SS)],
+  #before downtime schedule this IO will be in happy path.
+  schedule_frequency: 1 #Once or repetitive (after every schedule time interval) --> repetition will happen as per schedule time interval
+  pod_uptime_schedule: None  #<None, int(5m,2h,1d etc...)time when pods need to be active back since downtime.
+  #if None it will never come back for permanent failure,when pods need to be reverted online[Time Delta in (HH:MM:SS) ]
+  inflight_mode: off #<on/off> (Continuous IO once support is there for server handles the degraded nodes/pods)
+  ignore_io_failures : True #<True/False>(IO failure may be ignored while IO continue with POD shutdown), Default is False
+  wait_on_operation: False #<True/False> True: Wait till pending operation completes to mark it pass,

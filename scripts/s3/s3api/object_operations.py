@@ -24,13 +24,11 @@ from datetime import timedelta, datetime
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestS3Object(S3Bucket, S3Object):
+class TestS3Object(S3Api):
     """Class for bucket operations."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -62,11 +60,17 @@ class TestS3Object(S3Bucket, S3Object):
         else:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=broad-except
     async def execute_object_workload(self):
         """Execute object workload with given parameters."""
-        bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
-        self.log.info("Create bucket %s", bucket)
-        await self.create_bucket(bucket)
+        if os.getenv("d_bucket"):
+            bucket = os.getenv("d_bucket")
+            self.log.info("Doing Object IO Operations with bucket %s", bucket)
+        else:
+            bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
+            self.log.info("Create bucket %s", bucket)
+            await self.create_bucket(bucket)
+
         while True:
             self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
@@ -76,8 +80,9 @@ class TestS3Object(S3Bucket, S3Object):
                 else:
                     range_read = self.range_read
                 file_name = f'object-bucket-op-{perf_counter_ns()}'
-                file_path = create_file(file_name, file_size)
-                self.log.info("Object '%s', object size %s", file_name, convert_size(file_size))
+                file_path = corio_utils.create_file(file_name, file_size)
+                self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
+                    file_size))
                 checksum_in = self.checksum_file(file_path)
                 self.log.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_path)
@@ -90,7 +95,7 @@ class TestS3Object(S3Bucket, S3Object):
                         loc = random.randrange(start, end)
                         assert (await self.get_s3object_checksum(
                             bucket, file_name, ranges=f'bytes={f"{loc}-{loc + range_read - 1}"}'
-                        ) == await self.checksum_part_file(file_path, loc, range_read)), \
+                        ) == self.checksum_part_file(file_path, loc, range_read)), \
                             f"Checksum of downloaded part for range  " \
                             f"({f'{loc}-{loc + range_read - 1}'}) does not " \
                             f"match for s3://{bucket}/{file_name}."
@@ -104,8 +109,8 @@ class TestS3Object(S3Bucket, S3Object):
                     await self.delete_object(bucket, file_name)
                     os.remove(file_path)
             except Exception as err:
-                self.log.exception(err)
-                raise err
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", bucket)
                 await self.delete_bucket(bucket, True)

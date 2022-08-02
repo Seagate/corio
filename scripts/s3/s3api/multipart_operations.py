@@ -24,16 +24,15 @@ import hashlib
 import os
 import random
 from datetime import datetime, timedelta
+
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_multipart_ops import S3MultiParts
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
+class TestMultiParts(S3Api):
     """Multipart class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -52,9 +51,10 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
         self.part_copy = kwargs.get("part_copy", False)
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=f"{test_id}_multipart_partcopy_operations" if self.part_copy else
-            f"{test_id}_multipart_operations")
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url,
+                         use_ssl=kwargs.get("use_ssl"),
+                         test_id=(f"{test_id}_multipart_partcopy_operations" if self.part_copy else
+                                  f"{test_id}_multipart_operations"))
         random.seed(kwargs.get("seed"))
         self.object_size = kwargs.get("object_size")
         self.part_range = kwargs.get("part_range")
@@ -66,6 +66,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         else:  # If duration not given then test will run for 100 Day
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
+    # pylint: disable=broad-except
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
         iteration = 1
@@ -81,7 +82,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                 number_of_parts = await self.get_random_number_of_parts()
                 file_size = await self.get_workload_size()
                 single_part_size = round(file_size / number_of_parts)
-                self.log.info("single part size: %s", convert_size(single_part_size))
+                self.log.info("single part size: %s", corio_utils.convert_size(single_part_size))
                 upload_obj_checksum = await self.create_upload_list_completed_mpart(
                     number_of_parts, mpart_bucket, s3mpart_object, s3_object)
                 all_object = await self.list_objects(mpart_bucket)
@@ -98,8 +99,8 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
             except Exception as err:
-                self.log.exception(err)
-                raise err
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
@@ -113,7 +114,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
             file_size = random.randrange(self.object_size["start"], self.object_size["end"])
         else:
             file_size = self.object_size
-        self.log.info("File size: %s", convert_size(file_size))
+        self.log.info("File size: %s", corio_utils.convert_size(file_size))
         return file_size
 
     async def get_random_number_of_parts(self):
@@ -131,8 +132,7 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         resp = await self.get_object(bucket=s3bucket, key=s3object,
                                      ranges=f"bytes={self.range_read['start']}"
                                             f"-{self.range_read['end']}")
-        assert resp['Body'].read(), f"Failed to read bytes {self.range_read} from " \
-                                    f"s3://{s3bucket}/{s3object}"
+        assert resp, f"Failed to read bytes {self.range_read} from s3://{s3bucket}/{s3object}"
 
     async def create_upload_list_completed_mpart(self, number_of_parts, mpart_bucket,
                                                  s3mpart_object, s3_object) -> None:
@@ -165,3 +165,4 @@ class TestMultiParts(S3MultiParts, S3Object, S3Bucket):
         await self.complete_multipart_upload(
             response["UploadId"], parts, mpart_bucket, s3mpart_object)
         self.log.info("'s3://%s/%s' uploaded successfully.", mpart_bucket, s3mpart_object)
+        return upload_obj_checksum

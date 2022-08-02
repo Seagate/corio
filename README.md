@@ -143,3 +143,17 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
       -tp, --test_plan (optonal)
                 jira xray test plan id.
+
+      -mr, --s3max_retry
+                Max number of retries in case of any type of failure.
+
+      -sr, --sequential_run
+                Run test sequentially from workload.
+
+#### Email Notifications
+By default, email notifications are turned off. To get the email notifications on IO run status, set following environmental variables:
+
+    - RECEIVER_MAIL_ID (Receiver email ID/s)
+    - SENDER_MAIL_ID (Sender email ID)
+    - EMAIL_HOST (SMTP email server hostname)
+    - EMAIL_PORT (SMTP email server port number)

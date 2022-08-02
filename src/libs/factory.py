@@ -13,25 +13,35 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
+#
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
+#
 
-"""s3api package."""
-
-
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_multipart_ops import S3MultiParts
-from src.libs.s3api.s3_object_ops import S3Object
+"""Python Library to implement factory pattern for tools."""
 
 
-class S3Api(S3Bucket, S3Object, S3MultiParts):
-    """Common class for all aiobotocore, boto3 api."""
+class ToolsFactory:
+    """Tools Factory."""
 
-    def __int__(self, *args, **kwargs):
-        """Initialize members of S3Api."""
-        super().__init__(*args, **kwargs)
+    def __init__(self, tool):
+        """Initialize tools factory."""
+        self.tool = tool
 
     def __str__(self):
-        """Representation of an S3API object."""
-        return "S3RestApi for s3 operations using aiobotocore and boto3."
+        """Object representation."""
+        return f'Tool name is {self.tool}'
+
+    def __repr__(self):
+        """Object name."""
+        return f'Tool:{self.tool}'
+
+    def __call__(self):
+        """Get Created object."""
+        return self.get_tool_object()
+
+    def get_tool_object(self):
+        """Create tools objects as per client requirements."""
+        target_tool = self.tool.capitalize()
+        return globals()[target_tool]()

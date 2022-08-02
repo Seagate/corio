@@ -22,14 +22,42 @@
 """Exception module for corio tool."""
 
 
-class HealthCheckError(Exception):
+class CheckError(Exception):
     """Class for health check error."""
 
     def __init__(self, message=''):
-        """Initialize health check error."""
+        """Initialize error."""
         super().__init__(message)
         self.message = message
 
     def __str__(self):
         """Print error message."""
         return self.message
+
+
+class HealthCheckError(CheckError):
+    """Exception class for health check error."""
+
+
+class PodReplicaError(CheckError):
+    """Exception class for PodReplica Error"""
+
+
+class DeployReplicasetError(CheckError):
+    """Exception class for Replicaset Error"""
+
+
+class NumReplicaError(CheckError):
+    """Exception class for NumReplica Error"""
+
+
+class K8sDeploymentRecoverError(CheckError):
+    """Exception class for K8sDeployment Recover Error"""
+
+
+class DeploymentBackupException(CheckError):
+    """Exception class for Deployment Backup"""
+
+
+class NoBucketExistsException(CheckError):
+    """Exception class for if buckets created/exists"""

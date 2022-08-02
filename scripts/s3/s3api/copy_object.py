@@ -24,16 +24,12 @@ from datetime import datetime
 from datetime import timedelta
 from time import perf_counter_ns
 
-from botocore.exceptions import ClientError
-
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.corio_utils import create_file
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.commons.utils import corio_utils
+from src.libs.s3api import S3Api
 
 
-class TestS3CopyObjects(S3Object, S3Bucket):
+class TestS3CopyObjects(S3Api):
     """S3 Copy Object class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
@@ -56,7 +52,7 @@ class TestS3CopyObjects(S3Object, S3Bucket):
         self.object_size = kwargs.get("object_size")
         self.iteration = 1
         self.session_id = kwargs.get("session")
-        self.test_id = test_id
+        self.test_id = test_id.lower()
         self.range_read = kwargs.get("range_read")
         if kwargs.get("duration"):
             self.finish_time = datetime.now() + kwargs.get("duration")
@@ -66,11 +62,12 @@ class TestS3CopyObjects(S3Object, S3Bucket):
     @classmethod
     def initialize_variables(cls, test_id):
         """Initialize variables for copy object operations."""
-        cls.bucket_name1 = f"copy-obj-bucket1-{test_id}-{perf_counter_ns()}".lower()
-        cls.bucket_name2 = f"copy-obj-bucket2-{test_id}-{perf_counter_ns()}".lower()
-        cls.object_name1 = f"copy-object1-{test_id}-{perf_counter_ns()}".lower()
-        cls.object_name2 = f"copy-object2-{test_id}-{perf_counter_ns()}".lower()
+        cls.bucket_name1 = f"copy-obj-bucket1-{test_id}-{perf_counter_ns()}"
+        cls.bucket_name2 = f"copy-obj-bucket2-{test_id}-{perf_counter_ns()}"
+        cls.object_name1 = f"copy-object1-{test_id}-{perf_counter_ns()}"
+        cls.object_name2 = f"copy-object2-{test_id}-{perf_counter_ns()}"
 
+    # pylint: disable=broad-except
     async def execute_copy_object_workload(self):
         """Execute copy object workload for specific duration."""
         self.initialize_variables(self.test_id)
@@ -83,28 +80,25 @@ class TestS3CopyObjects(S3Object, S3Bucket):
             try:
                 # Put object in self.bucket_name1
                 file_size = await self.get_workload_size()
-                file_path = create_file(self.object_name1, file_size)
-                self.log.info("Object1 '%s', object size %s", self.object_name1, convert_size(
-                    file_size))
+                file_path = corio_utils.create_file(self.object_name1, file_size)
+                self.log.info("Object1 '%s', object size %s", self.object_name1,
+                              corio_utils.convert_size(file_size))
                 await self.upload_object(self.bucket_name1, self.object_name1, file_path=file_path)
-                self.log.info("Objects 's3://%s/%s' uploaded successfully.",
-                              self.bucket_name1, self.object_name1)
+                self.log.info("Objects '%s' uploaded successfully.", self.s3_url)
                 ret1 = await self.head_object(self.bucket_name1, self.object_name1)
                 await self.copy_object(self.bucket_name1, self.object_name1, self.bucket_name2,
                                        self.object_name2)
-                self.log.info(
-                    "Copied object 's3://%s/%s' to s3://%s/%s in same account successfully.",
-                    self.bucket_name1, self.object_name1, self.bucket_name1, self.object_name2)
+                self.log.info("Copied object '%s in same account successfully.", self.s3_url)
                 ret2 = await self.head_object(self.bucket_name2, self.object_name2)
                 assert ret1["ETag"] == ret2["ETag"], \
                     f"etag of original object ({ret1['ETag']})\netag of copied object " \
                     f"({ret2['ETag']}) are not matching"
                 if self.range_read:
-                    if not isinstance(self.range_read, dict):
-                        range_read = self.range_read
-                    else:
+                    if isinstance(self.range_read, dict):
                         range_read = random.randrange(
                             self.range_read["start"], self.range_read["end"])
+                    else:
+                        range_read = self.range_read
                     self.log.info("Get object with range read '%s' bytes.", range_read)
                     offset = random.randrange(file_size - range_read)
                     await self.data_integrity(byte_range=f'bytes={offset}-{range_read + offset}')
@@ -118,9 +112,9 @@ class TestS3CopyObjects(S3Object, S3Bucket):
                 self.log.info("Delete destination object from bucket-2.")
                 await self.delete_object(self.bucket_name2, self.object_name2)
                 os.remove(file_path)
-            except (ClientError, IOError, AssertionError) as err:
-                self.log.exception(err)
-                raise err
+            except Exception as err:
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 for bucket in [self.bucket_name1, self.bucket_name2]:
                     self.log.info("Delete bucket %s with all objects in it.", bucket)
