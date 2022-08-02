@@ -38,7 +38,7 @@ import time
 from config import CORIO_CFG, CLUSTER_CFG
 from config import S3_CFG
 from src.commons import commands as cmd
-from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR
+from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR, LATEST_LOG_PATH
 from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
 from src.commons.constants import KB, KIB
 from src.commons.constants import ROOT
@@ -327,6 +327,17 @@ def get_report_file_path(corio_start_time) -> str:
     return os.path.join(REPORTS_DIR,
                         f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
 
+def get_test_file_path(corio_start_time, test_id) -> str:
+    """
+    Returns test log file path
+
+    :param corio_start_time: Start time for main process.
+    """
+    test_list = []
+    test_list = os.listdir(LATEST_LOG_PATH)
+    for test_file in test_list:
+        if test_file.startswith(test_id):
+            return os.path.join(LATEST_LOG_PATH, test_file)
 
 # pylint: disable=broad-except
 def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
