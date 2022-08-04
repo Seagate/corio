@@ -25,11 +25,12 @@ import logging
 import os
 import smtplib
 import threading
-import time
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, COMMASPACE, make_msgid
+
+import time
 
 from config import CORIO_CFG
 from src.commons import commands
@@ -51,7 +52,7 @@ class Mail:
         :param receiver: email address of receiver
         """
         self.mail_host = os.getenv("EMAIL_HOST")
-        self.port = int(os.getenv("EMAIL_PORT"))
+        self.port = int(os.getenv("EMAIL_PORT") or 0)
         self.sender = sender
         self.receiver = receiver
 
@@ -60,31 +61,42 @@ class Mail:
         Function to send mail using smtp server
         :param message: Email message
         """
-        LOGGER.info("Sending mail with Subject %s:", message['Subject'])
-        with smtplib.SMTP(self.mail_host, self.port) as server:
-            server.sendmail(self.sender, self.receiver.split(','), message.as_string())
+        if self.mail_host and self.port:
+            LOGGER.info("Sending mail alert...")
+            with smtplib.SMTP(self.mail_host, self.port) as server:
+                server.sendmail(self.sender, self.receiver.split(','), message.as_string())
+        else:
+            LOGGER.warning("Can't send mail as email host/port not found.")
 
 
+# pylint: disable=too-many-instance-attributes
 class MailNotification(threading.Thread):
     """This class contains common utility methods for Mail Notification."""
 
-    def __init__(self, sender, receiver, tp_id, report_path):
+    def __init__(self, start_time, tp_id, **kwargs):
         """
         Init method:
-        :param sender: sender of mail
-        :param receiver: receiver of mail
+        :param corio_start_time : Start time of the execution.
         :param tp_id : Test Plan ID to be sent in subject.
-        :param report_path: Report file path.
+        :keyword sender: sender of mail.
+        :keyword receiver: receiver of mail.
+        :keyword health_check: Health check of cortx cluster.
+        :keyword endpoint: S3 endpoint.
         """
         super().__init__()
+        self.health_check = kwargs.get("health_check", False)
+        self.sender = kwargs.get("sender", os.getenv("SENDER_MAIL_ID"))
+        self.receiver = kwargs.get("receiver", os.getenv("RECEIVER_MAIL_ID"))
         self.event_fail = threading.Event()
-        self.mail_obj = Mail(sender=sender, receiver=receiver)
-        self.sender = sender
-        self.receiver = receiver
-        self.tp_id = tp_id
-        self.health_obj = get_logical_node()
-        self.report_path = report_path
+        self.event_pass = threading.Event()
+        self.event_abort = threading.Event()
+        self.report_path = get_report_file_path(start_time)
+        self._alert = bool(self.sender and self.receiver)
+        self.mail_obj = Mail(sender=self.sender, receiver=self.receiver)
+        self.health_obj = get_logical_node() if self.health_check else None
+        self.host = self.health_obj.host if self.health_check else kwargs.get("endpoint")
         self.message_id = None
+        self.tp_id = str(tp_id or '')
 
     def prepare_email(self, execution_status) -> MIMEMultipart:
         """
@@ -92,72 +104,120 @@ class MailNotification(threading.Thread):
         :param execution_status: Execution status. In Progress/Fail
         :return: Formatted MIME message
         """
-        hctl_status = json.dumps(self.health_obj.get_hctl_status()[1], indent=4)
-        result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
-        status = f"Corio TestPlan {str(self.tp_id or '')} is {execution_status} " \
-                 f"on {self.health_obj.host}"
-        subject = status
-        body = f"<h3>{status}.</h2>\n" \
-               f"<h3>PFA hctl cluster status, pod status & execution status.</h3>\n"
-        build_url = os.getenv("BUILD_URL")
-        if build_url:
-            body += f"""Visit Jenkins Job: <a href="{build_url}">{build_url}</a>"""
+        # Mail common parameters.
         message = MIMEMultipart()
         message['From'] = self.sender
         message['To'] = COMMASPACE.join(self.receiver.split(','))
         message['Date'] = formatdate(localtime=True)
-        message['Subject'] = subject
+        # Message ID.
         if not self.message_id:
             self.message_id = make_msgid()
             message["Message-ID"] = self.message_id
         else:
             message["In-Reply-To"] = self.message_id
             message["References"] = self.message_id
-        attachment = MIMEApplication(hctl_status, Name="hctl_status.txt")
-        attachment['Content-Disposition'] = 'attachment; filename=hctl_status.txt'
-        message.attach(attachment)
-        if result:
-            attachment = MIMEApplication(pod_status, Name="pod_status.txt")
-            attachment['Content-Disposition'] = 'attachment; filename=pod_status.txt'
+        # Mail subject.
+        subject = f"Corio TestPlan {str(self.tp_id or '')} is triggered on {self.host}"
+        message['Subject'] = subject
+        # Execution status
+        body = f"Execution status: {execution_status}\n"
+        # Cluster health and pod status.
+        if self.health_check:
+            hctl_status  = self.health_obj.get_hctl_status()[1]
+            hctl_data = json.dumps(hctl_status, indent=4)
+            result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
+            health_status = "Cluster is healthy" if "offline" not in str(hctl_status) else \
+                "Cluster is unhealthy"
+            body += f"Cluster Health: {health_status}"
+            storage_stat = hctl_status.get('filesystem', {'stats': ''}).get('stats')
+            body += f"Storage: {storage_stat}"
+            body += "PFA of hctl cluster status, pod status & execution status.\n"
+            attachment = MIMEApplication(hctl_data, Name="hctl_status.txt")
+            attachment['Content-Disposition'] = 'attachment; filename=hctl_status.txt'
             message.attach(attachment)
-        else:
-            body += """<h3>Could not collect pod status</h3>"""
-        name = os.path.basename(self.report_path)
+            if result:
+                attachment = MIMEApplication(pod_status, Name="pod_status.txt")
+                attachment['Content-Disposition'] = 'attachment; filename=pod_status.txt'
+                message.attach(attachment)
+            else:
+                body += """Could not collect pod status"""
+        # Corio execution report.
         if os.path.exists(self.report_path):
-            message.attach(MIMEText(body, "html"))
             with open(self.report_path, "rb") as fil:
-                attachment = MIMEApplication(fil.read(), Name=name)
-            attachment['Content-Disposition'] = f'attachment; filename={name}'
+                attachment = MIMEApplication(fil.read(), Name="execution_summery.txt")
+            attachment['Content-Disposition'] = 'attachment; filename=execution_summery.txt'
             message.attach(attachment)
         else:
-            message.attach(MIMEText(body + f"<h3>Could not find {self.report_path}.</h3>", "html"))
+            body += f"Could not find {self.report_path}."
+        # Jenkins execution url.
+        build_url = os.getenv("BUILD_URL")
+        if build_url:
+            body += f"""Visit Jenkins Job: <a href="{build_url}">{build_url}</a>"""
+        # Email body
+        message.attach(MIMEText(body, "html", "utf-8"))
         return message
 
     def run(self):
         """Send Mail notification periodically."""
-        while not self.event_fail.is_set():
-            message = self.prepare_email(execution_status="in progress")
+        message = None
+        while not self.active_event():
+            message = self.prepare_email(execution_status="In progress")
             self.mail_obj.send_mail(message)
             current_time = time.time()
             while time.time() < current_time + CORIO_CFG.email_interval_mins * 60:
-                if self.event_fail.is_set():
+                if self.active_event():
                     break
                 time.sleep(60)
-        message = self.prepare_email(execution_status="failed")
+        if self.event_pass.is_set():
+            message = self.prepare_email(execution_status="Passed")
+        if self.event_fail.is_set():
+            message = self.prepare_email(execution_status="Failed")
+        if self.event_abort.is_set():
+            message = self.prepare_email(execution_status="Aborted")
         self.mail_obj.send_mail(message)
 
+    def active_event(self) -> bool:
+        """Check the active event status."""
+        return self.event_pass.is_set() or self.event_abort.is_set() or self.event_fail.is_set()
 
-def send_mail_notification(sender_email, receiver_email, tp_id, corio_start_time):
-    """
-    Send mail notification
-    :param sender_email: Sender Mail ID
-    :param receiver_email: Receiver Mail ID
-    :param tp_id: Test Plan ID
-    :param corio_start_time:
-    :return MailNotification Process.
-    """
-    report_path = get_report_file_path(corio_start_time)
-    mail_notify = MailNotification(sender=sender_email, receiver=receiver_email, tp_id=tp_id,
-                                   report_path=report_path)
-    mail_notify.start()
-    return mail_notify
+
+class SendMailNotification(MailNotification):
+    """Send mail notification/status of execution."""
+
+    def start_mail_notification(self):
+        """Start the mail notification."""
+        self.start()
+
+    def send_failure_notification(self):
+        """Send failure notification."""
+        self.event_fail.set()
+        self.join()
+
+    def send_passed_notification(self):
+        """Send passed notification."""
+        self.event_pass.set()
+        self.join()
+
+    def send_aborted_notification(self):
+        """Send aborted notifications."""
+        self.event_abort.set()
+        self.join()
+
+    def email_alert(self, action, **kwargs):
+        """Start the mail notifications."""
+        if self._alert:
+            if action == "start":
+                self.start_mail_notification()
+            elif action == "stop":
+                if kwargs.get("tp"):
+                    if kwargs.get("ids"):
+                        self.send_failure_notification()
+                    else:
+                        self.send_aborted_notification()
+                else:
+                    self.send_passed_notification()
+            else:
+                LOGGER.warning("Incorrect action '%s' for mail alert...", action)
+        else:
+            LOGGER.warning("Can't send alert as sender: %s, receiver: %s not found.",
+                           self.sender, self.receiver)

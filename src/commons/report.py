@@ -24,13 +24,12 @@ import logging
 from datetime import datetime
 from typing import Union
 
+import pandas as pd
 import time
 import yaml
 
-import pandas as pd
-
-from src.commons.constants import ROOT, CORIO_MASTER_CONFIG
 from src.commons.commands import GREP_CMD_ERROR, GREP_CMD_ITERATION
+from src.commons.constants import ROOT, CORIO_MASTER_CONFIG
 from src.commons.utils.corio_utils import convert_size, get_report_file_path
 from src.commons.utils.corio_utils import get_test_file_path
 from src.commons.utils.corio_utils import run_local_cmd
@@ -114,7 +113,6 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
     completed_iterations_count = 0
     fpath = get_test_file_path(corio_start_time, input_dict['TEST_ID'])
     yaml_file = CORIO_MASTER_CONFIG
-    print(CORIO_MASTER_CONFIG)
     LOGGER.debug("YAML file selected for parse: %s", yaml_file)
     yaml_dict = {}
     with open(yaml_file, "r", encoding="utf-8") as obj:
