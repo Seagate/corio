@@ -116,7 +116,7 @@ def run_local_cmd(command: str) -> tuple:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc: # nosec
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:  # nosec
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
@@ -327,6 +327,13 @@ def get_report_file_path(corio_start_time) -> str:
     return os.path.join(REPORTS_DIR,
                         f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
 
+
+def convert_datetime_delta(time_delta: datetime.now()) -> str:
+    """Convert datetime delta object into tuple of days, hours, minutes"""
+    return (f"{time_delta.days}Days {time_delta.seconds//3600}Hours"
+            f" {(time_delta.seconds//60)%60}Minutes")
+
+
 def get_test_file_path(corio_start_time, test_id) -> str:
     """
     Returns test log file path
@@ -340,6 +347,8 @@ def get_test_file_path(corio_start_time, test_id) -> str:
             return os.path.join(LATEST_LOG_PATH, test_file)
 
 # pylint: disable=broad-except
+
+
 def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
     """
     Retry/polling in case all types of failures.

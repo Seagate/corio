@@ -25,6 +25,7 @@ import logging
 import os
 import smtplib
 import threading
+from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -36,7 +37,7 @@ from config import CORIO_CFG
 from src.commons import commands
 from src.commons.constants import ROOT
 from src.commons.degrade_cluster import get_logical_node
-from src.commons.utils.corio_utils import get_report_file_path
+from src.commons.utils.corio_utils import get_report_file_path, convert_datetime_delta
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -90,7 +91,8 @@ class MailNotification(threading.Thread):
         self.event_fail = threading.Event()
         self.event_pass = threading.Event()
         self.event_abort = threading.Event()
-        self.report_path = get_report_file_path(start_time)
+        self.start_time = start_time
+        self.report_path = get_report_file_path(self.start_time)
         self._alert = bool(self.sender and self.receiver)
         self.mail_obj = Mail(sender=self.sender, receiver=self.receiver)
         self.health_obj = get_logical_node() if self.health_check else None
@@ -98,13 +100,15 @@ class MailNotification(threading.Thread):
         self.message_id = None
         self.tp_id = str(tp_id or '')
 
-    def prepare_email(self, execution_status) -> MIMEMultipart:
+    def prepare_email(self, execution_status, status_code) -> MIMEMultipart:
         """
         Prepare email message with format and attachment
         :param execution_status: Execution status. In Progress/Fail
+        :param status_code: Color code used as per execution status.
         :return: Formatted MIME message
         """
         # Mail common parameters.
+        execution_duration = convert_datetime_delta(datetime.now() - self.start_time)
         message = MIMEMultipart()
         message['From'] = self.sender
         message['To'] = COMMASPACE.join(self.receiver.split(','))
@@ -117,21 +121,26 @@ class MailNotification(threading.Thread):
             message["In-Reply-To"] = self.message_id
             message["References"] = self.message_id
         # Mail subject.
-        subject = f"Corio TestPlan {str(self.tp_id or '')} is triggered on {self.host}"
-        message['Subject'] = subject
+        message['Subject'] = f"Corio: TestPlan {str(self.tp_id or '')}, Server {self.host}"
         # Execution status
-        body = f"Execution status: {execution_status}\n"
+        body = "<h2 style='text-align:center;'>Corio Execution Status</h2>"
+        body += f"""<table style='width: 100%; border: thin black dotted; text-align: left;'
+         width = 'nowrap;'> <tr style='background-color:{status_code}'>"""
+        body += f"""<td style='color: white; font-size: 124%; padding-left: 5px; font-weight: bold;'
+         colspan=2><b>Execution status:</b> {execution_status}</td></tr>"""
+        body += f"<tr><td><b>Execution started:</b></td> <td>{self.start_time}</td></tr>"
+        body += f"<tr><td><b>Execution duration:</b></td> <td>{execution_duration}</td></tr>"
         # Cluster health and pod status.
         if self.health_check:
-            hctl_status  = self.health_obj.get_hctl_status()[1]
+            hctl_status = self.health_obj.get_hctl_status()[1]
             hctl_data = json.dumps(hctl_status, indent=4)
             result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
-            health_status = "Cluster is healthy" if "offline" not in str(hctl_status) else \
-                "Cluster is unhealthy"
-            body += f"Cluster Health: {health_status}"
-            storage_stat = hctl_status.get('filesystem', {'stats': ''}).get('stats')
-            body += f"Storage: {storage_stat}"
-            body += "PFA of hctl cluster status, pod status & execution status.\n"
+            health_status = "Cluster is healthy"
+            if "offline" in str(hctl_status) or "unknown" in str(hctl_status):
+                health_status = "Cluster is unhealthy"
+            body += f"<tr><td><b>Cluster Health:</b></td> <td>{health_status}</td></tr>"
+            storage_stat = self.health_obj.check_cluster_storage()[1]
+            body += f"<tr><td><b>Storage stat(bytes):</b></td> <td>{storage_stat}</td></tr>"
             attachment = MIMEApplication(hctl_data, Name="hctl_status.txt")
             attachment['Content-Disposition'] = 'attachment; filename=hctl_status.txt'
             message.attach(attachment)
@@ -140,19 +149,24 @@ class MailNotification(threading.Thread):
                 attachment['Content-Disposition'] = 'attachment; filename=pod_status.txt'
                 message.attach(attachment)
             else:
-                body += """Could not collect pod status"""
+                LOGGER.warning("Could not collect pod status.")
         # Corio execution report.
         if os.path.exists(self.report_path):
             with open(self.report_path, "rb") as fil:
-                attachment = MIMEApplication(fil.read(), Name="execution_summery.txt")
-            attachment['Content-Disposition'] = 'attachment; filename=execution_summery.txt'
+                attachment = MIMEApplication(fil.read(), Name=os.path.basename(self.report_path))
+            attachment['Content-Disposition'] = 'attachment; filename=execution_summery_report.txt'
             message.attach(attachment)
         else:
-            body += f"Could not find {self.report_path}."
+            LOGGER.warning("Could not find %s", self.report_path)
         # Jenkins execution url.
-        build_url = os.getenv("BUILD_URL")
-        if build_url:
-            body += f"""Visit Jenkins Job: <a href="{build_url}">{build_url}</a>"""
+        exec_url = os.getenv("BUILD_URL")
+        if exec_url:
+            body += f"<tr><td><b>Visit Jenkins Job:</b></td> <td><a href=" \
+                    f"'{exec_url}'>build_url</a></td></tr>"
+        body += """<tr style='background-color:gray'><td style='color: white; font-size: 90%;
+         padding-left: 5px; font-weight: bold;' colspan=2><b>Note: PFA of hctl, pod status of 
+         cluster & execution report.</b></td></tr>"""
+        body += "</table>"
         # Email body
         message.attach(MIMEText(body, "html", "utf-8"))
         return message
@@ -161,7 +175,7 @@ class MailNotification(threading.Thread):
         """Send Mail notification periodically."""
         message = None
         while not self.active_event():
-            message = self.prepare_email(execution_status="In progress")
+            message = self.prepare_email(execution_status="In Progress", status_code="#2B65EC")
             self.mail_obj.send_mail(message)
             current_time = time.time()
             while time.time() < current_time + CORIO_CFG.email_interval_mins * 60:
@@ -169,11 +183,11 @@ class MailNotification(threading.Thread):
                     break
                 time.sleep(60)
         if self.event_pass.is_set():
-            message = self.prepare_email(execution_status="Passed")
+            message = self.prepare_email(execution_status="Passed", status_code="#27AE60")
         if self.event_fail.is_set():
-            message = self.prepare_email(execution_status="Failed")
+            message = self.prepare_email(execution_status="Failed", status_code="#E74C3C")
         if self.event_abort.is_set():
-            message = self.prepare_email(execution_status="Aborted")
+            message = self.prepare_email(execution_status="Aborted", status_code="#f4e242")
         self.mail_obj.send_mail(message)
 
     def active_event(self) -> bool:
