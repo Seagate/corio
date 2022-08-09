@@ -1,0 +1,21 @@
+test_1:
+  TEST_ID: #TBD
+  tool: s3api
+  operation: type_5_bucket_ops_negative
+test_2: #negative scenario
+  TEST_ID: #TBD
+  sessions_per_node: 10
+  number_of_buckets: ??
+  operation: type_5_object
+test_3: #negative scenario
+  TEST_ID: #TBD
+  object_size:
+    start: 0Kb
+    end: 5Gb
+  number_of_buckets: 1
+  number_of_objects: 500
+  operation: type_5_object_range_read
+test_4: #negative scenario
+  TEST_ID: #TBD
+  number_of_buckets: 1
+  operation: type_5_object_multipart

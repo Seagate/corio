@@ -1,0 +1,15 @@
+test_1:
+  TEST_ID: #TBD
+  object_size:
+    start: 0b
+    end: 1Gb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 10
+  number_of_objects: 500
+  tool: s3api
+  operation: type_5_bucket_object_ops
+  delay:
+    minimum: 1h
+    maximum: 12h
+  delete_percentage_per_bucket: 10
