@@ -133,17 +133,15 @@ class MailNotification(threading.Thread):
         # Cluster health and pod status.
         if self.health_check:
             hctl_status = self.health_obj.get_hctl_status()[1]
-            hctl_data = json.dumps(hctl_status, indent=4)
-            result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
-            health_status = "Cluster is healthy"
-            if "offline" in str(hctl_status) or "unknown" in str(hctl_status):
-                health_status = "Cluster is unhealthy"
+            health_status = ("Cluster is healthy" if self.health_obj.check_cluster_health()[1]
+                             else "Cluster is unhealthy")
             body += f"<tr><td><b>Cluster Health:</b></td> <td>{health_status}</td></tr>"
             storage_stat = self.health_obj.check_cluster_storage()[1]
             body += f"<tr><td><b>Storage stat(bytes):</b></td> <td>{storage_stat}</td></tr>"
-            attachment = MIMEApplication(hctl_data, Name="hctl_status.txt")
+            attachment = MIMEApplication(json.dumps(hctl_status, indent=4), Name="hctl_status.txt")
             attachment['Content-Disposition'] = 'attachment; filename=hctl_status.txt'
             message.attach(attachment)
+            result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
             if result:
                 attachment = MIMEApplication(pod_status, Name="pod_status.txt")
                 attachment['Content-Disposition'] = 'attachment; filename=pod_status.txt'
@@ -164,7 +162,7 @@ class MailNotification(threading.Thread):
             body += f"<tr><td><b>Visit Jenkins Job:</b></td> <td><a href=" \
                     f"'{exec_url}'>build_url</a></td></tr>"
         body += """<tr style='background-color:gray'><td style='color: white; font-size: 90%;
-         padding-left: 5px; font-weight: bold;' colspan=2><b>Note: PFA of hctl, pod status of 
+         padding-left: 5px; font-weight: bold;' colspan=2><b>Note: PFA of hctl, pod status of
          cluster & execution report.</b></td></tr>"""
         body += "</table>"
         # Email body
