@@ -48,7 +48,7 @@ from src.commons.scheduler import schedule_test_status_update
 from src.commons.scheduler import terminate_update_test_status
 from src.commons.support_bundle import collect_upload_rotate_support_bundles
 from src.commons.support_bundle import support_bundle_process
-from src.commons.utils.alerts import send_mail_notification
+from src.commons.utils.alerts import SendMailNotification
 from src.commons.utils.corio_utils import cpu_memory_details
 from src.commons.utils.corio_utils import log_cleanup
 from src.commons.utils.corio_utils import run_local_cmd
@@ -277,7 +277,7 @@ def start_processes(processes: dict) -> None:
         LOGGER.info("Process started: %s", process)
 
 
-# pylint: disable=too-many-branches, too-many-statements, broad-except
+# pylint: disable=broad-except
 def main(options):
     """
     Main function for CORIO.
@@ -300,10 +300,9 @@ def main(options):
     sched = schedule_test_status_update(parsed_input, corio_start_time,
                                         CORIO_CFG.report_interval_mins,
                                         sequential_run=options.sequential_run)
-    receivers = os.getenv("RECEIVER_MAIL_ID")
-    sender = os.getenv("SENDER_MAIL_ID")
-    if receivers and sender:
-        mail_notify = send_mail_notification(sender, receivers, options.test_plan, corio_start_time)
+    mobj = SendMailNotification(corio_start_time, options.test_plan,
+                                health_check=options.health_check, endpoint=S3_CFG.endpoint)
+    mobj.email_alert(action="start")
     terminated_tp, test_ids = None, []
     try:
         if options.degraded_mode:
@@ -320,28 +319,24 @@ def main(options):
             terminated_tp = monitor_processes(processes)
             if terminated_tp:
                 test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
-                if receivers and sender:
-                    mail_notify.event_fail.set()
-                    mail_notify.join()
                 break
             if tuple(processes.keys()) in const.terminate_process_list:
                 break
-    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as error:
-        LOGGER.exception(error)
-        terminated_tp = type(error).__name__
+    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as err:
+        LOGGER.exception(err)
+        terminated_tp = type(err).__name__
     finally:
         terminate_processes(processes)
-        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids,
-                                     sched, sequential_run=options.sequential_run)
+        terminate_update_test_status(
+            parsed_input, corio_start_time, terminated_tp, test_ids,
+            sched, sequential_run=options.sequential_run)
         if jira_obj:
-            jira_obj.update_jira_status(corio_start_time=corio_start_time,
-                                        tests_details=tests_to_execute, aborted=True,
-                                        terminated_tests=test_ids)
+            jira_obj.update_jira_status(
+                corio_start_time=corio_start_time, tests_details=tests_to_execute, aborted=True,
+                terminated_tests=test_ids)
         if options.support_bundle:
             collect_upload_rotate_support_bundles(const.CMN_LOG_DIR)
-        if receivers and sender:
-            mail_notify.event_fail.set()
-            mail_notify.join()
+        mobj.email_alert(action="stop", tp=terminated_tp, ids=test_ids)
         collect_resource_utilisation(action="stop")
         store_logs_to_nfs_local_server()
         if options.degraded_mode:

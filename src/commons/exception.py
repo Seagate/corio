@@ -61,3 +61,7 @@ class DeploymentBackupException(CheckError):
 
 class NoBucketExistsException(CheckError):
     """Exception class for if buckets created/exists"""
+
+
+class CorIOException(Exception):
+    """General exception class for corio tool."""
