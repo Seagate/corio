@@ -1,0 +1,129 @@
+test_1:
+  TEST_ID: TEST-35748
+  object_size:
+    start: 0Kib
+    end: 100Kib
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: bucket
+
+test_2:
+  TEST_ID: TEST-37228
+  object_size:
+    - 4kb
+    - 8Kb
+    - 16Kb
+    - 32Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+    - 16Mb
+    - 32Mb
+    - 64Mb
+    - 128Mb
+    - 256Mb
+    - 512Mb
+    - 1Gb
+    - 2Gb
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: object_fix_size
+
+test_3:
+    TEST_ID: TEST-36184
+    object_size: 4Gib
+    part_range:
+        start: 50
+        end: 100
+    min_runtime: 2h
+    sessions: 5  # One object per session.
+    tool: s3api
+    operation: multipart
+
+test_4:
+    TEST_ID: TEST-36211
+    object_size:
+        start: 1Gib
+        end: 4Gib
+    part_range:
+        start: 50
+        end: 100
+    min_runtime: 2h
+    sessions: 5  # One object per session.
+    tool: s3api
+    operation: multipart_random
+
+test_5:
+  TEST_ID: TEST-40039
+  # object size distribution given in percentage, samples will be given on total samples
+  object_size:
+    0Kb: 2%
+    1Kb: 24.79%
+    10Kb: 18.84%
+    100Kb: 17.87%
+    1Mb: 18.2%
+    10Mb: 16.7%
+    100Mb: 1.56%
+    1Gb: 0.03%
+    2Gb: 0.01%
+  total_samples: 10000
+  #  If None then it will be fetched from cluster(cortx specific.)
+  min_runtime: 10m
+  sessions_per_node: 1
+  tool: s3api
+  operation: "type1_object_ops"
+
+test_6:
+    TEST_ID: TEST-40041
+    object_size:
+        - 128Mb
+        - 256Mb
+        - 512Mb
+        - 1Gb
+        - 2Gb
+    write_percentage: 95
+    read_percentage: 100
+    delete_percentage: 0
+    cleanup_percentage: 0
+    #  If None then it will be fetched from cluster(cortx specific.)
+    total_storage_size: 10G
+    min_runtime: 30d
+    sessions_per_node: 1
+    tool: s3api
+    operation: "type3_write_once_read_iterations"
+
+test_7:
+    TEST_ID: TEST-40042
+    object_size:
+        - 128Mb
+        - 256Mb
+        - 512Mb
+        - 1Gb
+        - 2Gb
+    write_percentage: 30
+    read_percentage: 100
+    delete_percentage: 15
+    cleanup_percentage: 85
+    #  If None then it will be fetched from cluster(cortx specific.)
+    total_storage_size: 10G
+    min_runtime: 10m
+    sessions_per_node: 2
+    tool: s3api
+    operation: "type4_object_ops"
+
+test_8:
+  TEST_ID: TEST-35736
+  object_size:
+    start : 0Kib
+    end : 100Kib
+  min_runtime: 10m
+  sessions_per_node: 1
+  tool: s3api
+  operation: object_random_size
