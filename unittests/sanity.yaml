@@ -1,0 +1,109 @@
+test_1:
+  TEST_ID: TEST-XXX01
+  object_size:
+    start: 0Kib
+    end: 100Kib
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: bucket
+
+test_2:
+  TEST_ID: TEST-XXX02
+  object_size:
+    start : 0Kib
+    end : 100Kib
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: object_random_size
+
+test_3:
+  TEST_ID: TEST-XXX03
+  object_size:
+    - 4kb
+    - 16Kb
+    - 64Kb
+    - 128Kb
+    - 256Kb
+    - 512Kb
+    - 1Mb
+    - 2Mb
+    - 4Mb
+    - 8Mb
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: object_fix_size
+
+test_4:
+    TEST_ID: TEST-XXX04
+    object_size: 4Gib
+    part_range:
+        start: 50
+        end: 100
+    min_runtime: 5m
+    sessions: 5
+    tool: s3api
+    operation: multipart
+
+test_5:
+    TEST_ID: TEST-XXX05
+    object_size:
+        start: 1Gib
+        end: 4Gib
+    part_range:
+        start: 50
+        end: 100
+    min_runtime: 5m
+    sessions: 5
+    tool: s3api
+    operation: multipart_random
+
+test_6:
+  TEST_ID: TEST-XXX06
+  object_size:
+    0Kb: 2%
+    1Kb: 24.79%
+    10Kb: 18.84%
+    100Kb: 17.87%
+    1Mb: 18.2%
+    10Mb: 16.7%
+    100Mb: 1.56%
+  total_samples: 100
+  min_runtime: 5m
+  sessions_per_node: 1
+  tool: s3api
+  operation: "type1_object_ops"
+
+test_7:
+    TEST_ID: TEST-XXX07
+    object_size:
+        - 128Mb
+        - 256Mb
+        - 512Mb
+    write_percentage: 95
+    read_percentage: 100
+    delete_percentage: 0
+    cleanup_percentage: 0
+    total_storage_size: 50Gib
+    min_runtime: 5m
+    sessions_per_node: 1
+    tool: s3api
+    operation: "type3_write_once_read_iterations"
+
+test_8:
+    TEST_ID: TEST-XXX08
+    object_size:
+        - 128Mb
+        - 256Mb
+        - 512Mb
+    write_percentage: 30
+    read_percentage: 100
+    delete_percentage: 15
+    cleanup_percentage: 85
+    total_storage_size: 50Gib
+    min_runtime: 5m
+    sessions_per_node: 2
+    tool: s3api
+    operation: "type4_object_ops"
