@@ -23,27 +23,31 @@
 
 import glob
 import logging
+import math
 import os
+import re
 import shutil
+import time
 from base64 import b64encode
 from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 from typing import Union
 
-import math
 import paramiko
 import psutil as ps
-import time
 
 from config import CORIO_CFG, CLUSTER_CFG
 from config import S3_CFG
 from src.commons import commands as cmd
+from src.commons import constants as const
 from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR, LATEST_LOG_PATH
 from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
 from src.commons.constants import KB, KIB
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
+
+EXEC_STATUS = {}
 
 
 def log_cleanup() -> None:
@@ -116,7 +120,8 @@ def run_local_cmd(command: str) -> tuple:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:  # nosec
+        # nosec
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
@@ -334,21 +339,21 @@ def convert_datetime_delta(time_delta: datetime.now()) -> str:
             f" {(time_delta.seconds//60)%60}Minutes")
 
 
-def get_test_file_path(corio_start_time, test_id) -> str:
+def get_test_file_path(test_id: str) -> str:
     """
     Returns test log file path
 
-    :param corio_start_time: Start time for main process.
+    :param test_id: Name of the test id.
     """
-    test_list = []
-    test_list = os.listdir(LATEST_LOG_PATH)
-    for test_file in test_list:
+    fpath = ""
+    for test_file in os.listdir(LATEST_LOG_PATH):
         if test_file.startswith(test_id):
-            return os.path.join(LATEST_LOG_PATH, test_file)
+            fpath = os.path.join(LATEST_LOG_PATH, test_file)
+            break
+    return fpath
+
 
 # pylint: disable=broad-except
-
-
 def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry_delay):
     """
     Retry/polling in case all types of failures.
@@ -389,6 +394,61 @@ def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry
                 return func(*args, **kwargs)
         return inner_wrapper
     return outer_wrapper
+
+
+# pylint: disable=too-many-branches
+def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> dict:
+    """Monitor and update the completed sessions & iterations in execution dictionary."""
+    if not EXEC_STATUS:
+        for tp_data in test_data.values():
+            for ts_data in tp_data.values():
+                EXEC_STATUS[ts_data["TEST_ID"]] = {"start_time": corio_start_time + ts_data[
+                    "start_time"], "min_runtime": ts_data["min_runtime"], "sessions": ts_data[
+                    "sessions"], "iterations": 0, "execution_time": None, "status": None}
+    # pylint: disable=too-many-nested-blocks
+    for tid in list(EXEC_STATUS):
+        iterations = 0
+        fpath = get_test_file_path(tid)
+        if fpath:
+            iterations = get_completed_iterations(fpath)[0]
+        if datetime.now() > (EXEC_STATUS[tid]["start_time"] + EXEC_STATUS[tid]["min_runtime"]):
+            if EXEC_STATUS[tid]["status"] != "Passed":
+                if kwargs.get("sequential_run"):
+                    resp1 = run_local_cmd(cmd.GREP_CMD.format(
+                        const.COMPLETED_SESSION.format(tid), os.getenv("log_path")))
+                    edate = get_latest_timedelta(resp1[1])
+                else:
+                    iterations, edate = get_completed_iterations(fpath)
+                    if CORIO_CFG.wait_on_iterations:
+                        while iterations % EXEC_STATUS[tid]["sessions"] != 0:
+                            time.sleep(10)
+                            iterations, edate = get_completed_iterations(fpath)
+                    else:
+                        edate = edate if edate else EXEC_STATUS[tid]["min_runtime"]
+                if edate:
+                    EXEC_STATUS[tid]["execution_time"] = edate
+                    EXEC_STATUS[tid]["status"] = "Passed"
+        EXEC_STATUS[tid]["iterations"] = iterations
+    return EXEC_STATUS
+
+
+def get_completed_iterations(fpath):
+    """Get completed iterations from test log."""
+    iterations, execution_time = 0, None
+    resp = run_local_cmd(f"{cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS, fpath)} | tail -25")
+    if resp[0] and resp[1]:
+        it_str = resp[1].rsplit(
+            const.COMPLETED_ITERATIONS.rsplit("*", maxsplit=1)[-1], maxsplit=1)[-2]
+        iterations = int(re.findall(r'\d+', it_str)[-1])
+        execution_time = get_latest_timedelta(resp[1])
+    return iterations, execution_time
+
+
+def get_latest_timedelta(log_str: str):
+    """Get latest timedelta from text string."""
+    sdate = log_str.rsplit("\n[", maxsplit=1)[-1].split("] [")[0] if log_str else ""
+    execution_time = datetime.strptime(sdate, '%Y-%m-%d %H:%M:%S,%f') if sdate else None
+    return execution_time
 
 
 class RemoteHost:

@@ -142,7 +142,6 @@ s3api: # basic_io
     total_storage_size: None
     min_runtime: 30d
     sessions_per_node: 2
-  wait_on_operation: False
 
 
 mix_io:
@@ -173,4 +172,3 @@ degraded_io:
   #if None it will never come back for permanent failure,when pods need to be reverted online[Time Delta in (HH:MM:SS) ]
   inflight_mode: off #<on/off> (Continuous IO once support is there for server handles the degraded nodes/pods)
   ignore_io_failures : True #<True/False>(IO failure may be ignored while IO continue with POD shutdown), Default is False
-  wait_on_operation: False #<True/False> True: Wait till pending operation completes to mark it pass,

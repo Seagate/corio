@@ -77,3 +77,7 @@ EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]
 # Terminate processes if execution completed and only health check and support bundle remaining.
 terminate_process_list = [("support_bundle", "health_check"), ("support_bundle",),
                           ("health_check",), ()]
+
+# Log rotation
+COMPLETED_SESSION = "Ended Session {}_"
+COMPLETED_ITERATIONS = "Iteration .* is completed"

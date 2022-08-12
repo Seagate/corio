@@ -26,6 +26,7 @@ import logging
 import multiprocessing
 import os
 import random
+import time
 from ast import literal_eval
 from collections import Counter
 from datetime import datetime
@@ -34,7 +35,6 @@ from pprint import pformat
 
 import munch
 import schedule
-import time
 
 from config import S3_CFG, CORIO_CFG
 from src.commons import constants as const
@@ -78,7 +78,7 @@ def initialize_loghandler(opt):
     os.environ["log_level"] = level
     LOGGER.setLevel(level)
     StreamToLogger(log_path, LOGGER, stream=True)
-    globals()['_LOG_PATH'] = log_path
+    os.environ["log_path"] = log_path
 
 
 def parse_args():
@@ -117,7 +117,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def pre_requisites(options: munch.Munch):
+def pre_requisites(options):
     """Perform health check and start resource monitoring."""
     setup_environment()
     # Check cluster is healthy to start execution.
@@ -199,7 +199,7 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
     for test_plan, test_plan_value in parsed_input.items():
         processes[test_plan] = multiprocessing.Process(target=schedule_test_plan, name=test_plan,
                                                        args=(test_plan, test_plan_value,
-                                                             commons_params))
+                                                             commons_params,))
     LOGGER.info("scheduled execution plan. Processes: %s", processes)
     if options.support_bundle:
         processes["support_bundle"] = multiprocessing.Process(target=support_bundle_process,
@@ -227,19 +227,19 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 def monitor_processes(processes: dict) -> str or None:
     """Monitor the process."""
     skip_process = []
-    log_path = globals().get("_LOG_PATH")
     for tp_key, process in processes.items():
         if not process.is_alive():
             if tp_key == "support_bundle":
-                LOGGER.critical("Process with PID %s stopped Support bundle collection"
-                                " error.", process.pid)
+                LOGGER.critical(
+                    "Process with PID %s stopped Support bundle collection error.", process.pid)
                 skip_process.append(tp_key)
                 continue
             if tp_key == "health_check":
-                raise HealthCheckError(f"Process with PID {process.pid} stopped."
-                                       f" Health Check collection error.")
-            if os.path.exists(log_path):
-                resp = run_local_cmd(f"grep 'topic {tp_key} completed successfully' {log_path} ")
+                raise HealthCheckError(
+                    f"Process with PID {process.pid} stopped. Health Check collection error.")
+            if os.path.exists(os.getenv("log_path")):
+                resp = run_local_cmd(
+                    f"grep 'topic {tp_key} completed successfully' {os.getenv('log_path')} ")
                 if resp[0] and resp[1]:
                     skip_process.append(tp_key)
                     continue
@@ -249,7 +249,6 @@ def monitor_processes(processes: dict) -> str or None:
     for proc in skip_process:
         LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
         processes.pop(proc)
-
     return None
 
 
@@ -284,11 +283,9 @@ def main(options):
 
     :param options: Parsed Arguments.
     """
-    pre_requisites(options)
-    jira_obj = options.test_plan
-    tests_details = {}
+    terminated_tp, test_ids, tests_details = None, [], {}
+    jira_obj = JiraApp() if options.test_plan else None
     if jira_obj:
-        jira_obj = JiraApp()
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
     workload_list = get_workload_list(options.test_input)
     LOGGER.info("Test YAML Files to be executed : %s", workload_list)
@@ -298,12 +295,11 @@ def main(options):
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     processes = schedule_execution_plan(parsed_input, options)
     sched = schedule_test_status_update(parsed_input, corio_start_time,
-                                        CORIO_CFG.report_interval_mins,
+                                        periodic_time=CORIO_CFG.report_interval_mins,
                                         sequential_run=options.sequential_run)
     mobj = SendMailNotification(corio_start_time, options.test_plan,
                                 health_check=options.health_check, endpoint=S3_CFG.endpoint)
     mobj.email_alert(action="start")
-    terminated_tp, test_ids = None, []
     try:
         if options.degraded_mode:
             activate_degraded_mode(options)
@@ -327,9 +323,9 @@ def main(options):
         terminated_tp = type(err).__name__
     finally:
         terminate_processes(processes)
-        terminate_update_test_status(
-            parsed_input, corio_start_time, terminated_tp, test_ids,
-            sched, sequential_run=options.sequential_run)
+        terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids,
+                                     sched, action="final", sequential_run=options.sequential_run,
+                                     )
         if jira_obj:
             jira_obj.update_jira_status(
                 corio_start_time=corio_start_time, tests_details=tests_to_execute, aborted=True,
@@ -349,4 +345,5 @@ if __name__ == "__main__":
     OPTS = parse_args()
     initialize_loghandler(OPTS)
     LOGGER.info("Arguments: %s", OPTS)
+    pre_requisites(OPTS)
     main(OPTS)

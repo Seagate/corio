@@ -114,7 +114,7 @@ class TestS3Object(S3Api):
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.log.info("Delete bucket %s with all objects in it.", bucket)
                 await self.delete_bucket(bucket, True)
-                return True, "Multipart execution completed successfully."
+                return True, "Object workload execution completed successfully."
             self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1
 

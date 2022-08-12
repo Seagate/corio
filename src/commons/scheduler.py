@@ -35,23 +35,24 @@ from src.commons.report import log_status
 LOGGER = logging.getLogger(ROOT)
 
 
-async def create_session(funct: list, start_time: float, **kwargs) -> tuple:
+async def create_session(funct: list, start_time: float, **kwargs: dict) -> tuple:
     """
     Execute the test function in sessions.
 
     :param funct: List of class name and method name to be called.
     :param start_time: Start time for session.
-    :param kwargs: session name from each test and test parameters.
+    :param kwargs: parameters of the tests.
     """
     await asyncio.sleep(start_time)
-    active_session = kwargs.pop("session", None)
-    LOGGER.info("Starting Session %s, PID - %s", active_session, os.getpid())
+    session = kwargs.get("session")
+    LOGGER.info("Starting Session %s, PID - %s", session, os.getpid())
     LOGGER.info("kwargs : %s", kwargs)
     func = getattr(funct[0](**kwargs), funct[1])
     resp = await func()
     LOGGER.info(resp)
-    LOGGER.info("Ended Session %s, PID - %s", active_session, os.getpid())
+    LOGGER.info("Ended Session %s, PID - %s", session, os.getpid())
     return resp
+
 
 # pylint: disable=too-many-branches, too-many-locals
 async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
@@ -62,7 +63,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
-    seq_run = common_params.pop("sequential_run", False)
+    seq_run = common_params.pop("sequential_run")
     if seq_run:
         LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     tasks = []
@@ -96,8 +97,10 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
                                                 start_time=start_time.total_seconds(),
                                                 **params))
         elif each["tool"] == "s3bench":
+            params["session"] = f"{test_id}_session_s3bench"
             tasks.append(create_session(funct=each["operation"],
-                                        start_time=start_time.total_seconds(), **params))
+                                        start_time=start_time.total_seconds(),
+                                        **params))
         else:
             raise NotImplementedError(f"Tool is not supported: {each['tool']}")
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
@@ -141,19 +144,16 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
 
 
 def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
-                                periodic_time: int = 1, sequential_run=False) -> Job:
+                                periodic_time: int = 1, **kwargs) -> Job:
     """
     Schedule the test status update.
 
     :param parsed_input: Dict for all the input yaml files.
     :param corio_start_time: Start time for main process.
     :param periodic_time: Duration to update test status.
-    :param sequential_run: Execute tests sequentially.
     """
-    sched_job = schedule.every(periodic_time).minutes.do(log_status, parsed_input=parsed_input,
-                                                         corio_start_time=corio_start_time,
-                                                         test_failed=None,
-                                                         sequential_run=sequential_run)
+    sched_job = schedule.every(periodic_time).minutes.do(
+        log_status, parsed_input=parsed_input, corio_start_time=corio_start_time, **kwargs)
     LOGGER.info("Report status update scheduled for every %s minutes", periodic_time)
     sched_job.run()
     return sched_job
