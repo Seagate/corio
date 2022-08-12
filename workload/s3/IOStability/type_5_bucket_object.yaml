@@ -1,5 +1,5 @@
 test_1:
-  TEST_ID: #TBD
+  TEST_ID: TEST-BKTOBJX
   object_size:
     start: 0b
     end: 1Gb
