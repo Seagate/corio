@@ -170,7 +170,7 @@ def test_parser(yaml_file, number_of_nodes):
 
 def convert_min_runtime_to_time_delta(test, delta_list, data):
     """Convert min_runtime to time_delta."""
-    if test.lower() == "test_1":
+    if test.lower() == "test_1" or len(delta_list) == 0:
         data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
         delta_list.append(convert_to_time_delta(data['min_runtime']))
     else:
