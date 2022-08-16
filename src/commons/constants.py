@@ -80,4 +80,4 @@ terminate_process_list = [("support_bundle", "health_check"), ("support_bundle",
 
 # Log rotation
 COMPLETED_SESSION = "Ended Session {}_"
-COMPLETED_ITERATIONS = "Iteration .* is completed"
+COMPLETED_ITERATIONS = "Iteration {} is completed"

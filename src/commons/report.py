@@ -89,9 +89,8 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
         input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
     elif isinstance(value['object_size'], dict):
         if 'start' in value['object_size']:
-            input_dict["OBJECT_SIZE"] = {"OBJECT_SIZE_START": convert_size(
-                value['object_size']['start']), "OBJECT_SIZE_END": convert_size(
-                value['object_size']['end'])}
+            input_dict["OBJECT_SIZE"] = {"START": convert_size(value['object_size']['start']),
+                                         "END": convert_size(value['object_size']['end'])}
         else:
             object_dict = {}
             for key, _value in value['object_size'].items():
@@ -118,6 +117,7 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
     test_start_time = corio_start_time + value['start_time']
     if datetime.now() > test_start_time:
         input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict["RESULT_UPDATE"] = "In Progress"
         if datetime.now() > (test_start_time + value['min_runtime']):
             execution_time = execution_status[input_dict["TEST_ID"]]["execution_time"]
             if execution_time:
@@ -126,10 +126,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
                     total_execution_time = execution_time - test_start_time
                 else:
                     total_execution_time = datetime.now() - test_start_time
-            else:
-                input_dict["RESULT_UPDATE"] = "In Progress"
-                total_execution_time = datetime.now() - test_start_time
-        else:
+                input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
+        if "Passed" not in input_dict["RESULT_UPDATE"]:
             # Report In Progress, Fail, Aborted and update status.
             if input_dict["TEST_ID"] in terminated_tests:
                 LOGGER.error("Test execution terminated due to error in %s.", input_dict["TEST_ID"])
@@ -139,7 +137,7 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
             else:
                 input_dict["RESULT_UPDATE"] = "In Progress"
             total_execution_time = datetime.now() - test_start_time
-        input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
+            input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
     else:
         input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "Not Triggered"

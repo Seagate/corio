@@ -418,27 +418,41 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
                         const.COMPLETED_SESSION.format(tid), os.getenv("log_path")))
                     edate = get_latest_timedelta(resp1[1])
                 else:
-                    iterations, edate = get_completed_iterations(fpath)
-                    if CORIO_CFG.wait_on_iterations:
-                        while iterations % EXEC_STATUS[tid]["sessions"] != 0:
+                    prv_iteration, edate = get_completed_iterations(fpath)
+                    completed_iter_count = get_completed_iterations_for_all_sessions(
+                        prv_iteration, fpath)
+                    if CORIO_CFG.wait_on_iterations and not kwargs.get("test_failed"):
+                        while (completed_iter_count % EXEC_STATUS[tid]["sessions"] != 0 and
+                                prv_iteration == iterations):
                             time.sleep(10)
                             iterations, edate = get_completed_iterations(fpath)
+                            completed_iter_count = get_completed_iterations_for_all_sessions(
+                                iterations, fpath)
                     else:
                         edate = edate if edate else EXEC_STATUS[tid]["min_runtime"]
                 if edate:
                     EXEC_STATUS[tid]["execution_time"] = edate
                     EXEC_STATUS[tid]["status"] = "Passed"
-        EXEC_STATUS[tid]["iterations"] = iterations
+        if iterations:
+            EXEC_STATUS[tid]["iterations"] = iterations
+            LOGGER.info("Iteration %s completed for test %s", iterations, tid)
     return EXEC_STATUS
+
+
+def get_completed_iterations_for_all_sessions(iteration: int, fpath)->int:
+    """Get the completed iteration count for all sessions."""
+    resp = run_local_cmd(cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS.format(iteration), fpath))
+    iter_count = len(resp[1].rstrip("\n").split("\n")) if resp[0] and resp[1] else 0
+    return iter_count
 
 
 def get_completed_iterations(fpath):
     """Get completed iterations from test log."""
     iterations, execution_time = 0, None
-    resp = run_local_cmd(f"{cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS, fpath)} | tail -25")
+    search_string = const.COMPLETED_ITERATIONS.format(".*")
+    resp = run_local_cmd(f"{cmd.GREP_CMD.format(search_string, fpath)} | tail -25")
     if resp[0] and resp[1]:
-        it_str = resp[1].rsplit(
-            const.COMPLETED_ITERATIONS.rsplit("*", maxsplit=1)[-1], maxsplit=1)[-2]
+        it_str = resp[1].rsplit(search_string.rsplit("*", maxsplit=1)[-1], maxsplit=1)[-2]
         iterations = int(re.findall(r'\d+', it_str)[-1])
         execution_time = get_latest_timedelta(resp[1])
     return iterations, execution_time

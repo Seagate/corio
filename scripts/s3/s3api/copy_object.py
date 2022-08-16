@@ -76,8 +76,8 @@ class TestS3CopyObjects(S3Api):
         await self.create_bucket(self.bucket_name2)
         self.log.info("Created bucket %s", self.bucket_name2)
         while True:
-            self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
+                self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
                 # Put object in self.bucket_name1
                 file_size = await self.get_workload_size()
                 file_path = corio_utils.create_file(self.object_name1, file_size)
@@ -112,6 +112,7 @@ class TestS3CopyObjects(S3Api):
                 self.log.info("Delete destination object from bucket-2.")
                 await self.delete_object(self.bucket_name2, self.object_name2)
                 os.remove(file_path)
+                self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
@@ -120,7 +121,6 @@ class TestS3CopyObjects(S3Api):
                     self.log.info("Delete bucket %s with all objects in it.", bucket)
                     await self.delete_bucket(bucket, True)
                 return True, "Copy Object execution completed successfully."
-            self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1
 
     async def get_workload_size(self) -> int:
