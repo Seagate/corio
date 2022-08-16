@@ -122,9 +122,12 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
             execution_time = execution_status[input_dict["TEST_ID"]]["execution_time"]
             if execution_time:
                 input_dict["RESULT_UPDATE"] = f"Passed at {execution_time}"
-            if kwargs.get("sequential_run") and execution_time:
-                total_execution_time = execution_time - test_start_time
+                if kwargs.get("sequential_run"):
+                    total_execution_time = execution_time - test_start_time
+                else:
+                    total_execution_time = datetime.now() - test_start_time
             else:
+                input_dict["RESULT_UPDATE"] = "In Progress"
                 total_execution_time = datetime.now() - test_start_time
         else:
             # Report In Progress, Fail, Aborted and update status.

@@ -446,8 +446,8 @@ def get_completed_iterations(fpath):
 
 def get_latest_timedelta(log_str: str):
     """Get latest timedelta from text string."""
-    sdate = log_str.rsplit("\n[", maxsplit=1)[-1].split("] [")[0] if log_str else ""
-    execution_time = datetime.strptime(sdate, '%Y-%m-%d %H:%M:%S,%f') if sdate else None
+    sdate = re.findall(r"\d+-\d+-\d+ \d+:\d+:\d+,\d+", log_str) if log_str else ""
+    execution_time = datetime.strptime(sdate[-1], '%Y-%m-%d %H:%M:%S,%f') if sdate else None
     return execution_time
 
 

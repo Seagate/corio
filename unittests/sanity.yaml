@@ -6,7 +6,7 @@ test_1:
   min_runtime: 5m
   sessions_per_node: 1
   tool: s3api
-  operation: bucket
+  operation: "bucket"
 
 test_2:
   TEST_ID: TEST-XXX02
@@ -16,7 +16,7 @@ test_2:
   min_runtime: 5m
   sessions_per_node: 1
   tool: s3api
-  operation: object_random_size
+  operation: "object_random_size"
 
 test_3:
   TEST_ID: TEST-XXX03
@@ -34,7 +34,7 @@ test_3:
   min_runtime: 5m
   sessions_per_node: 1
   tool: s3api
-  operation: object_fix_size
+  operation: "object_fix_size"
 
 test_4:
     TEST_ID: TEST-XXX04
@@ -45,7 +45,7 @@ test_4:
     min_runtime: 5m
     sessions: 5
     tool: s3api
-    operation: multipart
+    operation: "multipart"
 
 test_5:
     TEST_ID: TEST-XXX05
@@ -58,7 +58,7 @@ test_5:
     min_runtime: 5m
     sessions: 5
     tool: s3api
-    operation: multipart_random
+    operation: "multipart_random"
 
 test_6:
   TEST_ID: TEST-XXX06
