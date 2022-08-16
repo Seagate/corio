@@ -80,20 +80,24 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
 
 def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
     """
-    Convert object size for reporting.
+    Convert object size(str, list, tuple or dict) for reporting.
 
     :param input_dict: Dict for all the input yaml files.
     :param value: Dict/List/int for object size.
     """
-    if isinstance(value['object_size'], list):
+    if isinstance(value['object_size'], (list, tuple)):
         input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
     elif isinstance(value['object_size'], dict):
         if 'start' in value['object_size']:
-            input_dict.update({"OBJECT_SIZE_START": convert_size(value['object_size']['start']),
-                               "OBJECT_SIZE_END": convert_size(value['object_size']['end'])})
+            input_dict["OBJECT_SIZE"] = {"OBJECT_SIZE_START": convert_size(
+                value['object_size']['start']), "OBJECT_SIZE_END": convert_size(
+                value['object_size']['end'])}
         else:
+            object_dict = {}
             for key, _value in value['object_size'].items():
-                input_dict.update({convert_size(key): _value})
+                object_dict.update({convert_size(key): _value})
+            if object_dict:
+                input_dict["OBJECT_SIZE"] = object_dict
     else:
         input_dict["OBJECT_SIZE"] = convert_size(value['object_size'])
 
