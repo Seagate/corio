@@ -66,15 +66,15 @@ def stop_store_client_resource_utilization():
     shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
     if os.path.exists(stat_fpath):
         os.remove(stat_fpath)
-    corio_utils.remove_package(const.NMON)
+    # corio_utils.remove_package(const.NMON)
     # collect journalctl logs from client.
     journalctl_filepath = os.path.join("/root", "client_journalctl.log")
-    resp = corio_utils.install_package(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
+    resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
     if resp[0]:
         shutil.move(journalctl_filepath, os.path.join(dpath, os.path.basename(journalctl_filepath)))
     # collect dmesg logs from client.
     dmesg_filepath = os.path.join("/root", "client_dmesg.log")
-    resp = corio_utils.install_package(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
+    resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
     if resp[0]:
         shutil.move(dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath)))
 
@@ -123,7 +123,7 @@ def stop_store_server_resource_utilization():
         cluster_obj.download_file(cl_path, remote_path)
         resp = cluster_obj.execute_command(cmd.CMD_RM_NMON.format(remote_path))
         LOGGER.debug("file removed: %s", resp)
-        resp = cluster_obj.remove_package(const.NMON)
+        # resp = cluster_obj.remove_package(const.NMON)
         LOGGER.info(resp)
         # collect journalctl
         journalctl_path = os.path.join("/root", f"{node}_journalctl.log")
