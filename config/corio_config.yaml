@@ -6,3 +6,5 @@ hc_interval_mins: 60
 report_interval_mins: 30
 email_interval_mins: 120
 nfs_server:
+# True: Wait till pending operation completes to mark it pass else min time will be used.
+wait_on_iterations: True

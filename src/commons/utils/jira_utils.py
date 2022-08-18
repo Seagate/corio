@@ -159,7 +159,7 @@ class JiraApp:
         """
         try:
             comment_response = requests.request(
-                "PUT", f"{self.jira_base_url}testrun/{test_run_id}/comment", data=comment,
+                "PUT", f"{self.jira_base_url}api/testrun/{test_run_id}/comment", data=comment,
                 auth=self.auth, headers=self.headers, params=None)
             LOGGER.info("Response code: %s", comment_response.status_code)
             if comment_response.status_code == HTTPStatus.OK:

@@ -24,7 +24,6 @@ import hashlib
 import os
 import random
 from datetime import datetime, timedelta
-
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
@@ -73,8 +72,8 @@ class TestMultiParts(S3Api):
         mpart_bucket = f"s3mpart-bkt-{self.test_id}-{perf_counter_ns()}"
         await self.create_bucket(mpart_bucket)
         while True:
-            self.log.info("Iteration %s is started for %s...", iteration, self.session_id)
             try:
+                self.log.info("Iteration %s is started for %s...", iteration, self.session_id)
                 self.log.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = f"s3mpart-obj-{self.test_id}-{perf_counter_ns()}"
                 s3_object = f"s3-obj-{self.test_id}-{perf_counter_ns()}"
@@ -98,6 +97,7 @@ class TestMultiParts(S3Api):
                 if self.part_copy:
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
+                self.log.info("Iteration %s is completed of %s...", iteration, self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
@@ -105,7 +105,6 @@ class TestMultiParts(S3Api):
                 self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
                 return True, "Multipart execution completed successfully."
-            self.log.info("Iteration %s is completed of %s...", iteration, self.session_id)
             iteration += 1
 
     async def get_workload_size(self):
@@ -135,7 +134,7 @@ class TestMultiParts(S3Api):
         assert resp, f"Failed to read bytes {self.range_read} from s3://{s3bucket}/{s3object}"
 
     async def create_upload_list_completed_mpart(self, number_of_parts, mpart_bucket,
-                                                 s3mpart_object, s3_object) -> None:
+                                                 s3mpart_object, s3_object) -> str:
         """Upload, list and complete multipart operations."""
         response = await self.create_multipart_upload(mpart_bucket, s3mpart_object)
         random_part = random.randrange(1, number_of_parts + 1)

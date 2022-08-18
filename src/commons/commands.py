@@ -68,5 +68,5 @@ CMD_CHMOD = "chmod 655 ninstall"
 CMD_NINSTALL = "./ninstall"
 CMD_RUN_NIMON = "nimon -s 30 -k -i ssc-vm-g4-rhev4-0125.colo.seagate.com -p 8086 -x njmon -W"
 CMD_KILL_NIMON = "kill -USR2 $(ps ax | grep nimon  | grep -v grep | awk '{print $1}')"
-GREP_CMD_ITERATION = 'grep -i -E \"iteration {}.*completed\" {}'
+GREP_CMD = "grep -i -E '{}' {}"
 GREP_CMD_ERROR = 'grep -i -E \"Error\" {}'

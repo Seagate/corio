@@ -20,10 +20,9 @@
 import asyncio
 import random
 from datetime import datetime, timedelta
-from typing import Union
-
 from math import modf
 from time import perf_counter_ns
+from typing import Union
 
 from src.commons.constants import MIN_DURATION
 from src.commons.utils.cluster_utils import ClusterServices
@@ -172,8 +171,8 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         """Execute mix object operations workload for specific duration."""
         size_to_cleanup_all_data = int(self.cluster_storage / 100 * self.cleanup_percentage)
         while True:
-            self.log.info("iteration %s is started...", self.iteration)
             try:
+                self.log.info("iteration %s is started...", self.iteration)
                 self.log.info("Object size in bytes: %s", self.object_size)
                 written_percentage = int(self.total_written_data / self.cluster_storage * 100)
                 if isinstance(self.object_size, dict):
@@ -223,6 +222,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
                 await self.display_storage_consumed(operation="")
+                self.log.info("iteration %s is completed...", self.iteration)
             except Exception as err:
                 exception = (f"bucket url: '{self.s3_url}', Exception: '{err}"'' if self.s3_url
                              else f"Exception: '{err}"'')
@@ -231,7 +231,6 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.execute_workload(operations="cleanup", sessions=self.sessions)
                 return True, "Object workload execution completed successfully."
-            self.log.info("iteration %s is completed...", self.iteration)
             self.iteration += 1
 
     async def execute_object_crud_workload(self):

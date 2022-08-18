@@ -120,8 +120,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
         self.log.info("Created bucket: %s", self.bucket_name)
         self.s3_url = f"s3://{self.bucket_name}"
         while True:
-            self.log.info("iteration %s is started...", self.iteration)
             try:
+                self.log.info("iteration %s is started...", self.iteration)
                 if int(self.total_written_data / self.total_storage * 100) < 100:
                     self.object_name = f"{self.object_prefix}{self.iteration}"
                     self.log.info("Running with: %s", self.object_name)
@@ -163,13 +163,13 @@ class TestMixObjectOps(S3Bucket, S3Object):
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
                 self.display_storage_consumed(operation="")
+                self.log.info("iteration %s is completed...", self.iteration)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.delete_s3_bucket(self.bucket_name, force=True)
                 return True, "Bucket operation execution completed successfully."
-            self.log.info("iteration %s is completed...", self.iteration)
             self.iteration += 1
 
     def display_storage_consumed(self, operation="write"):

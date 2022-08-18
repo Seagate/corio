@@ -62,8 +62,8 @@ class TestBucketOps(S3Api):
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
         while True:
-            self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
             try:
+                self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
                 if isinstance(self.object_size, dict):
                     file_size = random.randrange(self.object_size["start"], self.object_size["end"])
                 else:
@@ -80,12 +80,12 @@ class TestBucketOps(S3Api):
                 await self.head_bucket(bucket_name)
                 self.log.info("Delete bucket %s with all objects in it.", bucket_name)
                 await self.delete_bucket(bucket_name, True)
+                self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 return True, "Bucket operation execution completed successfully."
-            self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             self.iteration += 1
 
     async def upload_n_number_objects(self, bucket_name, file_size):
