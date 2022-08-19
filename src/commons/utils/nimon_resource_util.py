@@ -24,9 +24,9 @@ import logging
 from config import CLUSTER_CFG
 from src.commons import commands as cm_cmd
 from src.commons.constants import ROOT
-from src.commons.utils.cluster_utils import RemoteHost
 from src.commons.utils.corio_utils import install_package
 from src.commons.utils.corio_utils import run_local_cmd
+from src.commons.utils.system_utils import RemoteHost
 
 LOGGER = logging.getLogger(ROOT)
 

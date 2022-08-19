@@ -29,7 +29,7 @@ from logging import handlers
 from os import path
 
 from config import CORIO_CFG
-from src.commons.constants import FORMATTER
+from src.commons import constants as const
 
 
 class StreamToLogger:
@@ -51,7 +51,7 @@ class StreamToLogger:
         self.backup_count = kwargs.get("backup_count", CORIO_CFG["log_backup_count"])
         self.file_path = file_path
         self.logger = logger
-        self.formatter = FORMATTER
+        self.formatter = const.FORMATTER
         self.make_logdir()
         if kwargs.get("stream", False):
             self.set_stream_logger()
@@ -118,31 +118,49 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
                 shutil.copyfileobj(sf_obj, df_obj)
         os.remove(source)
 
+    @staticmethod
+    def get_logger(level, name, **kwargs) -> object:
+        """
+        Initialize and get the logger object.
 
-def get_logger(level, name, **kwargs) -> object:
-    """
-    Initialize and get the logger object.
-
-    :param level: Set logging level, which is used across execution.
-    :param name: Name of the logger.
-    :returns: logger object.
-    """
-    logger = logging.Logger.manager.loggerDict.get(name)
-    if logger:
+        :param level: Set logging level, which is used across execution.
+        :param name: Name of the logger.
+        :returns: logger object.
+        """
+        logger = logging.Logger.manager.loggerDict.get(name)
+        if logger:
+            return logger
+        dir_path = os.path.join(os.getcwd(), "log", "latest")
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path, exist_ok=True)
+        level = logging.getLevelName(level)
+        if level == logging.DEBUG:
+            logger = logging.getLogger()
+            for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
+                logging.getLogger(pkg).setLevel(logging.DEBUG)
+            fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
+        else:
+            logger = logging.getLogger(name)
+            fpath = os.path.join(dir_path, f"{name}_console.INFO")
+        logger.setLevel(level)
+        StreamToLogger(fpath, logger, **kwargs)
         return logger
-    dir_path = os.path.join(os.getcwd(), "log", "latest")
+
+
+def initialize_loghandler(logger, verbose=False):
+    """Initialize io driver runner logging with stream and file handlers."""
+    # If log level provided then it will use DEBUG else will use default INFO.
+    dir_path = os.path.join(os.path.join(const.LOG_DIR, "latest"))
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
-    level = logging.getLevelName(level)
-    if level == logging.DEBUG:
-        logger = logging.getLogger()
-        for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
-            logging.getLogger(pkg).setLevel(logging.DEBUG)
-        fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
+    name = os.path.splitext(os.path.basename(__file__))[0]
+    if verbose:
+        level = logging.getLevelName(logging.DEBUG)
+        log_path = os.path.join(dir_path, f"{name}_console_{const.DT_STRING}.DEBUG")
     else:
-        logger = logging.getLogger(name)
-        fpath = os.path.join(dir_path, f"{name}_console.INFO")
+        level = logging.getLevelName(logging.INFO)
+        log_path = os.path.join(dir_path, f"{name}_console_{const.DT_STRING}.INFO")
+    os.environ["log_level"] = level
     logger.setLevel(level)
-    StreamToLogger(fpath, logger, **kwargs)
-
-    return logger
+    StreamToLogger(log_path, logger, stream=True)
+    os.environ["log_path"] = log_path

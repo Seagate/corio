@@ -33,19 +33,15 @@ from datetime import datetime
 from subprocess import Popen, PIPE, CalledProcessError
 from typing import Union
 
-import paramiko
 import psutil as ps
 
-from config import CORIO_CFG, CLUSTER_CFG
+from config import CLUSTER_CFG
+from config import CORIO_CFG
 from config import S3_CFG
 from src.commons import commands as cmd
 from src.commons import constants as const
-from src.commons.constants import CMN_LOG_DIR, MOUNT_DIR, LATEST_LOG_PATH
-from src.commons.constants import DATA_DIR_PATH, LOG_DIR, REPORTS_DIR
-from src.commons.constants import KB, KIB
-from src.commons.constants import ROOT
 
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(const.ROOT)
 
 EXEC_STATUS = {}
 
@@ -59,25 +55,25 @@ def log_cleanup() -> None:
     """
     LOGGER.info("Backup all old execution logs into current timestamp directory.")
     now = str(datetime.now()).replace(' ', '-').replace(":", "_").replace(".", "_")
-    if os.path.isdir(LOG_DIR):
-        latest = os.path.join(LOG_DIR, 'latest')
+    if os.path.isdir(const.LOG_DIR):
+        latest = os.path.join(const.LOG_DIR, 'latest')
         if os.path.isdir(latest):
             log_list = glob.glob(latest + "/*")
             if log_list:
-                os.rename(latest, os.path.join(LOG_DIR, now))
-                LOGGER.info("Backup directory: %s", os.path.join(LOG_DIR, now))
+                os.rename(latest, os.path.join(const.LOG_DIR, now))
+                LOGGER.info("Backup directory: %s", os.path.join(const.LOG_DIR, now))
             if not os.path.isdir(latest):
                 os.makedirs(latest)
         else:
             os.makedirs(latest)
     else:
         LOGGER.info("Created log directory '%s'", )
-        os.makedirs(os.path.join(LOG_DIR, 'latest'))
+        os.makedirs(os.path.join(const.LOG_DIR, 'latest'))
     LOGGER.info("Backup all old report into current timestamp directory.")
-    if os.path.isdir(REPORTS_DIR):
-        report_list = glob.glob(REPORTS_DIR + "/*")
+    if os.path.isdir(const.REPORTS_DIR):
+        report_list = glob.glob(const.REPORTS_DIR + "/*")
         if report_list:
-            now_dir = os.path.join(REPORTS_DIR, now)
+            now_dir = os.path.join(const.REPORTS_DIR, now)
             if not os.path.isdir(now_dir):
                 os.makedirs(now_dir)
             for file in report_list:
@@ -86,7 +82,7 @@ def log_cleanup() -> None:
                     os.rename(file, os.path.join(now_dir, os.path.basename(fpath)))
             LOGGER.info("Backup directory: %s", now_dir)
     else:
-        os.makedirs(REPORTS_DIR)
+        os.makedirs(const.REPORTS_DIR)
 
 
 def cpu_memory_details() -> None:
@@ -141,11 +137,11 @@ def create_file(file_name: str, size: int, data_type: Union[str, bytes] = bytes)
     :param file_name: File name or file path.
     :param data_type: supported data type string(str)/byte(bytes) while create file.
     """
-    base = KIB * KIB
+    base = const.KIB ** 2
     if os.path.isdir(os.path.split(file_name)[0]):
         file_path = file_name
     else:
-        file_path = os.path.join(DATA_DIR_PATH, file_name)
+        file_path = os.path.join(const.DATA_DIR_PATH, file_name)
     while size > base:
         if issubclass(data_type, bytes):
             with open(file_path, 'ab+') as bf_out:
@@ -172,14 +168,14 @@ def convert_size(size_bytes) -> str:
     if size_bytes:
         size_name_1024 = ("B", "KiB", "MiB", "GiB", "TiB", "PiB")
         size_name_1000 = ("B", "KB", "MB", "GB", "TB", "PB")
-        if (size_bytes % KB) == 0:
-            check_pow = int(math.floor(math.log(size_bytes, KB)))
-            power = math.pow(KB, check_pow)
+        if (size_bytes % const.KB) == 0:
+            check_pow = int(math.floor(math.log(size_bytes, const.KB)))
+            power = math.pow(const.KB, check_pow)
             size = int(round(size_bytes / power, 2))
             part_size = f"{size}{size_name_1000[check_pow]}"
-        elif (size_bytes % KIB) == 0:
-            check_pow = int(math.floor(math.log(size_bytes, KIB)))
-            power = math.pow(KIB, check_pow)
+        elif (size_bytes % const.KIB) == 0:
+            check_pow = int(math.floor(math.log(size_bytes, const.KIB)))
+            power = math.pow(const.KIB, check_pow)
             size = int(round(size_bytes / power, 2))
             part_size = f"{size}{size_name_1024[check_pow]}"
         else:
@@ -261,37 +257,38 @@ def decode_bytes_to_string(text: bytes) -> Union[str, list]:
 def setup_environment() -> None:
     """Prepare client for workload execution with CORIO."""
     LOGGER.info("Setting up environment to start execution!!")
-    ret = mount_nfs_server(CORIO_CFG["nfs_server"], MOUNT_DIR)
+    ret = mount_nfs_server(CORIO_CFG["nfs_server"], const.MOUNT_DIR)
     if not ret:
-        raise AssertionError(f"Error while Mounting NFS directory: {MOUNT_DIR}.")
-    if os.path.exists(DATA_DIR_PATH):
-        shutil.rmtree(DATA_DIR_PATH)
-    os.makedirs(DATA_DIR_PATH, exist_ok=True)
-    LOGGER.debug("Data directory path created: %s", DATA_DIR_PATH)
+        raise AssertionError(f"Error while Mounting NFS directory: {const.MOUNT_DIR}.")
+    if os.path.exists(const.DATA_DIR_PATH):
+        shutil.rmtree(const.DATA_DIR_PATH)
+    os.makedirs(const.DATA_DIR_PATH, exist_ok=True)
+    LOGGER.debug("Data directory path created: %s", const.DATA_DIR_PATH)
     LOGGER.info("environment setup completed.")
 
 
 def store_logs_to_nfs_local_server() -> None:
     """Copy/Store workload, support bundle and client/server resource log to local/NFS server."""
     # Copy workload execution logs to nfs/local server.
-    latest = os.path.join(LOG_DIR, 'latest')
+    latest = os.path.join(const.LOG_DIR, 'latest')
     # copy s3bench run logs
     for fpath in glob.glob(os.path.join(os.getcwd(), "s3bench*.log")):
         if os.path.exists(fpath):
             os.rename(fpath, os.path.join(latest, os.path.basename(fpath)))
     if os.path.exists(latest):
-        shutil.copytree(latest, os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "log", "latest"))
+        shutil.copytree(latest, os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "log",
+                                             "latest"))
     # Copy reports to nfs/local server.
-    reports = glob.glob(f"{REPORTS_DIR}/*.*")
-    svr_report_dir = os.path.join(CMN_LOG_DIR, os.getenv("run_id"), "reports")
+    reports = glob.glob(f"{const.REPORTS_DIR}/*.*")
+    svr_report_dir = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "reports")
     if not os.path.exists(svr_report_dir):
         os.makedirs(svr_report_dir)
     for report in reports:
         shutil.copyfile(report, os.path.join(svr_report_dir, os.path.basename(report)))
-    LOGGER.info("All logs copied to %s", os.path.join(CMN_LOG_DIR, os.getenv("run_id")))
+    LOGGER.info("All logs copied to %s", os.path.join(const.CMN_LOG_DIR, os.getenv("run_id")))
     # Cleaning up TestData.
-    if os.path.exists(DATA_DIR_PATH):
-        shutil.rmtree(DATA_DIR_PATH)
+    if os.path.exists(const.DATA_DIR_PATH):
+        shutil.rmtree(const.DATA_DIR_PATH)
 
 
 def install_package(package_name: str) -> tuple:
@@ -329,7 +326,7 @@ def get_report_file_path(corio_start_time) -> str:
 
     :param corio_start_time: Start time for main process.
     """
-    return os.path.join(REPORTS_DIR,
+    return os.path.join(const.REPORTS_DIR,
                         f"corio_summary_{corio_start_time.strftime('%Y_%m_%d_%H_%M_%S')}.report")
 
 
@@ -346,9 +343,9 @@ def get_test_file_path(test_id: str) -> str:
     :param test_id: Name of the test id.
     """
     fpath = ""
-    for test_file in os.listdir(LATEST_LOG_PATH):
+    for test_file in os.listdir(const.LATEST_LOG_PATH):
         if test_file.startswith(test_id):
-            fpath = os.path.join(LATEST_LOG_PATH, test_file)
+            fpath = os.path.join(const.LATEST_LOG_PATH, test_file)
             break
     return fpath
 
@@ -439,7 +436,7 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
     return EXEC_STATUS
 
 
-def get_completed_iterations_for_all_sessions(iteration: int, fpath)->int:
+def get_completed_iterations_for_all_sessions(iteration: int, fpath) -> int:
     """Get the completed iteration count for all sessions."""
     resp = run_local_cmd(cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS.format(iteration), fpath))
     iter_count = len(resp[1].rstrip("\n").split("\n")) if resp[0] and resp[1] else 0
@@ -465,132 +462,12 @@ def get_latest_timedelta(log_str: str):
     return execution_time
 
 
-class RemoteHost:
-    """Class for execution of commands on remote machine."""
-
-    def __init__(self, host: str, user: str, password: str, timeout: int = 20 * 60) -> None:
-        """Initialize parameters."""
-        self.host = host
-        self.user = user
-        self.password = password
-        self.timeout = timeout
-        self.host_obj = paramiko.SSHClient()
-        self.host_obj.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self.sftp_obj = None
-
-    def connect(self) -> None:
-        """Connect to remote machine."""
-        self.host_obj.connect(hostname=self.host, username=self.user, password=self.password,
-                              timeout=self.timeout)
-        self.sftp_obj = self.host_obj.open_sftp()
-        LOGGER.debug("connected to %s", self.host)
-
-    def disconnect(self) -> None:
-        """Close remote machine connection."""
-        self.sftp_obj.close()
-        self.host_obj.close()
-        LOGGER.debug("disconnected %s", self.host)
-
-    def __del__(self):
-        """Delete the connection object."""
-        del self.sftp_obj
-        del self.host_obj
-
-    def execute_command(self, command: str, read_lines: bool = False) -> tuple:
-        """
-        Execute command on remote machine and return output/error response.
-
-        :param command: command to be executed on remote machine.
-        :param read_lines: read lines if set to True else read as a single string.
-        """
-        self.connect()
-        LOGGER.info("Executing command: %s", command)
-        _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
-        exit_status = stdout.channel.recv_exit_status() == 0
-        error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
-        output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
-        LOGGER.debug("Execution status %s", exit_status)
-        LOGGER.debug(output)
-        LOGGER.debug(error)
-        response = output if exit_status else error
-        self.disconnect()
-        return exit_status, response
-
-    def download_file(self, local_path: str, remote_path: str) -> None:
-        """
-        Download remote file to local path.
-
-        :param local_path: Local file path.
-        :param remote_path: remote file path.
-        """
-        self.connect()
-        self.sftp_obj.get(remote_path, local_path)
-        if not os.path.exists(local_path):
-            raise IOError(f"Failed to download '{remote_path}' file")
-        LOGGER.info("Remote file %s downloaded to %s successfully.", remote_path, local_path)
-        self.disconnect()
-
-    def delete_file(self, remote_path: str) -> None:
-        """
-        Delete remote file.
-
-        :param remote_path: Remote file path.
-        """
-        self.connect()
-        self.sftp_obj.remove(remote_path)
-        LOGGER.info("Removed file %s", remote_path)
-        self.disconnect()
-
-    def path_exists(self, remote_path: str) -> bool:
-        """
-        Check remote file/directory path exists.
-
-        :param remote_path: Remote file/directory path.
-        """
-        self.connect()
-        try:
-            self.sftp_obj.stat(remote_path)
-            return True
-        except IOError:
-            return False
-        finally:
-            self.disconnect()
-
-    def list_dirs(self, remote_path: str) -> list:
-        """List all files and directories from remote path."""
-        self.connect()
-        try:
-            return self.sftp_obj.listdir(remote_path)
-        except IOError as err:
-            LOGGER.error(err)
-            return []
-        finally:
-            self.disconnect()
-
-    def install_package(self, package_name: str) -> tuple:
-        """Install package on remote machine."""
-        self.connect()
-        resp = (False, None)
-        try:
-            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
-            if package_name not in resp[1]:
-                resp = self.execute_command(cmd.CMD_INSTALL_PKG.format(package_name))
-        except IOError as err:
-            LOGGER.error(err)
-        finally:
-            self.disconnect()
-        return resp
-
-    def remove_package(self, package_name: str) -> tuple:
-        """Remove package from remote machine."""
-        self.connect()
-        resp = (False, None)
-        try:
-            resp = self.execute_command(cmd.CMD_CHK_PKG_INSTALLED.format(package_name))
-            if package_name in resp[1]:
-                resp = self.execute_command(cmd.CMD_REMOVE_PKG.format(package_name))
-        except IOError as err:
-            LOGGER.error(err)
-        finally:
-            self.disconnect()
-        return resp
+def get_workload_list(path: str) -> list:
+    """Get all workload filepath list."""
+    if os.path.isdir(path):
+        file_list = glob.glob(path + "/*")
+    elif os.path.isfile(path):
+        file_list = [os.path.abspath(path)]
+    else:
+        raise IOError(f"Incorrect test input: {path}")
+    return file_list

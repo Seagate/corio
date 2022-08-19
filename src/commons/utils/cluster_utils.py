@@ -30,15 +30,15 @@ from src.commons import constants as const
 from src.commons.constants import ROOT
 from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import PodReplicaError, DeployReplicasetError, NumReplicaError
-from src.commons.utils.corio_utils import RemoteHost
 from src.commons.utils.corio_utils import convert_size
+from src.commons.utils.system_utils import RemoteHost
 from src.commons.yaml_parser import read_yaml
 
 LOGGER = logging.getLogger(ROOT)
 
 
-class ClusterServices(RemoteHost):
-    """Cluster services class to perform service related operations."""
+class BaseClusterServices(RemoteHost):
+    """Base class for cluster services class to perform service related operations."""
 
     kube_commands = ('create', 'apply', 'config', 'get', 'explain',
                      'autoscale', 'patch', 'scale', 'exec')
@@ -47,6 +47,63 @@ class ClusterServices(RemoteHost):
         """Execute command on remote k8s master."""
         status, output = self.execute_command(command, read_lines)
         return status, output
+
+    def send_k8s_cmd(self, operation: str, pod: str, namespace: str, command_suffix: str,
+                     **kwargs) -> bytes:
+        """Send/execute command on logical node/pods."""
+        if operation not in ClusterServices.kube_commands:
+            raise ValueError(f"command parameter must be one of {ClusterServices.kube_commands}.")
+        LOGGER.debug("Performing %s on service %s in namespace %s...", operation, pod, namespace)
+        k8s_cmd = cmd.KUBECTL_CMD.format(operation, pod, namespace, command_suffix)
+        status, resp = self.execute_command(k8s_cmd, **kwargs)
+        if kwargs.get("decode", False) and status:
+            resp = (resp.decode("utf8")).strip()
+        return resp
+
+    def send_sync_command(self, pod_prefix):
+        """
+        Send sync command to all containers of given pod category.
+
+        :param pod_prefix: Prefix to define the pod category
+        :return: Bool
+        """
+        LOGGER.info("Run sync command on all containers of pods %s", pod_prefix)
+        pod_dict = self.get_all_pods_containers(pod_prefix=pod_prefix)
+        if pod_dict:
+            for pod, containers in pod_dict.items():
+                for cnt in containers:
+                    res = self.send_k8s_cmd(
+                        operation="exec", pod=pod, namespace=const.NAMESPACE,
+                        command_suffix=f"-c {cnt} -- sync", decode=True)
+                    LOGGER.info("Response for pod %s container %s: %s", pod, cnt, res)
+        return True
+
+    def get_all_pods_containers(self, pod_prefix, pod_list=None):
+        """
+        Get all pods with containers of given pod_prefix.
+
+        :param pod_prefix: Prefix to define the pod category
+        :param pod_list: List of pods
+        :return: Dict
+        """
+        pod_containers = {}
+        if not pod_list:
+            LOGGER.info("Get all data pod names of %s", pod_prefix)
+            output = self.execute_command(
+                cmd.CMD_POD_STATUS + " -o=custom-columns=NAME:.metadata.name", read_lines=True)
+            for lines in output:
+                if pod_prefix in lines:
+                    pod_list.append(lines.strip())
+        for pod in pod_list:
+            k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format(pod)
+            status, output = self.execute_command(command=k8s_cmd, read_lines=True)
+            if status:
+                pod_containers[pod] = output
+        return pod_containers
+
+
+class ClusterServices(BaseClusterServices):
+    """Cluster services class to perform service related operations."""
 
     def get_pod_name(self, pod_prefix: str = const.SERVER_POD_NAME_PREFIX):
         """Get pod name with given prefix."""
@@ -147,62 +204,6 @@ class ClusterServices(RemoteHost):
         self.delete_file(remote_path)
         LOGGER.info("Support bundle '%s' generated and copied to %s.", file_name, local_path)
         return os.path.exists(local_path), local_path
-
-    def send_k8s_cmd(self, operation: str, pod: str, namespace: str, command_suffix: str,
-                     **kwargs) -> bytes:
-        """Send/execute command on logical node/pods."""
-        if operation not in ClusterServices.kube_commands:
-            raise ValueError(f"command parameter must be one of {ClusterServices.kube_commands}.")
-        LOGGER.debug("Performing %s on service %s in namespace %s...", operation, pod, namespace)
-        k8s_cmd = cmd.KUBECTL_CMD.format(operation, pod, namespace, command_suffix)
-        status, resp = self.execute_command(k8s_cmd, **kwargs)
-        if kwargs.get("decode", False) and status:
-            resp = (resp.decode("utf8")).strip()
-        return resp
-
-    def send_sync_command(self, pod_prefix):
-        """
-        Send sync command to all containers of given pod category.
-
-        :param pod_prefix: Prefix to define the pod category
-        :return: Bool
-        """
-        LOGGER.info("Run sync command on all containers of pods %s", pod_prefix)
-        pod_dict = self.get_all_pods_containers(pod_prefix=pod_prefix)
-        if pod_dict:
-            for pod, containers in pod_dict.items():
-                for cnt in containers:
-                    res = self.send_k8s_cmd(
-                        operation="exec", pod=pod, namespace=const.NAMESPACE,
-                        command_suffix=f"-c {cnt} -- sync", decode=True)
-                    LOGGER.info("Response for pod %s container %s: %s", pod, cnt, res)
-
-        return True
-
-    def get_all_pods_containers(self, pod_prefix, pod_list=None):
-        """
-        Get all pods with containers of given pod_prefix.
-
-        :param pod_prefix: Prefix to define the pod category
-        :param pod_list: List of pods
-        :return: Dict
-        """
-        pod_containers = {}
-        if not pod_list:
-            LOGGER.info("Get all data pod names of %s", pod_prefix)
-            output = self.execute_command(cmd.CMD_POD_STATUS +
-                                          " -o=custom-columns=NAME:.metadata.name", read_lines=True)
-            for lines in output:
-                if pod_prefix in lines:
-                    pod_list.append(lines.strip())
-
-        for pod in pod_list:
-            k8s_cmd = cmd.KUBECTL_GET_POD_CONTAINERS.format(pod)
-            status, output = self.execute_command(command=k8s_cmd, read_lines=True)
-            if status:
-                pod_containers[pod] = output
-
-        return pod_containers
 
     def create_pod_replicas(self, num_replica, deploy=None, pod_name=None):
         """
