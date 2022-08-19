@@ -24,9 +24,8 @@ from typing import List
 
 import munch
 
-from src.commons.constants import CLUSTER_CFG
-from src.commons.constants import CORIO_CFG_PATH
-from src.commons.constants import S3_CONFIG, S3_TOOL_PATH
+from src.commons import constants as const
+from src.commons import yaml_parser
 from src.commons.utils import config_utils
 
 
@@ -41,27 +40,28 @@ def split_args(sys_cmd: List):
     return _args
 
 
-CORIO_CFG = config_utils.get_config_yaml(CORIO_CFG_PATH)
-S3_CFG = config_utils.get_config_yaml(fpath=S3_CONFIG)
-CLUSTER_CFG = config_utils.get_config_yaml(fpath=CLUSTER_CFG)
-S3_TOOLS_CFG = config_utils.get_config_yaml(fpath=S3_TOOL_PATH)
+CORIO_CFG = yaml_parser.read_yaml(fpath=const.CORIO_CFG_PATH)
+S3_CFG = yaml_parser.read_yaml(fpath=const.S3_CONFIG)
+CLUSTER_CFG = yaml_parser.read_yaml(fpath=const.CLUSTER_CFG)
+S3_TOOLS_CFG = yaml_parser.read_yaml(fpath=const.S3_TOOL_PATH)
+MASTER_CFG = yaml_parser.read_yaml(fpath=const.CORIO_MASTER_CONFIG)
 
 
 IO_DRIVER_ARGS = split_args(sys.argv)
-_USE_SSL = '-us' if '-us' in IO_DRIVER_ARGS else '--use_ssl' if '--use_ssl' in IO_DRIVER_ARGS\
-    else None
+_USE_SSL = ('-us' if '-us' in IO_DRIVER_ARGS else '--use_ssl' if '--use_ssl' in IO_DRIVER_ARGS
+            else None)
 SSL_FLG = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_USE_SSL) + 1] if _USE_SSL else True
-_ENDPOINT = '-ep' if '-ep' in IO_DRIVER_ARGS else '--endpoint' if '--endpoint' in IO_DRIVER_ARGS\
-    else None
+_ENDPOINT = ('-ep' if '-ep' in IO_DRIVER_ARGS else '--endpoint' if '--endpoint' in IO_DRIVER_ARGS
+             else None)
 S3_URL = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ENDPOINT) + 1] if _ENDPOINT else "s3.seagate.com"
-_ACCESS_KEY = "-ak" if '-ak' in IO_DRIVER_ARGS else '--access_key' if '--access_key' in\
-                                                                      IO_DRIVER_ARGS else None
+_ACCESS_KEY = ("-ak" if '-ak' in IO_DRIVER_ARGS else '--access_key' if '--access_key' in
+               IO_DRIVER_ARGS else None)
 ACCESS_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ACCESS_KEY) + 1] if _ACCESS_KEY else None
-_SECRT_KEY = "-sk" if '-sk' in IO_DRIVER_ARGS else '--secret_key' if '--secret_key' in\
-    IO_DRIVER_ARGS else None
+_SECRT_KEY = ("-sk" if '-sk' in IO_DRIVER_ARGS else '--secret_key' if '--secret_key' in
+              IO_DRIVER_ARGS else None)
 SECRT_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_SECRT_KEY) + 1] if _SECRT_KEY else None
-_S3MAX_RETRY = "-mr" if '-mr' in IO_DRIVER_ARGS else '--s3max_retry' if '--s3max_retry' in\
-    IO_DRIVER_ARGS else None
+_S3MAX_RETRY = ("-mr" if '-mr' in IO_DRIVER_ARGS else '--s3max_retry' if '--s3max_retry' in
+                IO_DRIVER_ARGS else None)
 S3MAX_RETRY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_S3MAX_RETRY) + 1] if _S3MAX_RETRY else 1
 USE_SSL = ast.literal_eval(str(SSL_FLG).title())
 S3_ENDPOINT = f"{'https' if USE_SSL else 'http'}://{S3_URL}"

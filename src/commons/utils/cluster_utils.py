@@ -30,9 +30,9 @@ from src.commons import constants as const
 from src.commons.constants import ROOT
 from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import PodReplicaError, DeployReplicasetError, NumReplicaError
-from src.commons.utils.config_utils import get_config_yaml
 from src.commons.utils.corio_utils import RemoteHost
 from src.commons.utils.corio_utils import convert_size
+from src.commons.yaml_parser import read_yaml
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -438,8 +438,7 @@ class ClusterServices(RemoteHost):
         if os.path.exists(local_conf):
             os.remove(local_conf)
         self.download_file(local_path=local_conf, remote_path=const.LOCAL_CONF_PATH)
-
-        return get_config_yaml(local_conf)
+        return read_yaml(local_conf)
 
     def retrieve_durability_values(self, dur_type: str = 'sns') -> dict:
         """

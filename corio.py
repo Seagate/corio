@@ -35,7 +35,7 @@ from pprint import pformat
 import munch
 import schedule
 
-from config import S3_CFG, CORIO_CFG
+from config import S3_CFG, CORIO_CFG, MASTER_CFG
 from src.commons import constants as const
 from src.commons.cluster_health import check_health
 from src.commons.cluster_health import health_check_process
@@ -58,7 +58,7 @@ from src.commons.utils.corio_utils import store_logs_to_nfs_local_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.workload_mapping import SCRIPT_MAPPING
-from src.commons.yaml_parser import yaml_parser
+from src.commons.yaml_parser import test_parser
 
 LOGGER = logging.getLogger(const.ROOT)
 
@@ -217,11 +217,9 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dic
         LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
 
     if options.degraded_mode:
-        master_config = yaml_parser("workload/master_config.yaml")
-        LOGGER.info("Master config data \n %s", master_config)
         processes["degraded_mode"] = multiprocessing.Process(target=activate_degraded_mode_parallel,
-                                                            name="degraded_mode",
-                                                            args=(return_dict, master_config,))
+                                                             name="degraded_mode",
+                                                             args=(return_dict, MASTER_CFG,))
     return processes
 
 
@@ -254,14 +252,13 @@ def monitor_processes(processes: dict, return_dict) -> str or None:
                     continue
             if tp_key == "degraded_mode":
                 if not return_dict['degraded_done']:
-                    LOGGER.warning("Process with PID for Cluster Degraded Mode "
-                                   "Transition %s stopped.", process.pid)
+                    LOGGER.critical("Process '%s' for Cluster Degraded Mode Transition stopped.",
+                                    process.pid)
                     raise DegradedModeError(f"Process with PID {process.pid} stopped.")
-                else:
-                    LOGGER.info("Process with PID for Cluster Degraded Mode"
-                                " Transition %s completed.", process.pid)
-                    skip_process.append(tp_key)
-                    continue
+                LOGGER.info("Process with PID for Cluster Degraded Mode Transition %s completed.",
+                            process.pid)
+                skip_process.append(tp_key)
+                continue
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
                             process.pid, process.name)
             return tp_key
