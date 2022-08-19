@@ -27,7 +27,6 @@ import multiprocessing
 import os
 import random
 import time
-from ast import literal_eval
 from collections import Counter
 from datetime import datetime
 from distutils.util import strtobool
@@ -40,7 +39,9 @@ from config import S3_CFG, CORIO_CFG
 from src.commons import constants as const
 from src.commons.cluster_health import check_health
 from src.commons.cluster_health import health_check_process
-from src.commons.degrade_cluster import activate_degraded_mode, restore_pod
+from src.commons.degrade_cluster import activate_degraded_mode_parallel
+from src.commons.degrade_cluster import get_degraded_mode
+from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.logger import StreamToLogger
 from src.commons.scheduler import schedule_test_plan
@@ -57,7 +58,7 @@ from src.commons.utils.corio_utils import store_logs_to_nfs_local_server
 from src.commons.utils.jira_utils import JiraApp
 from src.commons.utils.resource_util import collect_resource_utilisation
 from src.commons.workload_mapping import SCRIPT_MAPPING
-from src.commons.yaml_parser import test_parser
+from src.commons.yaml_parser import yaml_parser
 
 LOGGER = logging.getLogger(const.ROOT)
 
@@ -187,7 +188,7 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
     return tests_to_execute
 
 
-def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
+def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dict):
     """Schedule the execution plan."""
     processes = {}
     commons_params = {"access_key": S3_CFG.access_key,
@@ -211,8 +212,16 @@ def schedule_execution_plan(parsed_input: dict, options: munch.Munch):
     if options.health_check:
         processes["health_check"] = multiprocessing.Process(target=health_check_process,
                                                             name="health_check",
-                                                            args=(CORIO_CFG.hc_interval_mins * 60,))
+                                                            args=(CORIO_CFG.hc_interval_mins * 60,
+                                                                  return_dict,))
         LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
+
+    if options.degraded_mode:
+        master_config = yaml_parser("workload/master_config.yaml")
+        LOGGER.info("Master config data \n %s", master_config)
+        processes["degraded_mode"] = multiprocessing.Process(target=activate_degraded_mode_parallel,
+                                                            name="degraded_mode",
+                                                            args=(return_dict, master_config,))
     return processes
 
 
@@ -224,7 +233,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
     return test_ids
 
 
-def monitor_processes(processes: dict) -> str or None:
+def monitor_processes(processes: dict, return_dict) -> str or None:
     """Monitor the process."""
     skip_process = []
     for tp_key, process in processes.items():
@@ -241,6 +250,16 @@ def monitor_processes(processes: dict) -> str or None:
                 resp = run_local_cmd(
                     f"grep 'topic {tp_key} completed successfully' {os.getenv('log_path')} ")
                 if resp[0] and resp[1]:
+                    skip_process.append(tp_key)
+                    continue
+            if tp_key == "degraded_mode":
+                if not return_dict['degraded_done']:
+                    LOGGER.warning("Process with PID for Cluster Degraded Mode "
+                                   "Transition %s stopped.", process.pid)
+                    raise DegradedModeError(f"Process with PID {process.pid} stopped.")
+                else:
+                    LOGGER.info("Process with PID for Cluster Degraded Mode"
+                                " Transition %s completed.", process.pid)
                     skip_process.append(tp_key)
                     continue
             LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
@@ -293,7 +312,8 @@ def main(options):
     tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
     corio_start_time = datetime.now()
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
-    processes = schedule_execution_plan(parsed_input, options)
+    return_dict = multiprocessing.Manager().dict()
+    processes = schedule_execution_plan(parsed_input, options, return_dict)
     sched = schedule_test_status_update(parsed_input, corio_start_time,
                                         periodic_time=CORIO_CFG.report_interval_mins,
                                         sequential_run=options.sequential_run)
@@ -302,8 +322,7 @@ def main(options):
     mobj.email_alert(action="start")
     try:
         if options.degraded_mode:
-            activate_degraded_mode(options)
-            options.number_of_nodes -= literal_eval(os.getenv("DEGRADED_PODS_CNT"))
+            get_degraded_mode()
         start_processes(processes)
         while processes:
             time.sleep(1)
@@ -312,20 +331,19 @@ def main(options):
             if jira_obj:
                 jira_obj.update_jira_status(
                     corio_start_time=corio_start_time, tests_details=tests_to_execute)
-            terminated_tp = monitor_processes(processes)
+            terminated_tp = monitor_processes(processes, return_dict)
             if terminated_tp:
                 test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
                 break
             if tuple(processes.keys()) in const.terminate_process_list:
                 break
-    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError) as err:
+    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError, DegradedModeError) as err:
         LOGGER.exception(err)
         terminated_tp = type(err).__name__
     finally:
         terminate_processes(processes)
         terminate_update_test_status(parsed_input, corio_start_time, terminated_tp, test_ids,
-                                     sched, action="final", sequential_run=options.sequential_run,
-                                     )
+                                     sched, action="final", sequential_run=options.sequential_run,)
         if jira_obj:
             jira_obj.update_jira_status(
                 corio_start_time=corio_start_time, tests_details=tests_to_execute, aborted=True,
@@ -335,8 +353,6 @@ def main(options):
         mobj.email_alert(action="stop", tp=terminated_tp, ids=test_ids)
         collect_resource_utilisation(action="stop")
         store_logs_to_nfs_local_server()
-        if options.degraded_mode:
-            restore_pod()
 
 
 if __name__ == "__main__":

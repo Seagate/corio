@@ -127,7 +127,8 @@ def activate_degraded_mode_parallel(return_dict, m_conf):
     return_dict.update({"degraded_done": True})
 
 
-def activate_degraded_mode(options: munchify):
+def activate_degraded_mode(options: munchify)->None:
+    """Activate the degraded mode."""
     bucket_obj = S3Bucket(access_key=options.access_key,
                           secret_key=options.secret_key,
                           endpoint_url=S3_ENDPOINT,
@@ -148,10 +149,11 @@ def activate_degraded_mode(options: munchify):
         logical_node = get_logical_node()
         os.environ["logical_node"] = str(logical_node)
         if os.environ['POD_PREFIX'].lower() == 'data':
-            pod_prefix = DATA_POD_NAME_PREFIX
+            logical_node.degrade_nodes(DATA_POD_NAME_PREFIX)
         elif os.environ['POD_PREFIX'].lower() == 'server':
-            pod_prefix = SERVER_POD_NAME_PREFIX
-        logical_node.degrade_nodes(pod_prefix)
+            logical_node.degrade_nodes(SERVER_POD_NAME_PREFIX)
+        else:
+            LOGGER.warning("Incorrect pod prefix: %s", os.environ['POD_PREFIX'])
 
 
 def get_logical_node() -> ClusterServices:
