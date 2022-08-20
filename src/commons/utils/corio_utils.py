@@ -418,10 +418,14 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
                     prv_iteration, edate = get_completed_iterations(fpath)
                     completed_iter_count = get_completed_iterations_for_all_sessions(
                         prv_iteration, fpath)
+                    # 5 minute loop to check completion of ongoing iterations.
                     if CORIO_CFG.wait_on_iterations and not kwargs.get("test_failed"):
-                        while (completed_iter_count % EXEC_STATUS[tid]["sessions"] != 0 and
-                                prv_iteration == iterations):
-                            time.sleep(10)
+                        time_out = time.time() + 300
+                        while time.time() <= time_out:
+                            if (completed_iter_count % EXEC_STATUS[tid]["sessions"] == 0 and
+                                    prv_iteration != iterations):
+                                break
+                            time.sleep(30)
                             iterations, edate = get_completed_iterations(fpath)
                             completed_iter_count = get_completed_iterations_for_all_sessions(
                                 iterations, fpath)
@@ -429,7 +433,8 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
                         edate = edate if edate else EXEC_STATUS[tid]["min_runtime"]
                 if edate:
                     EXEC_STATUS[tid]["execution_time"] = edate
-                    EXEC_STATUS[tid]["status"] = "Passed"
+                    if not kwargs.get("test_failed"):
+                        EXEC_STATUS[tid]["status"] = "Passed"
         if iterations:
             EXEC_STATUS[tid]["iterations"] = iterations
             LOGGER.info("Iteration %s completed for test %s", iterations, tid)

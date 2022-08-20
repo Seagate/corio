@@ -118,33 +118,33 @@ class CorIORotatingFileHandler(handlers.RotatingFileHandler):
                 shutil.copyfileobj(sf_obj, df_obj)
         os.remove(source)
 
-    @staticmethod
-    def get_logger(level, name, **kwargs) -> object:
-        """
-        Initialize and get the logger object.
 
-        :param level: Set logging level, which is used across execution.
-        :param name: Name of the logger.
-        :returns: logger object.
-        """
-        logger = logging.Logger.manager.loggerDict.get(name)
-        if logger:
-            return logger
-        dir_path = os.path.join(os.getcwd(), "log", "latest")
-        if not os.path.exists(dir_path):
-            os.makedirs(dir_path, exist_ok=True)
-        level = logging.getLevelName(level)
-        if level == logging.DEBUG:
-            logger = logging.getLogger()
-            for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
-                logging.getLogger(pkg).setLevel(logging.DEBUG)
-            fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
-        else:
-            logger = logging.getLogger(name)
-            fpath = os.path.join(dir_path, f"{name}_console.INFO")
-        logger.setLevel(level)
-        StreamToLogger(fpath, logger, **kwargs)
+def get_logger(level, name, **kwargs) -> object:
+    """
+    Initialize and get the logger object.
+
+    :param level: Set logging level, which is used across execution.
+    :param name: Name of the logger.
+    :returns: logger object.
+    """
+    logger = logging.Logger.manager.loggerDict.get(name)
+    if logger:
         return logger
+    dir_path = os.path.join(os.getcwd(), "log", "latest")
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path, exist_ok=True)
+    level = logging.getLevelName(level)
+    if level == logging.DEBUG:
+        logger = logging.getLogger()
+        for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
+            logging.getLogger(pkg).setLevel(logging.DEBUG)
+        fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
+    else:
+        logger = logging.getLogger(name)
+        fpath = os.path.join(dir_path, f"{name}_console.INFO")
+    logger.setLevel(level)
+    StreamToLogger(fpath, logger, **kwargs)
+    return logger
 
 
 def initialize_loghandler(logger, verbose=False):
