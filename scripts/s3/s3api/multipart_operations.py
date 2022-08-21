@@ -24,7 +24,6 @@ import hashlib
 import os
 import random
 from datetime import datetime, timedelta
-
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
@@ -32,6 +31,7 @@ from src.commons.utils import corio_utils
 from src.libs.s3api import S3Api
 
 
+# pylint: disable=too-many-instance-attributes
 class TestMultiParts(S3Api):
     """Multipart class for executing given io stability workload."""
 
@@ -60,21 +60,22 @@ class TestMultiParts(S3Api):
         self.part_range = kwargs.get("part_range")
         self.range_read = kwargs.get("range_read")
         self.session_id = kwargs.get("session")
+        self.iteration = 1
         self.test_id = test_id.lower()
         if kwargs.get("duration"):
             self.finish_time = datetime.now() + kwargs.get("duration")
-        else:  # If duration not given then test will run for 100 Day
+        else:
+            # If duration not given then test will run for 100 Day
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
 
     # pylint: disable=broad-except
     async def execute_multipart_workload(self):
         """Execute multipart workload for specific duration."""
-        iteration = 1
         mpart_bucket = f"s3mpart-bkt-{self.test_id}-{perf_counter_ns()}"
         await self.create_bucket(mpart_bucket)
         while True:
             try:
-                self.log.info("Iteration %s is started for %s...", iteration, self.session_id)
+                self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
                 self.log.info("Bucket name: %s", mpart_bucket)
                 s3mpart_object = f"s3mpart-obj-{self.test_id}-{perf_counter_ns()}"
                 s3_object = f"s3-obj-{self.test_id}-{perf_counter_ns()}"
@@ -98,15 +99,15 @@ class TestMultiParts(S3Api):
                 if self.part_copy:
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
-                self.log.info("Iteration %s is completed of %s...", iteration, self.session_id)
+                self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             except Exception as err:
-                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
-                assert False, f"bucket url: {self.s3_url}\nException: {err}"
+                self.log.exception("bucket url: {%s} \nException: {%s}", self.s3_url, err)
+                assert False, f"bucket url: {self.s3_url} \n Exception: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
-                self.log.info("Delete bucket %s with all objects in it.", mpart_bucket)
                 await self.delete_bucket(mpart_bucket, force=True)
+                self.log.info("Deleted bucket %s with all objects in it.", mpart_bucket)
                 return True, "Multipart execution completed successfully."
-            iteration += 1
+            self.iteration += 1
 
     async def get_workload_size(self):
         """Get the workload size."""

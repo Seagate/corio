@@ -36,19 +36,20 @@ SCRIPT_MAPPING = {
     'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'multipart_partcopy': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'multipart_range_read': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_partcopy_range_read': [multipart_operations.TestMultiParts,
-                                      'execute_multipart_workload'],
-    'multipart_partcopy_random': [multipart_operations.TestMultiParts,
-                                  'execute_multipart_workload'],
+    'multipart_partcopy_range_read': [
+        multipart_operations.TestMultiParts, 'execute_multipart_workload'],
+    'multipart_partcopy_random': [
+        multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'multipart_random': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
     'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
     'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
     'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
     'mix_object_ops': [mix_object_operations.TestMixObjectOps, 'execute_mix_object_workload'],
-    'type1_object_ops': [mix_object_crud_operations.TestTypeXObjectOps, 'execute_object_crud_workload'],
-    'type4_object_ops': [mix_object_crud_operations.TestTypeXObjectOps,
-                         'execute_mix_object_workload'],
-    'type3_write_once_read_iterations': [mix_object_crud_operations.TestTypeXObjectOps,
-                                        'execute_mix_object_workload']
+    'type1_object_ops': [
+        mix_object_crud_operations.TestTypeXObjectOps, 'execute_object_crud_workload'],
+    'type4_object_ops': [
+        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
+    'type3_write_once_read_iterations': [
+        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload']
     }

@@ -54,7 +54,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         self.access_key = access_key
         self.secret_key = secret_key
         self.endpoint_url = endpoint_url
-        self.iteration = 0
+        self.iteration = 1
         self.sessions = kwargs.get("sessions")
         if kwargs.get("duration"):
             self.finish_time = datetime.now() + kwargs.get("duration")
