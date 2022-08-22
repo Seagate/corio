@@ -30,13 +30,12 @@ from time import perf_counter_ns
 from munch import munchify
 
 from config import CLUSTER_CFG, S3_ENDPOINT
-from src.commons.constants import DATA_POD_NAME_PREFIX, SERVER_POD_NAME_PREFIX
-from src.commons.constants import ROOT
+from src.commons import constants as const
 from src.commons.exception import NoBucketExistsException
 from src.commons.utils.cluster_utils import ClusterServices
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(const.ROOT)
 
 
 def get_degraded_mode():
@@ -97,9 +96,9 @@ def activate_degraded_mode_parallel(return_dict, m_conf):
                                 '%H:%M:%S').time()
     uptime = total_t.hour * 3600 + total_t.minute * 60 + total_t.second
     # Set default pod_prefix
-    pod_prefix = SERVER_POD_NAME_PREFIX
-    if os.environ['POD_PREFIX'] == 'data':
-        pod_prefix = DATA_POD_NAME_PREFIX
+    pod_prefix = const.SERVER_POD_NAME_PREFIX
+    if os.environ['POD_PREFIX'].lower() == 'data':
+        pod_prefix = const.DATA_POD_NAME_PREFIX
     return_dict.update({"degraded_done": False})
     for cnt in range(m_conf['degraded_io']['schedule_frequency']):
         LOGGER.info("Degrading Cluster for %s count", cnt)
@@ -120,14 +119,14 @@ def activate_degraded_mode_parallel(return_dict, m_conf):
         try:
             while True:
                 LOGGER.info("Degraded Cluster Process Sleeping for %s sec with %s pods down",
-                downtime, os.environ['DEGRADED_PODS_CNT'])
+                            downtime, os.environ['DEGRADED_PODS_CNT'])
                 time.sleep(downtime)
         except KeyboardInterrupt:
             pass
     return_dict.update({"degraded_done": True})
 
 
-def activate_degraded_mode(options: munchify)->None:
+def activate_degraded_mode(options: munchify) -> None:
     """Activate the degraded mode."""
     bucket_obj = S3Bucket(access_key=options.access_key,
                           secret_key=options.secret_key,
@@ -149,26 +148,18 @@ def activate_degraded_mode(options: munchify)->None:
         logical_node = get_logical_node()
         os.environ["logical_node"] = str(logical_node)
         if os.environ['POD_PREFIX'].lower() == 'data':
-            logical_node.degrade_nodes(DATA_POD_NAME_PREFIX)
+            logical_node.degrade_nodes(const.DATA_POD_NAME_PREFIX)
         elif os.environ['POD_PREFIX'].lower() == 'server':
-            logical_node.degrade_nodes(SERVER_POD_NAME_PREFIX)
+            logical_node.degrade_nodes(const.SERVER_POD_NAME_PREFIX)
         else:
             LOGGER.warning("Incorrect pod prefix: %s", os.environ['POD_PREFIX'])
 
 
 def get_logical_node() -> ClusterServices:
     """Create cluster services object and returns object."""
-    nodes = CLUSTER_CFG["nodes"]
-    (host, user, password) = (None, None, None)
-    for node in nodes:
-        if node["node_type"] == "master":
-            host = node["hostname"]
-            user = node["username"]
-            password = node["password"]
-            break
-    logical_node = ClusterServices(host=host,
-                                   user=user,
-                                   password=password)
+    master = [node for node in CLUSTER_CFG["nodes"] if node["node_type"] == "master"][-1]
+    host, user, password = master["hostname"], master["username"], master["password"]
+    logical_node = ClusterServices(host=host, user=user, password=password)
     return logical_node
 
 
