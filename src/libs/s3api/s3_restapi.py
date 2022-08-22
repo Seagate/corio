@@ -22,6 +22,7 @@
 """RestAPI library using aiobotocore module."""
 
 import logging
+import os
 
 import boto3
 import urllib3
