@@ -476,3 +476,13 @@ def get_workload_list(path: str) -> list:
     else:
         raise IOError(f"Incorrect test input: {path}")
     return file_list
+
+
+def get_s3_keys(access_key: str, secret_key: str) -> dict:
+    """access, secret key/keys(comma/space separated) string and return mapping dict."""
+    access_keys = [x.strip() for x in access_key.split(",") or access_key.split()]
+    secret_keys = [y.strip() for y in secret_key.split(",") or secret_key.split()]
+    if len(access_keys) != len(secret_keys):
+        raise AssertionError(
+            f"Number of access: {access_keys}, secret: {secret_keys} keys are different.")
+    return dict(zip(access_keys, secret_keys))
