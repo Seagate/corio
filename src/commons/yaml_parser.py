@@ -25,11 +25,9 @@ import logging
 
 import yaml
 
-from src.commons.constants import KB
-from src.commons.constants import KIB
-from src.commons.constants import ROOT
+from src.commons import constants as const
 
-LOGGER = logging.getLogger(ROOT)
+LOGGER = logging.getLogger(const.ROOT)
 
 
 def apply_master_config(workload: dict, master_cfg: dict) -> dict:
@@ -66,23 +64,24 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
     return workload
 
 
-def yaml_parser(yaml_file) -> dict:
+def read_yaml(fpath: str, encoding="utf-8") -> dict:
     """
     YAML file to python dictionary.
 
-    :param yaml_file: yaml file to parse.
-    :return python dict containing file contents.
+    :param fpath: Yaml file path to parse.
+    :param encoding: Type of encoding is used to read file.
+    :return: python dict containing file contents.
     """
-    LOGGER.debug("YAML file selected for parse: %s", yaml_file)
+    LOGGER.debug("YAML file selected for parse: %s", fpath)
     yaml_dict = {}
-    with open(yaml_file, "r", encoding="utf-8") as obj:
+    with open(fpath, "r", encoding=encoding) as obj:
         data = yaml.safe_load(obj)
         yaml_dict.update(data)
     LOGGER.debug("YAML file data: %s", yaml_dict)
     return yaml_dict
 
 
-def convert_to_bytes(size):
+def convert_to_bytes(size: str) -> int:
     """
     Convert any size to bytes.
 
@@ -90,31 +89,34 @@ def convert_to_bytes(size):
     can be provided as byte(s), kb, kib, mb, mib, gb, gib, tb, tib
     :return equivalent bytes value for object size.
     """
-    size = size.lower()
-    size_bytes = 0
+    size, size_bytes = size.lower(), 0
     if 'bytes' in size or 'byte' in size:
         size_bytes = int(size.split('byte')[0])
     if 'kb' in size:
-        size_bytes = int(size.split('kb')[0]) * KB
+        size_bytes = int(size.split('kb')[0]) * const.KB
     if 'kib' in size:
-        size_bytes = int(size.split('kib')[0]) * KIB
+        size_bytes = int(size.split('kib')[0]) * const.KIB
     if 'mb' in size:
-        size_bytes = int(size.split('mb')[0]) * KB * KB
+        size_bytes = int(size.split('mb')[0]) * (const.KB ** 2)
     if 'mib' in size:
-        size_bytes = int(size.split('mib')[0]) * KIB * KIB
+        size_bytes = int(size.split('mib')[0]) * (const.KIB ** 2)
     if 'gb' in size:
-        size_bytes = int(size.split('gb')[0]) * KB * KB * KB
+        size_bytes = int(size.split('gb')[0]) * (const.KB ** 3)
     if 'gib' in size:
-        size_bytes = int(size.split('gib')[0]) * KIB * KIB * KIB
+        size_bytes = int(size.split('gib')[0]) * (const.KIB ** 3)
     if 'tb' in size:
-        size_bytes = int(size.split('tb')[0]) * KB * KB * KB * KB
+        size_bytes = int(size.split('tb')[0]) * (const.KB ** 4)
     if 'tib' in size:
-        size_bytes = int(size.split('tib')[0]) * KIB * KIB * KIB * KIB
+        size_bytes = int(size.split('tib')[0]) * (const.KIB ** 4)
+    if 'pb' in size:
+        size_bytes = int(size.split('tib')[0]) * (const.KB ** 5)
+    if 'pib' in size:
+        size_bytes = int(size.split('tib')[0]) * (const.KIB ** 5)
     LOGGER.debug(size_bytes)
     return size_bytes
 
 
-def convert_to_time_delta(time):
+def convert_to_time_delta(time: str) -> datetime.timedelta:
     """
     Convert execution time in time delta format.
 
@@ -138,7 +140,7 @@ def convert_to_time_delta(time):
     return datetime_obj
 
 
-def test_parser(yaml_file, number_of_nodes):
+def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
     """
     Parse a workload yaml file.
 
@@ -146,10 +148,8 @@ def test_parser(yaml_file, number_of_nodes):
     :param number_of_nodes: accepts number of nodes to calculate sessions (default=1).
     :return python dictionary containing file contents.
     """
-    workload_data = yaml_parser(yaml_file)
-    master_config = yaml_parser("workload/master_config.yaml")
-    workload_data = apply_master_config(workload_data, master_config)
     delta_list = []
+    workload_data = apply_master_config(read_yaml(yaml_file), read_yaml(const.CORIO_MASTER_CONFIG))
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.
         if "object_size" not in data:
@@ -162,13 +162,15 @@ def test_parser(yaml_file, number_of_nodes):
             convert_object_part_size_to_bytes(data)
             convert_range_read_to_bytes(data)
             convert_min_runtime_to_time_delta(test, delta_list, data)
+        # Convert sessions per node to sessions.
         if 'sessions_per_node' in data.keys():
             data['sessions'] = data['sessions_per_node'] * number_of_nodes
+            data.pop('sessions_per_node')
     LOGGER.debug("test object %s: ", workload_data)
     return workload_data
 
 
-def convert_min_runtime_to_time_delta(test, delta_list, data):
+def convert_min_runtime_to_time_delta(test: str, delta_list: list, data: dict) -> None:
     """Convert min_runtime to time_delta."""
     if test.lower() == "test_1" or len(delta_list) == 0:
         data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
@@ -179,7 +181,7 @@ def convert_min_runtime_to_time_delta(test, delta_list, data):
     data['min_runtime'] = convert_to_time_delta(data['min_runtime'])
 
 
-def convert_object_part_size_to_bytes(data):
+def convert_object_part_size_to_bytes(data: dict) -> None:
     """Convert object_size, part_size to bytes."""
     for size_type in ["object_size", "part_size", "total_storage_size"]:
         if size_type in data:

@@ -24,13 +24,22 @@
 import asyncio
 import datetime
 import logging
+import multiprocessing
 import os
 
+import munch
 import schedule
 from schedule import Job
 
+from config import MASTER_CFG, S3_CFG, CORIO_CFG
+from src.commons import cluster_health
+from src.commons import degrade_cluster
+from src.commons import support_bundle
 from src.commons.constants import ROOT
+from src.commons.exception import DegradedModeError
+from src.commons.exception import HealthCheckError
 from src.commons.report import log_status
+from src.commons.utils.corio_utils import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -175,3 +184,98 @@ def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
     schedule.cancel_job(sched_job)
     log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
                **kwargs)
+
+
+def monitor_processes(processes: dict, return_dict) -> str or None:
+    """Monitor the process."""
+    skip_process = []
+    for tp_key, process in processes.items():
+        if not process.is_alive():
+            if tp_key == "support_bundle":
+                LOGGER.critical(
+                    "Process with PID %s stopped Support bundle collection error.", process.pid)
+                skip_process.append(tp_key)
+                continue
+            if tp_key == "health_check":
+                raise HealthCheckError(
+                    f"Process with PID {process.pid} stopped. Health Check collection error.")
+            if os.path.exists(os.getenv("log_path")):
+                resp = run_local_cmd(
+                    f"grep 'topic {tp_key} completed successfully' {os.getenv('log_path')} ")
+                if resp[0] and resp[1]:
+                    skip_process.append(tp_key)
+                    continue
+            if tp_key == "degraded_mode":
+                if not return_dict['degraded_done']:
+                    LOGGER.critical("Process '%s' for Cluster Degraded Mode Transition stopped.",
+                                    process.pid)
+                    raise DegradedModeError(f"Process with PID {process.pid} stopped.")
+                LOGGER.info("Process with PID for Cluster Degraded Mode Transition %s completed.",
+                            process.pid)
+                skip_process.append(tp_key)
+                continue
+            LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
+                            process.pid, process.name)
+            return tp_key
+    for proc in skip_process:
+        LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
+        processes.pop(proc)
+    return None
+
+
+def terminate_processes(processes: dict) -> None:
+    """
+    Terminate Process on failure.
+
+    :param processes: List of process to be terminated.
+    """
+    LOGGER.debug("Processes to terminate: %s", processes)
+    for process in processes.values():
+        process.terminate()
+        process.join()
+
+
+def start_processes(processes: dict) -> None:
+    """
+    Trigger all proces from process list.
+
+    :param processes: List of process to start.
+    """
+    LOGGER.info("Processes to start: %s", processes)
+    for process in processes.values():
+        process.start()
+        LOGGER.info("Process started: %s", process)
+
+
+def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dict):
+    """Schedule the execution plan."""
+    processes = {}
+    commons_params = {"access_key": S3_CFG.access_key,
+                      "secret_key": S3_CFG.secret_key,
+                      "endpoint_url": S3_CFG.endpoint,
+                      "use_ssl": S3_CFG.use_ssl,
+                      "seed": options.seed,
+                      "sequential_run": options.sequential_run}
+    for test_plan, test_plan_value in parsed_input.items():
+        processes[test_plan] = multiprocessing.Process(target=schedule_test_plan,
+                                                       name=test_plan,
+                                                       args=(test_plan, test_plan_value,
+                                                             commons_params,))
+    LOGGER.info("scheduled execution plan. Processes: %s", processes)
+    if options.support_bundle:
+        processes["support_bundle"] = multiprocessing.Process(
+            target=support_bundle.support_bundle_process, name="support_bundle",
+            args=(CORIO_CFG.sb_interval_mins * 60,))
+        LOGGER.info("Support bundle collection scheduled for every %s minutes",
+                    CORIO_CFG.sb_interval_mins)
+    if options.health_check:
+        processes["health_check"] = multiprocessing.Process(
+            target=cluster_health.health_check_process, name="health_check",
+            args=(CORIO_CFG.hc_interval_mins * 60, return_dict))
+        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
+
+    if options.degraded_mode:
+        processes["degraded_mode"] = multiprocessing.Process(
+            target=degrade_cluster.activate_degraded_mode_parallel, name="degraded_mode",
+            args=(return_dict, MASTER_CFG,))
+    return processes

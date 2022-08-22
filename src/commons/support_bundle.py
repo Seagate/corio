@@ -22,7 +22,6 @@
 
 import logging
 import os
-
 import time
 
 from config import CLUSTER_CFG
@@ -58,7 +57,7 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> Non
         rotate_logs(sb_dir, max_sb)
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
-    except IOError as error:
+    except (IOError, AssertionError) as error:
         LOGGER.error(error)
 
 

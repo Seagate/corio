@@ -22,6 +22,7 @@
 """RestAPI library using aiobotocore module."""
 
 import logging
+import os
 
 import boto3
 import urllib3
@@ -59,11 +60,7 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        level = os.environ.get("log_level", logging.INFO)
-        if logging.getLevelName(level) == logging.DEBUG:
-            self.log = get_logger(level, kwargs.get("test_id").split("_", 1)[-1])
-        else:
-            self.log = get_logger(level, kwargs.get("test_id"))
+        self.log = get_logger(os.getenv("log_level") or logging.INFO, kwargs.get("test_id"))
         self.log_path = next(iter([handler.baseFilename for handler in self.log.handlers if
                                    isinstance(handler, logging.FileHandler)]))
 

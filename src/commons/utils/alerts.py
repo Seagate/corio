@@ -25,13 +25,12 @@ import logging
 import os
 import smtplib
 import threading
+import time
 from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formatdate, COMMASPACE, make_msgid
-
-import time
 
 from config import CORIO_CFG
 from src.commons import commands
@@ -67,7 +66,8 @@ class Mail:
             with smtplib.SMTP(self.mail_host, self.port) as server:
                 server.sendmail(self.sender, self.receiver.split(','), message.as_string())
         else:
-            LOGGER.warning("Can't send mail as email host/port not found.")
+            LOGGER.warning(
+                "Can't send mail as email host: %s, port: %s not found.", self.mail_host, self.port)
 
 
 # pylint: disable=too-many-instance-attributes
