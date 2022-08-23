@@ -1,0 +1,109 @@
+test_1:
+  TEST_ID: TEST-BKTXX1
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_2:
+  TEST_ID: TEST-BKTXX2
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_3:
+  TEST_ID: TEST-BKTXX3
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_4:
+  TEST_ID: TEST-BKTXX4
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_5:
+  TEST_ID: TEST-BKTXX5
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_6:
+  TEST_ID: TEST-BKTXX6
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_7:
+  TEST_ID: TEST-BKTXX7
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_8:
+  TEST_ID: TEST-BKTXX8
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_9:
+  TEST_ID: TEST-BKTXX9
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops
+
+test_10:
+  TEST_ID: TEST-BKTX10
+  object_size:
+    start: 0b
+    end: 512Mb
+  min_runtime: 2h
+  sessions_per_node: 5
+  number_of_buckets: 100
+  tool: s3api
+  operation: type_5_bucket_ops

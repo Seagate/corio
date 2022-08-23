@@ -1,0 +1,11 @@
+test_1:
+  TEST_ID: TEST-OBJXX1
+  object_size:
+    start: 0Kb
+    end: 5Gb
+  min_runtime: 30d
+  sessions_per_node: 10
+  number_of_buckets: 50
+  number_of_objects: 2000
+  tool: s3api
+  operation: type_5_object_ops
