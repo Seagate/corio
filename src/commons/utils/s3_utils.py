@@ -35,9 +35,6 @@ def get_bucket_name():
     rest letters can include number, lowercase, hyphens and dots.
     bucket length can vary from 3 to 63
     """
-    first = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits))
-    bkt_len = random.randint(2, 63)
-    rest = first + ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits +
-                                                        "." + '-') for _ in range(bkt_len))
-    bucket_name = first + rest
-    return bucket_name
+    return (''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) +
+            ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits + "." + '-')
+                    for _ in range(random.randint(2, 63)))))
