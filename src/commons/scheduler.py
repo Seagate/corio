@@ -26,7 +26,7 @@ import datetime
 import logging
 import multiprocessing
 import os
-from copy import copy
+from copy import deepcopy
 
 import munch
 import schedule
@@ -40,7 +40,7 @@ from src.commons.constants import ROOT
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.report import log_status
-from src.commons.utils.corio_utils import run_local_cmd
+from src.commons.utils.corio_utils import run_local_cmd, get_s3_keys, set_s3_access_secret_key
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -72,36 +72,42 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     :param common_params: Common arguments to be sent to function
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
-    seq_run = common_params.pop("sequential_run")
-    LOGGER.info("%s execution is enabled for workload: %s.",
-                f"{'Sequential' if seq_run else 'Incremental'}", test_plan)
     tasks = []
+    LOGGER.info("%s execution is enabled for workload: %s.",
+                f"{'Sequential' if common_params.get('sequential_run', False) else 'Incremental'}",
+                test_plan)
+    access_secret_keys = common_params.pop("access_secret_keys")
     for _, each in test_plan_value.items():
-        params = copy(each)
+        iter_keys = iter(access_secret_keys.items())
+        params = deepcopy(each)
         params["test_id"] = params.pop("TEST_ID")
         test_start_time = params.pop('start_time').total_seconds()
-        if seq_run:
+        if common_params.get('sequential_run', False):
             params["duration"] = params.get("min_runtime", 0)
         params.update(common_params)
         if params["tool"] == "s3api":
             if "TestTypeXObjectOps" in str(params.get("operation")[0]):
                 params["session"] = f"{params['test_id']}_session_main"
+                iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                 tasks.append(create_session(funct=params["operation"],
                                             start_time=test_start_time,
                                             **params))
             else:
                 for i in range(1, int(params["sessions"]) + 1):
                     params["session"] = f"{params['test_id']}_session{i}"
+                    iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                     tasks.append(create_session(funct=params["operation"],
                                                 start_time=test_start_time,
                                                 **params))
         elif params["tool"] == "s3bench":
             params["session"] = f"{params['test_id']}_session_s3bench"
+            iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
             tasks.append(create_session(funct=params["operation"],
                                         start_time=test_start_time,
                                         **params))
         else:
             raise NotImplementedError(f"Tool is not supported: {params['tool']}")
+        LOGGER.debug(iter_keys)
     done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
     if pending:
         LOGGER.critical("Terminating process: %s & pending tasks: %s", process_name, pending)
@@ -240,8 +246,7 @@ def start_processes(processes: dict) -> None:
 def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dict: dict) -> dict:
     """Schedule the execution plan."""
     processes = {}
-    commons_params = {"access_key": S3_CFG.access_key,
-                      "secret_key": S3_CFG.secret_key,
+    commons_params = {"access_secret_keys": get_s3_keys(S3_CFG.access_key, S3_CFG.secret_key),
                       "endpoint_url": S3_CFG.endpoint,
                       "use_ssl": S3_CFG.use_ssl,
                       "seed": options.seed,

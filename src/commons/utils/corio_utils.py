@@ -486,3 +486,13 @@ def get_s3_keys(access_key: str, secret_key: str) -> dict:
         raise AssertionError(
             f"Number of access: {access_keys}, secret: {secret_keys} keys are different.")
     return dict(zip(access_keys, secret_keys))
+
+
+def set_s3_access_secret_key(access_secret_keys: dict, iter_keys: iter, params: dict) -> iter:
+    """Update params dict for access secret key randomly from iterator dict."""
+    try:
+        params["access_key"], params["secret_key"] = next(iter_keys)
+    except StopIteration:
+        iter_keys = iter(access_secret_keys.items())
+        params["access_key"], params["secret_key"] = next(iter_keys)
+    return iter_keys
