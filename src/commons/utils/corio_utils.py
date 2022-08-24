@@ -478,14 +478,12 @@ def get_workload_list(path: str) -> list:
     return file_list
 
 
-def get_s3_keys(access_key: str, secret_key: str) -> dict:
-    """access, secret key/keys(comma/space separated) string and return mapping dict."""
-    access_keys = [x.strip() for x in access_key.split(",") or access_key.split()]
-    secret_keys = [y.strip() for y in secret_key.split(",") or secret_key.split()]
-    if len(access_keys) != len(secret_keys):
+def get_s3_keys(access_key: list, secret_key: list) -> dict:
+    """Return mapping dict from access_keys, secret_keys."""
+    if len(access_key) != len(secret_key):
         raise AssertionError(
-            f"Number of access: {access_keys}, secret: {secret_keys} keys are different.")
-    return dict(zip(access_keys, secret_keys))
+            f"Number of access: {access_key}, secret: {secret_key} keys are different.")
+    return dict(zip(access_key, secret_key))
 
 
 def set_s3_access_secret_key(access_secret_keys: dict, iter_keys: iter, params: dict) -> iter:
