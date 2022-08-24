@@ -28,7 +28,7 @@ from distutils.util import strtobool
 def parse_args():
     """Commandline arguments for CORIO Driver."""
     parser = ArgumentParser()
-    parser.add_argument("-ti", "--test_input", type=str,
+    parser.add_argument("-ti", "--test_input", type=str, required=True,
                         help="Directory path containing test data input yaml files or "
                              "input yaml file path.")
     parser.add_argument("-v", "--verbose", action="store_true",
@@ -37,11 +37,13 @@ def parse_args():
                         help="Use HTTPS/SSL connection for S3 endpoint.")
     parser.add_argument("-sd", "--seed", type=int, help="seed.",
                         default=random.SystemRandom().randint(1, 9999999))
-    parser.add_argument("-sk", "--secret_key", type=str, nargs="+", action=SplitArguments,
+    parser.add_argument("-sk", "--secret_key", type=str, nargs="+",
+                        action=SplitArguments, required=True,
                         help="One or more(space/comma separated) s3 secret Key or keys in order.")
-    parser.add_argument("-ak", "--access_key", type=str, nargs="+", action=SplitArguments,
+    parser.add_argument("-ak", "--access_key", type=str, nargs="+",
+                        action=SplitArguments, required=True,
                         help="One or more(space/comma separated) s3 access Key or keys in order.")
-    parser.add_argument("-ep", "--endpoint", type=str,
+    parser.add_argument("-ep", "--endpoint", type=str, required=True,
                         help="fqdn/ip:port of s3 endpoint for io operations without http/https."
                              "protocol in endpoint is based on use_ssl flag.",
                         default="s3.seagate.com")
