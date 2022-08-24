@@ -476,3 +476,21 @@ def get_workload_list(path: str) -> list:
     else:
         raise IOError(f"Incorrect test input: {path}")
     return file_list
+
+
+def get_s3_keys(access_key: list, secret_key: list) -> dict:
+    """Return mapping dict from access_keys, secret_keys."""
+    if len(access_key) != len(secret_key):
+        raise AssertionError(
+            f"Number of access: {access_key}, secret: {secret_key} keys are different.")
+    return dict(zip(access_key, secret_key))
+
+
+def set_s3_access_secret_key(access_secret_keys: dict, iter_keys: iter, params: dict) -> iter:
+    """Update params dict for access secret key randomly from iterator dict."""
+    try:
+        params["access_key"], params["secret_key"] = next(iter_keys)
+    except StopIteration:
+        iter_keys = iter(access_secret_keys.items())
+        params["access_key"], params["secret_key"] = next(iter_keys)
+    return iter_keys

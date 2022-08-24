@@ -123,10 +123,10 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
                 Seed used to regenerate same workload run.
     
       -sk, --secret_key
-                s3 secret Key.
+                One or more(space/comma separated) s3 secret Key or keys in order.
     
       -ak, --access_key
-                s3 access Key.
+                One or more(space/comma separated) s3 access Key or keys in order.
     
       -ep, --endpoint
                 fqdn/ip:port of s3 endpoint for io operations without http/https.

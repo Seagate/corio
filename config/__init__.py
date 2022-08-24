@@ -24,9 +24,9 @@ from typing import List
 
 import munch
 
+from arguments import opts
 from src.commons import constants as const
 from src.commons import yaml_parser
-from src.commons.utils import config_utils
 
 
 def split_args(sys_cmd: List):
@@ -54,25 +54,14 @@ SSL_FLG = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_USE_SSL) + 1] if _USE_SSL else Tr
 _ENDPOINT = ('-ep' if '-ep' in IO_DRIVER_ARGS else '--endpoint' if '--endpoint' in IO_DRIVER_ARGS
              else None)
 S3_URL = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ENDPOINT) + 1] if _ENDPOINT else "s3.seagate.com"
-_ACCESS_KEY = ("-ak" if '-ak' in IO_DRIVER_ARGS else '--access_key' if '--access_key' in
-               IO_DRIVER_ARGS else None)
-ACCESS_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ACCESS_KEY) + 1] if _ACCESS_KEY else None
-_SECRT_KEY = ("-sk" if '-sk' in IO_DRIVER_ARGS else '--secret_key' if '--secret_key' in
-              IO_DRIVER_ARGS else None)
-SECRT_KEY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_SECRT_KEY) + 1] if _SECRT_KEY else None
 _S3MAX_RETRY = ("-mr" if '-mr' in IO_DRIVER_ARGS else '--s3max_retry' if '--s3max_retry' in
                 IO_DRIVER_ARGS else None)
 S3MAX_RETRY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_S3MAX_RETRY) + 1] if _S3MAX_RETRY else 1
 USE_SSL = ast.literal_eval(str(SSL_FLG).title())
 S3_ENDPOINT = f"{'https' if USE_SSL else 'http'}://{S3_URL}"
-if not (ACCESS_KEY or SECRT_KEY):
-    LOCAL_ACC_KEY, LOCAL_SEC_KEY = config_utils.get_local_aws_keys(
-        S3_CFG["aws_path"], S3_CFG["aws_cred_section"])
-else:
-    LOCAL_ACC_KEY, LOCAL_SEC_KEY = None, None
 
-S3_CFG["access_key"] = ACCESS_KEY if ACCESS_KEY else LOCAL_ACC_KEY
-S3_CFG["secret_key"] = SECRT_KEY if SECRT_KEY else LOCAL_SEC_KEY
+S3_CFG["access_key"] = opts.access_key
+S3_CFG["secret_key"] = opts.secret_key
 S3_CFG["use_ssl"] = USE_SSL
 S3_CFG["endpoint"] = S3_ENDPOINT
 S3_CFG["s3max_retry"] = int(S3MAX_RETRY)
