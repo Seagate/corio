@@ -10,6 +10,6 @@ test_1:
   tool: s3api
   operation: type_5_bucket_object_ops
   delay:
-    minimum: 1h
-    maximum: 12h
+    start: 1h
+    end: 12h
   delete_percentage_per_bucket: 10
