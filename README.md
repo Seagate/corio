@@ -74,7 +74,7 @@ Fork local repository from Seagate's [CORIO](https://github.com/Seagate/corio.gi
 
     Following steps help to set up env, where CORIO runs. These steps assume that you have installed git client and cloned the repo.
 
-    1. Python 3.7 Version should be installed and configured in client system.
+    1. Python 3.7 Version should be installed and configured in client system. Ref(docs/environment_setup/Dev_Environment_Setup)
     2. Run following commands to update yum repo and pip.
          - `yum update -y`
          - `pip install --upgrade pip`
