@@ -32,7 +32,7 @@ import requests
 from jira import JIRAError
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry # pylint: disable=import-error
 
 from src.commons.constants import ROOT
 
