@@ -9,6 +9,7 @@ s3api: # basic_io
       end: 100Kib
     min_runtime: 2h
     sessions_per_node: 1
+    number_of_objects: 500
   copy_object:
     object_size:
       start: 0Kib

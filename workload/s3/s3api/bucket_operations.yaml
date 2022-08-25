@@ -5,6 +5,7 @@ test_1:
     end: 100Kib
   min_runtime: 2h
   sessions_per_node: 1
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -15,6 +16,7 @@ test_2:
     end: 100Kib
   min_runtime: 2h
   sessions_per_node: 2
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -25,6 +27,7 @@ test_3:
     end: 100Kib
   min_runtime: 20h
   sessions_per_node: 3
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -35,6 +38,7 @@ test_4:
     end: 100Kib
   min_runtime: 1d
   sessions_per_node: 5
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -45,6 +49,7 @@ test_5:
     end: 100Kib
   min_runtime: 1d
   sessions_per_node: 8
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -55,6 +60,7 @@ test_6:
     end: 100Kib
   min_runtime: 2d
   sessions_per_node: 13
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -65,6 +71,7 @@ test_7:
     end: 100Kib
   min_runtime: 2d
   sessions_per_node: 21
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -75,6 +82,7 @@ test_8:
     end: 100Kib
   min_runtime: 4d
   sessions_per_node: 34
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -85,6 +93,7 @@ test_9:
     end: 100Kib
   min_runtime: 5d
   sessions_per_node: 55
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -95,6 +104,7 @@ test_10:
     end: 100Kib
   min_runtime: 5d
   sessions_per_node: 89
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -105,6 +115,7 @@ test_11:
     end: 100Kib
   min_runtime: 5d
   sessions_per_node: 144
+  number_of_objects: 500
   tool: s3api
   operation: bucket
 
@@ -115,5 +126,6 @@ test_12:
     end: 100Kib
   min_runtime: 5d
   sessions_per_node: 233
+  number_of_objects: 500
   tool: s3api
   operation: bucket

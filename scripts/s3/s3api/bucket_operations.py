@@ -48,15 +48,12 @@ class TestBucketOps(S3Api):
         super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
             "use_ssl"), test_id=f"{test_id}_bucket_operations")
         random.seed(kwargs.get("seed"))
-        self.object_per_iter = 500
+        self.object_per_iter = kwargs.get("number_of_objects", 500)
         self.object_size = kwargs.get("object_size")
         self.test_id = test_id.lower()
         self.session_id = kwargs.get("session")
         self.iteration = 1
-        if kwargs.get("duration"):
-            self.finish_time = datetime.now() + kwargs.get("duration")
-        else:
-            self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
+        self.finish_time = datetime.now() + kwargs.get("duration") or timedelta(hours=int(100 * 24))
 
     # pylint: disable=broad-except
     async def execute_bucket_workload(self):
