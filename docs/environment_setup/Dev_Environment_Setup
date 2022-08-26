@@ -23,7 +23,7 @@ ln -s /usr/local/bin/python3.7 python3.7
 alias python3="/usr/local/bin/python3.7"
 alias python3.7="/usr/local/bin/python3.7"
 
-# Execute follownig command after adding in /root/.bashrc
+# Execute following command after adding in /root/.bashrc
 source /root/.bashrc
 
 
