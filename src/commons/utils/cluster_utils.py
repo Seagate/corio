@@ -104,7 +104,7 @@ class BaseClusterServices(RemoteHost):
 
 class ClusterServices(BaseClusterServices):
     """Cluster services class to perform service related operations."""
-
+    # pylint: disable=E1101
     def get_pod_name(self, pod_prefix: str = const.SERVER_POD_NAME_PREFIX):
         """Get pod name with given prefix."""
         status, output = self.exec_k8s_command(cmd.CMD_K8S_PODS_NAME, read_lines=True)

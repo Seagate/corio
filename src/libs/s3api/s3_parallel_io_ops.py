@@ -20,8 +20,8 @@
 import asyncio
 import os
 
-import nest_asyncio
 from time import perf_counter_ns
+import nest_asyncio
 
 from src.commons.utils import corio_utils
 from src.libs.s3api import S3Api

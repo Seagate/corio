@@ -33,7 +33,6 @@ from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.tools.s3bench import S3bench
 
-
 # pylint: disable=too-many-instance-attributes
 class TestMixObjectOps(S3Bucket, S3Object):
     """S3 mix object operations class for executing given io stability workload."""
@@ -58,6 +57,7 @@ class TestMixObjectOps(S3Bucket, S3Object):
         self.access_key = access_key
         self.secret_key = secret_key
         self.endpoint_url = endpoint_url
+        self.object_name = None
         if not S3bench.install_s3bench():
             raise Exception("s3bench tool is not installed.")
         if kwargs.get("duration"):
@@ -77,6 +77,7 @@ class TestMixObjectOps(S3Bucket, S3Object):
         # :param cleanup_percentage: Once write reached to percentage then delete all data.
         # :param total_storage_size: Total storage on cloud.
         """
+
         cls.object_prefix = "s3mix_object_ops_iter"
         cls.bucket_name = f"s3mix-bucket-{perf_counter_ns()}"
         cls.write_percentage = kwargs.get("write_percentage")
@@ -115,6 +116,7 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
     def execute_mix_object_workload(self):
         """Execute mix object operations workload for specific duration."""
+        # pylint: disable=W0511
         # TODO: disable_background_delete/enable_background_delete
         self.create_s3_bucket(self.bucket_name)
         self.log.info("Created bucket: %s", self.bucket_name)

@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(__name__)
 class Warp:
     """Warp class for executing given Warp workload."""
 
-    # pylint: disable=too-many-arguments,too-many-locals
+    # pylint: disable=too-many-arguments,too-many-locals,too-many-instance-attributes
     def __init__(self, operation: str, access: str, secret: str,
                  duration: timedelta = None, **kwargs) -> None:
         """Log file generated name = log_file.csv.zst file in current directory.
