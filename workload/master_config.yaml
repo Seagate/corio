@@ -155,6 +155,7 @@ s3api: # basic_io
       start: 1h
       end: 12h
     delete_percentage_per_bucket: 10
+    put_percentage_per_bucket: 10
 
 
 mix_io:

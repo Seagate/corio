@@ -86,7 +86,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["duration"] = params.get("min_runtime", 0)
         params.update(common_params)
         if params["tool"] == "s3api":
-            if "TestTypeXObjectOps" in str(params.get("operation")[0]):
+            operation = str(params.get("operation")[0])
+            if "TestTypeX" in operation or "TestType5" in operation:
                 params["session"] = f"{params['test_id']}_session_main"
                 iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                 tasks.append(create_session(funct=params["operation"],

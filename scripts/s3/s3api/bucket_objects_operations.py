@@ -61,13 +61,13 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             delete_percentage_per_bucket = self.kwargs.get("delete_percentage_per_bucket")
             put_percentage_per_bucket = self.kwargs.get("put_percentage_per_bucket")
             self.log.info("Iteration %s is started.", iteration)
-            buckets = await self.create_n_buckets("bucket_objects_ops", number_of_buckets)
+            buckets = await self.create_n_buckets("bucket-objects-ops", number_of_buckets)
             self.log.info("Bucket list: %s", buckets)
             distribution = self.distribution_of_buckets_objects_per_session(
                 buckets, number_of_objects, sessions)
             self.put_delete_distribution(
                 distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
-            await self.create_sessions(self.write_data, distribution)
+            await self.create_sessions(self.write_data, distribution, object_size)
             while True:
                 if iteration > 1:
                     self.log.info("Iteration %s is started.", iteration)
@@ -79,7 +79,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                 time.sleep(sleep_time)
                 await self.create_sessions(self.read_data, distribution)
                 await self.create_sessions(self.delete_distribution_data, distribution)
-                await self.create_sessions(self.write_distribution_data, distribution)
+                await self.create_sessions(self.write_distribution_data, distribution, object_size)
                 self.log.info("Iteration %s is completed.", iteration)
                 if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                     await self.create_sessions(self.cleanup_data, buckets, sessions)
