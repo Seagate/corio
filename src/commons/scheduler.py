@@ -111,8 +111,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         else:
             raise NotImplementedError(f"Tool is not supported: {params['tool']}")
         LOGGER.debug(iter_keys)
-        await schedule_tasks(LOGGER, tasks)
-        LOGGER.info("Execution completed for process: %s", process_name)
+    await schedule_tasks(LOGGER, tasks)
+    LOGGER.info("Execution completed for process: %s", process_name)
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:

@@ -68,7 +68,7 @@ class S3ApiIOUtils(S3Api):
                 distribution[i] = [{"bucket_name": bucket_name, "object_count": round(
                     object_count / ctr_itr[bucket_name])}]
                 buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
-                    bucket_name, 0) + 1
+                    bucket_name) + 1
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
             for _ in range(len(ctr_itr)):
@@ -137,7 +137,7 @@ class S3ApiIOUtils(S3Api):
         :param func: Name of the function.
         """
         self.log.info("Execution started for %s", func.__name__)
-        run_event_loop_until_complete(self.log, func(*args, **kwargs))
+        run_event_loop_until_complete(self.log, func, *args, **kwargs)
         self.log.info("Execution completed for %s", func.__name__)
 
     def get_object_size(self, object_size) -> int:
@@ -221,7 +221,7 @@ class S3ApiIOUtils(S3Api):
                 file_path = corio_utils.create_file(file_name, file_size)
                 await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
-                data["files"].append(file_path)
+                data["files"].append(file_name)
 
         for _, values in distribution.items():
             for value in values:
@@ -244,3 +244,14 @@ class S3ApiIOUtils(S3Api):
                 bucket_list.append(value["bucket_name"])
             tasks.append(delete_buckets(bucket_list))
         await schedule_tasks(self.log, tasks)
+
+    @staticmethod
+    def get_random_sleep_time(delay) -> int:
+        """Get the random delay time from dict/list/tuple/int."""
+        if isinstance(delay, dict):
+            sleep_time = random.randrange(delay["start"], delay["end"])
+        elif isinstance(delay, (list, tuple)):
+            sleep_time = random.choice(delay)
+        else:
+            sleep_time = delay
+        return sleep_time

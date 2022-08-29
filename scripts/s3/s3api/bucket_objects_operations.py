@@ -46,7 +46,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             "use_ssl"), test_id=f"{kwargs.get('test_id')}_bucket_objects_operations")
         random.seed(kwargs.get("seed"))
         self.kwargs = kwargs
-        self.finish_time = datetime.now() + kwargs.get("duration") or timedelta(hours=int(100 * 24))
+        self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
 
     # pylint: disable=broad-except
     async def execute_bucket_object_workload(self):
@@ -67,22 +67,19 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                 buckets, number_of_objects, sessions)
             self.put_delete_distribution(
                 distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
-            await self.starts_sessions(self.write_data, distribution, object_size)
+            self.starts_sessions(self.write_data, distribution, object_size)
             while True:
                 if iteration > 1:
                     self.log.info("Iteration %s is started.", iteration)
-                if isinstance(delay, dict):
-                    sleep_time = random.randrange(self.delete_object["start"], object_size["end"])
-                else:
-                    sleep_time = delay
+                sleep_time = self.get_random_sleep_time(delay)
                 self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
                 time.sleep(sleep_time)
-                await self.starts_sessions(self.read_data, distribution)
-                await self.starts_sessions(self.delete_distribution_data, distribution)
-                await self.starts_sessions(self.write_distribution_data, distribution, object_size)
+                self.starts_sessions(self.read_data, distribution)
+                self.starts_sessions(self.delete_distribution_data, distribution)
+                self.starts_sessions(self.write_distribution_data, distribution, object_size)
                 self.log.info("Iteration %s is completed.", iteration)
                 if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
-                    await self.starts_sessions(self.cleanup_data, buckets, sessions)
+                    self.starts_sessions(self.cleanup_data, buckets, sessions)
                     return True, "bucket object workload execution completed successfully."
                 iteration += 1
         except Exception as err:
