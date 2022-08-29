@@ -17,7 +17,6 @@
 #
 """S3api IO utility."""
 
-import asyncio
 import os
 import random
 from collections import Counter
@@ -26,6 +25,8 @@ from random import shuffle
 from time import perf_counter_ns
 
 from src.commons.utils import corio_utils
+from src.commons.utils.asyncio_utils import run_event_loop_until_complete
+from src.commons.utils.asyncio_utils import schedule_tasks
 from src.libs.s3api import S3Api
 
 
@@ -129,37 +130,14 @@ class S3ApiIOUtils(S3Api):
                 ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
         self.log.debug(distribution)
 
-    async def schedule_sessions(self, tasks):
-        """Schedule session for function as per sessions."""
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-        if pending:
-            self.log.critical("Terminating pending task: %s", pending)
-            for task in pending:
-                task.cancel()
-        self.log.info(done)
-        for task in done:
-            task.result()
-
-    # pylint: disable=broad-except
-    def create_sessions(self, func, *args, **kwargs):
+    def starts_sessions(self, func, *args, **kwargs):
         """
         Start workload execution.
 
         :param func: Name of the function.
         """
         self.log.info("Execution started for %s", func.__name__)
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            new_loop.run_until_complete(func(*args, **kwargs))
-        except Exception as error:
-            self.log.exception(error)
-            if new_loop.is_running():
-                new_loop.stop()
-            raise error from Exception
-        finally:
-            if not new_loop.is_closed():
-                new_loop.close()
+        run_event_loop_until_complete(self.log, func(*args, **kwargs))
         self.log.info("Execution completed for %s", func.__name__)
 
     def get_object_size(self, object_size) -> int:
@@ -186,13 +164,13 @@ class S3ApiIOUtils(S3Api):
                 file_path = corio_utils.create_file(file_name, file_size)
                 await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
-                data["files"].append(file_path)
+                data["files"].append(file_name)
 
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
                     put_data(value, value["bucket_name"], value["object_count"], object_size))
-        await self.schedule_sessions(tasks)
+        await schedule_tasks(self.log, tasks)
 
     async def read_data(self, distribution):
         """Read distribution data from s3."""
@@ -206,7 +184,7 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(read_data(value))
-        await self.schedule_sessions(tasks)
+        await schedule_tasks(self.log, tasks)
 
     async def delete_distribution_data(self, distribution):
         """Read distribution data from s3."""
@@ -229,7 +207,7 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(delete_data(value))
-        await self.schedule_sessions(tasks)
+        await schedule_tasks(self.log, tasks)
 
     async def write_distribution_data(self, distribution, object_size):
         """Write distribution data to s3."""
@@ -249,7 +227,7 @@ class S3ApiIOUtils(S3Api):
             for value in values:
                 tasks.append(
                     put_data(value, value["bucket_name"], value["put_object_count"], object_size))
-        await self.schedule_sessions(tasks)
+        await schedule_tasks(self.log, tasks)
 
     async def cleanup_data(self, distribution: dict) -> None:
         """Delete s3 buckets in parallel forcefully by default."""
@@ -265,4 +243,4 @@ class S3ApiIOUtils(S3Api):
             for value in values:
                 bucket_list.append(value["bucket_name"])
             tasks.append(delete_buckets(bucket_list))
-        await self.schedule_sessions(tasks)
+        await schedule_tasks(self.log, tasks)

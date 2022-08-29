@@ -22,7 +22,7 @@ import time
 from datetime import datetime, timedelta
 
 from src.commons.constants import MIN_DURATION
-from src.libs.s3api.s3_io_utils import S3ApiIOUtils
+from src.libs.s3api.s3io_utils import S3ApiIOUtils
 
 
 class TestType5BucketObjectOps(S3ApiIOUtils):
@@ -67,7 +67,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                 buckets, number_of_objects, sessions)
             self.put_delete_distribution(
                 distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
-            await self.create_sessions(self.write_data, distribution, object_size)
+            await self.starts_sessions(self.write_data, distribution, object_size)
             while True:
                 if iteration > 1:
                     self.log.info("Iteration %s is started.", iteration)
@@ -77,12 +77,12 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     sleep_time = delay
                 self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
                 time.sleep(sleep_time)
-                await self.create_sessions(self.read_data, distribution)
-                await self.create_sessions(self.delete_distribution_data, distribution)
-                await self.create_sessions(self.write_distribution_data, distribution, object_size)
+                await self.starts_sessions(self.read_data, distribution)
+                await self.starts_sessions(self.delete_distribution_data, distribution)
+                await self.starts_sessions(self.write_distribution_data, distribution, object_size)
                 self.log.info("Iteration %s is completed.", iteration)
                 if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
-                    await self.create_sessions(self.cleanup_data, buckets, sessions)
+                    await self.starts_sessions(self.cleanup_data, buckets, sessions)
                     return True, "bucket object workload execution completed successfully."
                 iteration += 1
         except Exception as err:
