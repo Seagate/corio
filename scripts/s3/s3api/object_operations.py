@@ -50,10 +50,7 @@ class TestS3Object(S3Api):
             "use_ssl"), test_id=f"{test_id}_object_operations")
         random.seed(kwargs.get("seed"))
         self.test_id = test_id
-        self.buckets = []
         self.object_size = kwargs.get("object_size")
-        self.number_of_buckets = kwargs.get("number_of_buckets", 1)
-        self.number_of_objects = kwargs.get("number_of_objects", 1)
         self.session_id = kwargs.get("session")
         self.iteration = 1
         self.range_read = kwargs.get("range_read")
@@ -70,51 +67,47 @@ class TestS3Object(S3Api):
             bucket = os.getenv("d_bucket")
             self.log.info("Doing Object IO Operations with bucket %s", bucket)
         else:
-            for _ in range(self.number_of_buckets):
-                bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
-                self.log.info("Create bucket %s", bucket)
-                await self.create_bucket(bucket)
-                self.buckets.append(bucket)
+            bucket = f'object-op-{self.test_id}-{perf_counter_ns()}'.lower()
+            self.log.info("Create bucket %s", bucket)
+            await self.create_bucket(bucket)
 
         while True:
             try:
                 self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
-                for bucket, in self.buckets:
-                    for _ in range(self.number_of_objects):
-                        file_size = self.get_object_size()
-                        if isinstance(self.range_read, dict):
-                            range_read = random.randrange(self.range_read["start"], self.range_read["end"])
-                        else:
-                            range_read = self.range_read
-                        file_name = f'object-bucket-op-{perf_counter_ns()}'
-                        file_path = corio_utils.create_file(file_name, file_size)
-                        self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
-                            file_size))
-                        checksum_in = self.checksum_file(file_path)
-                        self.log.debug("Checksum IN = %s", checksum_in)
-                        await self.upload_object(bucket, file_name, file_path=file_path)
-                        self.log.info("s3://%s/%s uploaded successfully.", bucket, file_name)
-                        if range_read:
-                            part = int(file_size / self.parts)
-                            part_ranges = [(0, part), (part + 1, part * 2),
-                                           (part * 2 + 1, file_size - range_read)]
-                            for start, end in part_ranges:
-                                loc = random.randrange(start, end)
-                                assert (await self.get_s3object_checksum(
-                                    bucket, file_name, ranges=f'bytes={f"{loc}-{loc + range_read - 1}"}'
-                                ) == self.checksum_part_file(file_path, loc, range_read)), \
-                                    f"Checksum of downloaded part for range  " \
-                                    f"({f'{loc}-{loc + range_read - 1}'}) does not " \
-                                    f"match for s3://{bucket}/{file_name}."
-                        else:
-                            self.log.info("Perform Head bucket.")
-                            await self.head_object(bucket, file_name)
-                            self.log.info("Get Object and check data integrity.")
-                            assert (checksum_in == await self.get_s3object_checksum(bucket, file_name)), \
-                                "Checksum are not equal."
-                            self.log.info("Delete object.")
-                            await self.delete_object(bucket, file_name)
-                            os.remove(file_path)
+                file_size = self.get_object_size()
+                if isinstance(self.range_read, dict):
+                    range_read = random.randrange(self.range_read["start"], self.range_read["end"])
+                else:
+                    range_read = self.range_read
+                file_name = f'object-bucket-op-{perf_counter_ns()}'
+                file_path = corio_utils.create_file(file_name, file_size)
+                self.log.info("Object '%s', object size %s", file_name, corio_utils.convert_size(
+                    file_size))
+                checksum_in = self.checksum_file(file_path)
+                self.log.debug("Checksum IN = %s", checksum_in)
+                await self.upload_object(bucket, file_name, file_path=file_path)
+                self.log.info("s3://%s/%s uploaded successfully.", bucket, file_name)
+                if range_read:
+                    part = int(file_size / self.parts)
+                    part_ranges = [(0, part), (part + 1, part * 2),
+                                   (part * 2 + 1, file_size - range_read)]
+                    for start, end in part_ranges:
+                        loc = random.randrange(start, end)
+                        assert (await self.get_s3object_checksum(
+                            bucket, file_name, ranges=f'bytes={f"{loc}-{loc + range_read - 1}"}'
+                        ) == self.checksum_part_file(file_path, loc, range_read)), \
+                            f"Checksum of downloaded part for range  " \
+                            f"({f'{loc}-{loc + range_read - 1}'}) does not " \
+                            f"match for s3://{bucket}/{file_name}."
+                else:
+                    self.log.info("Perform Head bucket.")
+                    await self.head_object(bucket, file_name)
+                    self.log.info("Get Object and check data integrity.")
+                    assert (checksum_in == await self.get_s3object_checksum(bucket, file_name)), \
+                        "Checksum are not equal."
+                    self.log.info("Delete object.")
+                    await self.delete_object(bucket, file_name)
+                    os.remove(file_path)
                 self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
