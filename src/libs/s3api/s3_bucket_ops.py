@@ -20,6 +20,8 @@
 #
 
 """Python Library to perform bucket operations using aiobotocore module."""
+import random
+import string
 import time
 
 from src.commons.utils.corio_utils import retries
@@ -183,3 +185,16 @@ class S3Bucket(S3RestApi):
         self.log.debug("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
+
+    @staticmethod
+    def get_bucket_name():
+        """
+        Generate a valid bucket name string.
+
+        first letter should be a number or lowercase letter, rest letters can include number,
+         lowercase, hyphens and dots. bucket length can vary from 3 to 63.
+        """
+        return (''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) +
+                ''.join(random.SystemRandom().choice(
+                    string.ascii_lowercase + string.digits + "." + '-') for _ in range(
+                    random.randint(2, 63)))))
