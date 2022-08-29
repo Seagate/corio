@@ -293,13 +293,16 @@ class S3ApiParallelIO(S3Api):
         :keyword distribution: Distribution of object size and number of samples.
             ex: {1024: 115, 2048: 100, 4096: 225}
         :keyword validate: Optional and used in case of read operations.
-        :keyword bucket_name: Name of s3 bucket. format: "iobkt-size{obj_size}-samples{num_sample}".
+        :keyword bucket_name: Name of s3 bucket. 
+            format: "iobkt-size{obj_size}-samples{num_sample}".
         :keyword object_prefix: Object prefix of the s3 object. format: "object-{obj_size}".
         """
         distribution = kwargs.get("distribution")
         if distribution:
             for obj_size, num_sample in distribution.items():
-                bucket_name = kwargs.get("bucket_name", f"iobkt-size{obj_size}-samples{num_sample}")
+                bucket_name = kwargs.get(
+                    "bucket_name",
+                    f"iobkt-size{obj_size}-samples{num_sample}")
                 object_prefix = kwargs.get("object_prefix", f"object-{obj_size}")
                 if operations == "write":
                     bucket_name = self.get_s3bucket(operations, bucket_name, obj_size)

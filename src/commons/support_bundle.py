@@ -35,7 +35,7 @@ LOGGER = logging.getLogger(ROOT)
 
 
 def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> None:
-    """Collect support bundle log and copy to NFS/LOCAL server and keep SB logs as per max_sb count.
+    """Collect and copy support bundles to NFS/LOCAL server and keep SB logs as per max_sb count.
 
     :param dir_path: Path of common log directory.
     :param max_sb: maximum sb count to keep on nfs server.

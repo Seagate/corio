@@ -67,7 +67,9 @@ class Mail:
                 server.sendmail(self.sender, self.receiver.split(','), message.as_string())
         else:
             LOGGER.warning(
-                "Can't send mail as email host: %s, port: %s not found.", self.mail_host, self.port)
+                "Can't send mail as email host: %s, port: %s not found.",
+                self.mail_host,
+                self.port)
 
 
 # pylint: disable=too-many-instance-attributes
@@ -126,8 +128,8 @@ class MailNotification(threading.Thread):
         body = "<h2 style='text-align:center;'>Corio Execution Status</h2>"
         body += f"""<table style='width: 100%; border: thin black dotted; text-align: left;'
          width = 'nowrap;'> <tr style='background-color:{status_code}'>"""
-        body += f"""<td style='color: white; font-size: 124%; padding-left: 5px; font-weight: bold;'
-         colspan=2><b>Execution status:</b> {execution_status}</td></tr>"""
+        body += f"""<td style='color: white; font-size: 124%; padding-left: 5px;'
+         font-weight: bold; colspan=2><b>Execution status:</b> {execution_status}</td></tr>"""
         body += f"<tr><td><b>Execution started:</b></td> <td>{self.start_time}</td></tr>"
         body += f"<tr><td><b>Execution duration:</b></td> <td>{execution_duration}</td></tr>"
         # Cluster health and pod status.

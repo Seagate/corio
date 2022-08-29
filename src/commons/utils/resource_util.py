@@ -71,7 +71,9 @@ def stop_store_client_resource_utilization():
     journalctl_filepath = os.path.join("/root", "client_journalctl.log")
     resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
     if resp[0]:
-        shutil.move(journalctl_filepath, os.path.join(dpath, os.path.basename(journalctl_filepath)))
+        shutil.move(journalctl_filepath, os.path.join(
+            dpath,
+            os.path.basename(journalctl_filepath)))
     # collect dmesg logs from client.
     dmesg_filepath = os.path.join("/root", "client_dmesg.log")
     resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(dmesg_filepath))

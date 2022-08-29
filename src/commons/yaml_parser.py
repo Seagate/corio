@@ -264,5 +264,10 @@ def convert_object_size_to_bytes(object_size: tuple) -> tuple:
 def convert_distribution_to_sample(distribution: list, samples: int) -> tuple:
     """Convert object size distribution to samples."""
     for sample, _ in enumerate(distribution):
-        distribution[sample] = int(round(((float(distribution[sample][:-1]) / 100.0) * samples), 2))
+        distribution[sample] = int(
+            round(
+                ((float(distribution[sample][:-1]) / 100.0) * samples),
+                2
+            )
+        )
     return tuple(distribution)

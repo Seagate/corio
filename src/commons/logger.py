@@ -42,7 +42,7 @@ class StreamToLogger:
         :param file_path: File path of the logger
         :param logger: logger object from logging.getLogger(__name__)
         :keyword stream: To enable/disable stream handler/logging
-        :keyword max_byte: Rollover occurs whenever the current logfile is nearly maxBytes in length
+        :keyword max_byte: Rollover occurs whenever the current logfile is nearly maxBytes
         :keyword backup_count: count of the max rotation/rollover of logs
         :keyword log_rotate: Rotate log once reached the max_bytes
         """

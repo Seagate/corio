@@ -295,9 +295,11 @@ class S3Object(S3RestApi):
         s3_resource = self.get_boto3_resource().Bucket(bucket_name)
         if object_prefix:
             objects = s3_resource.objects.filter(Prefix=object_prefix)
-            objects_to_delete = [{'Key': o.key} for o in objects if o.key.startswith(object_prefix)]
-            response = s3_resource.meta.client.delete_objects(Bucket=bucket_name,
-                                                              Delete={'Objects': objects_to_delete})
+            objects_to_delete = \
+                [{'Key': o.key} for o in objects if o.key.startswith(object_prefix)]
+            response = s3_resource.meta.client.delete_objects(
+                Bucket=bucket_name,
+                Delete={'Objects': objects_to_delete})
             self.log.info("deleted all s3 object with prefix '%s' from '%s', response: %s",
                           object_prefix, s3_url, response)
         else:

@@ -91,8 +91,9 @@ def cpu_memory_details() -> None:
     if cpu_usages > 85.0:
         LOGGER.warning("Client: CPU Usages are: %s", cpu_usages)
         if cpu_usages > 98.0:
-            LOGGER.critical("Client: CPU usages are greater than %s, hence tool may stop execution",
-                            cpu_usages)
+            LOGGER.critical(
+                "Client: CPU usages are greater than %s, hence tool may stop execution",
+                cpu_usages)
     memory_usages = ps.virtual_memory().percent
     if memory_usages > 85.0:
         LOGGER.warning("Client: Memory usages are: %s", memory_usages)

@@ -33,6 +33,7 @@ from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.tools.s3bench import S3bench
 
+
 # pylint: disable=too-many-instance-attributes
 class TestMixObjectOps(S3Bucket, S3Object):
     """S3 mix object operations class for executing given io stability workload."""
@@ -179,10 +180,15 @@ class TestMixObjectOps(S3Bucket, S3Object):
         consumed_per = int(self.total_written_data / self.total_storage * 100)
         storage_consumed = 100 if consumed_per > 100 else consumed_per
         if operation:
-            self.log.info("Storage consumed %s%% after %s operations.", storage_consumed, operation)
+            self.log.info(
+                "Storage consumed %s%% after %s operations.",
+                storage_consumed,
+                operation)
         else:
-            self.log.info("Storage consumed %s%% after iteration %s.", storage_consumed,
-                          self.iteration)
+            self.log.info(
+                "Storage consumed %s%% after iteration %s.",
+                storage_consumed,
+                self.iteration)
 
     def get_sample_details(self, file_size: int) -> tuple:
         """
@@ -205,7 +211,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
         r_chunks = modf(self.storage_size_to_read / file_size)
         self.read_samples = int(r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
         # Added if we are reading data in iteration more than 100 percent.
-        self.read_samples = self.read_samples if self.read_percentage <= 100 else self.write_samples
+        self.read_samples = self.read_samples if self.read_percentage <= 100 \
+            else self.write_samples
         if self.read_samples < self.sessions:
             self.log.warning(err_str, self.read_samples, self.sessions)
         else:

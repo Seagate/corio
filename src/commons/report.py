@@ -130,7 +130,9 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
         if "Passed" not in input_dict["RESULT_UPDATE"]:
             # Report In Progress, Fail, Aborted and update status.
             if input_dict["TEST_ID"] in terminated_tests:
-                LOGGER.error("Test execution terminated due to error in %s.", input_dict["TEST_ID"])
+                LOGGER.error(
+                    "Test execution terminated due to error in %s.",
+                    input_dict["TEST_ID"])
                 input_dict["RESULT_UPDATE"] = "Fail"
             elif test_failed:
                 input_dict["RESULT_UPDATE"] = "Aborted"

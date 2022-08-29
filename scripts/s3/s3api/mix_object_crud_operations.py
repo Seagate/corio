@@ -110,7 +110,10 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         """Display storage consumed after specified operation."""
         storage_consumed = int(self.total_written_data / self.cluster_storage * 100)
         if operation:
-            self.log.info("Storage consumed %s%% after %s operations.", storage_consumed, operation)
+            self.log.info(
+                "Storage consumed %s%% after %s operations.",
+                storage_consumed,
+                operation)
         else:
             self.log.info("Storage consumed %s%% after iteration %s.", storage_consumed,
                           self.iteration)
@@ -235,7 +238,8 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.iteration += 1
 
     async def execute_object_crud_workload(self):
-        """Execute Plain object operations workload for given distribution for specific duration."""
+        """Execute Plain object operations workload for given distribution for
+        specific duration."""
         while True:
             try:
                 self.log.info("iteration %s is started...", self.iteration)

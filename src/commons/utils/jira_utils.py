@@ -32,7 +32,8 @@ import requests
 from jira import JIRAError
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
-from requests.packages.urllib3.util.retry import Retry # pylint: disable=import-error
+
+from requests.packages.urllib3.util.retry import Retry  # pylint: disable=import-error
 
 from src.commons.constants import ROOT
 
@@ -67,10 +68,12 @@ class JiraApp:
              "self": "https://jts.seagate.com/rest/api/2/issue/311993",
              "testEnvironments": ["515_full"]},]
         """
-        tp_response = requests.get(f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
-                                   auth=self.auth)
+        tp_response = requests.get(
+            f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
+            auth=self.auth)
         if tp_response.status_code != HTTPStatus.OK:
-            raise AssertionError(f"Failed to get TE: {test_plan_id}, reason {tp_response.json()}")
+            raise AssertionError(
+                f"Failed to get TE: {test_plan_id},reason {tp_response.json()}")
 
         return tp_response.json()
 

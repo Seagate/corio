@@ -160,8 +160,12 @@ def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
     :keyword sequential_run: Execute tests sequentially.
     """
     schedule.cancel_job(sched_job)
-    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
-               **kwargs)
+    log_status(
+        parsed_input,
+        corio_start_time,
+        test_failed=terminated_tp,
+        terminated_tests=test_ids,
+        **kwargs)
 
 
 def monitor_processes(processes: dict, return_dict) -> str or None:

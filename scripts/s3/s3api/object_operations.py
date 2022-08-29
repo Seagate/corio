@@ -108,7 +108,10 @@ class TestS3Object(S3Api):
                     self.log.info("Delete object.")
                     await self.delete_object(bucket, file_name)
                     os.remove(file_path)
-                self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
+                self.log.info(
+                    "Iteration %s is completed of %s...",
+                    self.iteration,
+                    self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"

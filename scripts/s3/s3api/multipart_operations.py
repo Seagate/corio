@@ -99,7 +99,10 @@ class TestMultiParts(S3Api):
                 if self.part_copy:
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
-                self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
+                self.log.info(
+                    "Iteration %s is completed of %s...",
+                    self.iteration,
+                    self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s} \nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url} \n Exception: {err}"
@@ -146,16 +149,22 @@ class TestMultiParts(S3Api):
             byte_s = os.urandom(round(await self.get_workload_size() / number_of_parts))
             if self.part_copy and i == random_part:
                 await self.upload_object(body=byte_s, bucket=mpart_bucket, key=s3_object)
-                assert s3_object in await self.list_objects(mpart_bucket), f"Failed to upload " \
-                                                                           f"object {s3_object}"
-                upload_resp = await self.upload_part_copy(f"{mpart_bucket}/{s3_object}",
-                                                          mpart_bucket, s3_object, part_number=i,
-                                                          upload_id=response["UploadId"])
+                assert s3_object in await self.list_objects(mpart_bucket), \
+                    f"Failed to upload " \
+                    f"object {s3_object}"
+                upload_resp = await self.upload_part_copy(
+                    f"{mpart_bucket}/{s3_object}",
+                    mpart_bucket, s3_object, part_number=i,
+                    upload_id=response["UploadId"])
             else:
-                upload_resp = await self.upload_part(byte_s, mpart_bucket,
-                                                     s3mpart_object, upload_id=response["UploadId"],
-                                                     part_number=i)
-            etag = upload_resp["CopyPartResult"]["ETag"] if self.part_copy else upload_resp["ETag"]
+                upload_resp = await self.upload_part(
+                    byte_s,
+                    mpart_bucket,
+                    s3mpart_object,
+                    upload_id=response["UploadId"],
+                    part_number=i)
+            etag = upload_resp["CopyPartResult"]["ETag"] \
+                if self.part_copy else upload_resp["ETag"]
             assert etag is not None, f"Failed upload part: {upload_resp}"
             parts.append({"PartNumber": i, "ETag": etag})
             file_hash.update(byte_s)

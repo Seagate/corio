@@ -135,7 +135,9 @@ class ClusterServices(BaseClusterServices):
                 pod_name = node["name"]
                 pod = pod_name[:10] + pod_name[23:]
                 if pod in os.getenv('DEGRADED_PODS', '').split(','):
-                    LOGGER.info("Skipping Check for Pod %s as system is in degraded mode", pod_name)
+                    LOGGER.info(
+                        "Skipping Check for Pod %s as system is in degraded mode",
+                        pod_name)
                     continue
                 services = node["svcs"]
                 for service in services:
