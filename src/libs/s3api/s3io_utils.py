@@ -41,8 +41,9 @@ class S3ApiIOUtils(S3Api):
         if seed:
             random.seed(kwargs.get("seed"))
 
-    def distribution_of_buckets_objects_per_session(self, bucket_list: list, object_count: int,
-            sessions: int) -> dict:
+    def distribution_of_buckets_objects_per_session(
+        self, bucket_list: list, object_count: int, sessions: int
+    ) -> dict:
         """
         Get the objects per bucket and buckets per session distribution dictionary.
 
@@ -63,35 +64,58 @@ class S3ApiIOUtils(S3Api):
             ctr_itr = Counter([next(bkt_itr) for _ in range(sessions)])
             for i in range(1, sessions + 1):
                 bucket_name = next(bkt_itr)
-                while bucket_name in buckets and buckets[bucket_name] == ctr_itr[bucket_name]:
+                while (
+                    bucket_name in buckets
+                    and buckets[bucket_name] == ctr_itr[bucket_name]
+                ):
                     bucket_name = next(bkt_itr)
-                distribution[i] = [{"bucket_name": bucket_name, "object_count": round(
-                    object_count / ctr_itr[bucket_name])}]
-                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
-                    bucket_name) + 1
+                distribution[i] = [
+                    {
+                        "bucket_name": bucket_name,
+                        "object_count": round(object_count / ctr_itr[bucket_name]),
+                    }
+                ]
+                buckets[bucket_name] = (
+                    1 if bucket_name not in buckets else buckets.get(bucket_name) + 1
+                )
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
             for _ in range(len(ctr_itr)):
                 bucket_name = next(bkt_itr)
-                while bucket_name in buckets and ctr_itr[bucket_name] in [1, buckets[bucket_name]]:
+                while bucket_name in buckets and ctr_itr[bucket_name] in [
+                    1,
+                    buckets[bucket_name],
+                ]:
                     bucket_name = next(bkt_itr)
                 session = next(sess_itr)
                 if session in distribution:
-                    distribution[session].append({"bucket_name": bucket_name, "object_count": round(
-                        object_count / ctr_itr[bucket_name])})
+                    distribution[session].append(
+                        {
+                            "bucket_name": bucket_name,
+                            "object_count": round(object_count / ctr_itr[bucket_name]),
+                        }
+                    )
                 else:
-                    distribution[session] = [{"bucket_name": bucket_name, "object_count": round(
-                        object_count / ctr_itr[bucket_name])}]
-                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
-                    bucket_name, 0) + 1
+                    distribution[session] = [
+                        {
+                            "bucket_name": bucket_name,
+                            "object_count": round(object_count / ctr_itr[bucket_name]),
+                        }
+                    ]
+                buckets[bucket_name] = (
+                    1 if bucket_name not in buckets else buckets.get(bucket_name, 0) + 1
+                )
         del buckets, bkt_itr, ctr_itr, sess_itr
         self.log.debug(distribution)
         return distribution
 
-    def put_delete_distribution(self, distribution: dict,
-            delete_obj_percent: int = 0,
-            put_object_percent: int = 0,
-            overwrite_object_percent: int = 0) -> None:
+    def put_delete_distribution(
+        self,
+        distribution: dict,
+        delete_obj_percent: int = 0,
+        put_object_percent: int = 0,
+        overwrite_object_percent: int = 0,
+    ) -> None:
         """
         Modify distribution dict with delete object percentage and put object percentage.
 
@@ -129,11 +153,17 @@ class S3ApiIOUtils(S3Api):
         for _, value in distribution.items():
             for ele in value:
                 if delete_obj_percent:
-                    ele["delete_object_count"] = int(ele["object_count"] * delete_obj_percent / 100)
+                    ele["delete_object_count"] = int(
+                        ele["object_count"] * delete_obj_percent / 100
+                    )
                 if put_object_percent:
-                    ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
+                    ele["put_object_count"] = int(
+                        ele["object_count"] * put_object_percent / 100
+                    )
                 if overwrite_object_percent:
-                    ele["overwrite_object_count"] = int(ele["object_count"] * overwrite_object_percent / 100)
+                    ele["overwrite_object_count"] = int(
+                        ele["object_count"] * overwrite_object_percent / 100
+                    )
         self.log.debug(distribution)
 
     def starts_sessions(self, func, *args, **kwargs):
@@ -168,14 +198,19 @@ class S3ApiIOUtils(S3Api):
                 file_size = self.get_object_size(objsize)
                 file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                await self.upload_object(
+                    bucket_name, key=file_name, file_path=file_path
+                )
                 os.remove(file_path)
                 data["files"].append(file_name)
 
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(value, value["bucket_name"], value["object_count"], object_size))
+                    put_data(
+                        value, value["bucket_name"], value["object_count"], object_size
+                    )
+                )
         await schedule_tasks(self.log, tasks)
 
     async def read_data(self, distribution):
@@ -225,14 +260,22 @@ class S3ApiIOUtils(S3Api):
                 file_size = self.get_object_size(objsize)
                 file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                await self.upload_object(
+                    bucket_name, key=file_name, file_path=file_path
+                )
                 os.remove(file_path)
                 data["files"].append(file_name)
 
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(value, value["bucket_name"], value["put_object_count"], object_size))
+                    put_data(
+                        value,
+                        value["bucket_name"],
+                        value["put_object_count"],
+                        object_size,
+                    )
+                )
         await schedule_tasks(self.log, tasks)
 
     async def cleanup_data(self, distribution: dict) -> None:
@@ -272,11 +315,20 @@ class S3ApiIOUtils(S3Api):
                 file_name = random.choice(data["files"])
                 file_size = self.get_object_size(objsize)
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                await self.upload_object(
+                    bucket_name, key=file_name, file_path=file_path
+                )
                 os.remove(file_path)
                 await self.get_object(bucket_name, file_name)
+
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    overwrite_read_data(value, value["bucket_name"], value["overwrite_object_count"], object_size))
+                    overwrite_read_data(
+                        value,
+                        value["bucket_name"],
+                        value["overwrite_object_count"],
+                        object_size,
+                    )
+                )
         await schedule_tasks(self.log, tasks)

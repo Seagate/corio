@@ -126,7 +126,7 @@ def run_local_cmd(command: str) -> tuple:
     try:
         # nosec
         with Popen(
-            command, shell=False, stdout=PIPE, stderr=PIPE, encoding="utf-8"
+            command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8"
         ) as proc:
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))

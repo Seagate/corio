@@ -209,7 +209,12 @@ class S3Bucket(S3RestApi):
         first letter should be a number or lowercase letter, rest letters can include number,
          lowercase, hyphens and dots. bucket length can vary from 3 to 63.
         """
-        return (''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) +
-                ''.join(random.SystemRandom().choice(
-                    string.ascii_lowercase + string.digits + "." + '-') for _ in range(
-                    random.randint(2, 63)))))
+        return "".join(
+            random.SystemRandom().choice(string.ascii_lowercase + string.digits)
+            + "".join(
+                random.SystemRandom().choice(
+                    string.ascii_lowercase + string.digits + "." + "-"
+                )
+                for _ in range(random.randint(2, 63))
+            )
+        )

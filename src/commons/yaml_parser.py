@@ -215,10 +215,15 @@ def convert_delay_to_seconds(data: dict) -> None:
     if "delay" in data:
         if isinstance(data["delay"], dict):
             if "start" not in data["delay"] or "end" not in data["delay"]:
-                raise AssertionError(f"Range using start and end keys missing for delay in {data}")
-            data["delay"]["start"] = int(convert_to_time_delta(
-                data["delay"]["start"]).total_seconds())
-            data["delay"]["end"] = int(convert_to_time_delta(data["delay"]["end"]).total_seconds())
+                raise AssertionError(
+                    f"Range using start and end keys missing for delay in {data}"
+                )
+            data["delay"]["start"] = int(
+                convert_to_time_delta(data["delay"]["start"]).total_seconds()
+            )
+            data["delay"]["end"] = int(
+                convert_to_time_delta(data["delay"]["end"]).total_seconds()
+            )
         elif isinstance(data["delay"], str):
             data["delay"] = int(convert_to_time_delta(data["delay"]).total_seconds())
         else:

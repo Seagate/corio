@@ -36,7 +36,7 @@ class S3ObjectTestCase(unittest.TestCase):
     @staticmethod
     def read_part(content, offset, size):
         """Return size bytes' data from offset."""
-        return content[offset : offset + size]
+        return content[offset: offset + size]
 
     @patch("os.path.getsize")
     def test_checksum_part_file_positive_less_1mib(self, mock_getsize):

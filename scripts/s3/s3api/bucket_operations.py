@@ -64,7 +64,9 @@ class TestBucketOps(S3Api):
         self.test_id = test_id.lower()
         self.session_id = kwargs.get("session")
         self.iteration = 1
-        self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
+        self.finish_time = datetime.now() + kwargs.get(
+            "duration", timedelta(hours=int(100 * 24))
+        )
 
     # pylint: disable=broad-except
     async def execute_bucket_workload(self):

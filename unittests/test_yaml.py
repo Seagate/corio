@@ -93,7 +93,7 @@ class TestMasterConfig(unittest.TestCase):
           TEST_ID: TEST-37246
           tool: s3api
           operation: copy_object
-        
+
         test_2:
           TEST_ID: TEST-37247
           object_size:
