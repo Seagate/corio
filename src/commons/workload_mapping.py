@@ -21,12 +21,12 @@
 """Module to map script with workload."""
 
 from scripts.s3.mixs3io import mix_object_operations
+from scripts.s3.s3api import bucket_objects_operations
 from scripts.s3.s3api import bucket_operations
 from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import mix_object_crud_operations
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
-
 
 # mapping_dict = {operation_name_from_workload: [script.class, function_name],}
 SCRIPT_MAPPING = {
@@ -51,5 +51,7 @@ SCRIPT_MAPPING = {
     'type4_object_ops': [
         mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
     'type3_write_once_read_iterations': [
-        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload']
+        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
+    'type_5_bucket_object_ops':[
+        bucket_objects_operations.TestType5BucketObjectOps, 'execute_bucket_object_workload']
     }

@@ -5,6 +5,7 @@ test_1:
     end: 100Kib
   min_runtime: 5m
   sessions_per_node: 1
+  number_of_objects: 50
   tool: s3api
   operation: "bucket"
 
@@ -38,7 +39,7 @@ test_3:
 
 test_4:
     TEST_ID: TEST-XXX04
-    object_size: 4Gib
+    object_size: 1Gib
     part_range:
         start: 50
         end: 100
@@ -51,7 +52,7 @@ test_5:
     TEST_ID: TEST-XXX05
     object_size:
         start: 1Gib
-        end: 4Gib
+        end: 2Gib
     part_range:
         start: 50
         end: 100

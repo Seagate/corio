@@ -9,6 +9,7 @@ s3api: # basic_io
       end: 100Kib
     min_runtime: 2h
     sessions_per_node: 1
+    number_of_objects: 500
   copy_object:
     object_size:
       start: 0Kib
@@ -142,6 +143,19 @@ s3api: # basic_io
     total_storage_size: None
     min_runtime: 30d
     sessions_per_node: 2
+  type_5_bucket_object_ops:
+    object_size:
+      start: 0b
+      end: 1Gb
+    min_runtime: 2h
+    sessions_per_node: 5
+    number_of_buckets: 10
+    number_of_objects: 500
+    delay:
+      start: 1h
+      end: 12h
+    delete_percentage_per_bucket: 10
+    put_percentage_per_bucket: 10
 
 
 mix_io:

@@ -40,6 +40,7 @@ from src.commons.constants import ROOT
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.report import log_status
+from src.commons.utils.asyncio_utils import run_event_loop_until_complete, schedule_tasks
 from src.commons.utils.corio_utils import run_local_cmd, get_s3_keys, set_s3_access_secret_key
 
 LOGGER = logging.getLogger(ROOT)
@@ -73,9 +74,10 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
     tasks = []
-    LOGGER.info("%s execution is enabled for workload: %s.",
-                f"{'Sequential' if common_params.get('sequential_run', False) else 'Incremental'}",
-                test_plan)
+    if common_params.get('sequential_run', False):
+        LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
+    else:
+        LOGGER.info("Incremental execution is enabled for workload: %s.", test_plan)
     access_secret_keys = common_params.pop("access_secret_keys")
     for _, each in test_plan_value.items():
         iter_keys = iter(access_secret_keys.items())
@@ -86,7 +88,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
             params["duration"] = params.get("min_runtime", 0)
         params.update(common_params)
         if params["tool"] == "s3api":
-            if "TestTypeXObjectOps" in str(params.get("operation")[0]):
+            operation = str(params.get("operation")[0])
+            if "TestTypeX" in operation or "TestType5" in operation:
                 params["session"] = f"{params['test_id']}_session_main"
                 iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                 tasks.append(create_session(funct=params["operation"],
@@ -108,15 +111,8 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         else:
             raise NotImplementedError(f"Tool is not supported: {params['tool']}")
         LOGGER.debug(iter_keys)
-    done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-    if pending:
-        LOGGER.critical("Terminating process: %s & pending tasks: %s", process_name, pending)
-        for task in pending:
-            task.cancel()
-    if done:
-        LOGGER.info("Completed tasks: %s", done)
-        for task in done:
-            task.result()
+    await schedule_tasks(LOGGER, tasks)
+    LOGGER.info("Execution completed for process: %s", process_name)
 
 
 def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
@@ -129,22 +125,8 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     """
     process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
-    main_loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(main_loop)
-    try:
-        main_loop.run_until_complete(schedule_sessions(test_plan, test_plan_values, common_params))
-    except KeyboardInterrupt:
-        LOGGER.warning("%s Loop interrupted", process_name)
-    except Exception as err:
-        LOGGER.exception(err)
-        raise err from Exception
-    finally:
-        if main_loop.is_running():
-            main_loop.stop()
-            LOGGER.warning("Event loop stopped: %s", not main_loop.is_running())
-        if not main_loop.is_closed():
-            main_loop.close()
-            LOGGER.info("Event loop closed: %s", main_loop.is_closed())
+    run_event_loop_until_complete(
+        LOGGER, schedule_sessions, test_plan, test_plan_values, common_params)
     LOGGER.info("%s completed successfully", process_name)
 
 

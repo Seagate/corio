@@ -17,13 +17,13 @@
 #
 """Object crud operations in parallel for io stability workload using aiobotocore."""
 
-import asyncio
 import os
-
 from time import perf_counter_ns
+
 import nest_asyncio
 
 from src.commons.utils import corio_utils
+from src.commons.utils.asyncio_utils import schedule_tasks, run_event_loop_until_complete
 from src.libs.s3api import S3Api
 
 nest_asyncio.apply()
@@ -255,16 +255,10 @@ class S3ApiParallelIO(S3Api):
             tasks.append(func(*args, **kwargs))
             kwargs["cntr"] += 1
         if tasks:
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_EXCEPTION)
-            if pending:
-                self.log.critical("Terminating pending task: %s", func)
-                for task in pending:
-                    task.cancel()
-            self.log.info(done)
-            for task in done:
-                task.result()
+            self.log.info("Scheduling tasks: %s.", tasks)
+            await schedule_tasks(self.log, tasks)
+            self.log.info("completed tasks: %s.", tasks)
 
-    # pylint: disable=broad-except
     def create_sessions(self, func, *args, **kwargs):
         """
         Start workload execution.
@@ -272,18 +266,7 @@ class S3ApiParallelIO(S3Api):
         :param func: Name of the function.
         """
         self.log.info("Execution started for %s", func.__name__)
-        new_loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(new_loop)
-        try:
-            new_loop.run_until_complete(func(*args, **kwargs))
-        except Exception as error:
-            self.log.exception(error)
-            if new_loop.is_running():
-                new_loop.stop()
-            raise error from Exception
-        finally:
-            if not new_loop.is_closed():
-                new_loop.close()
+        run_event_loop_until_complete(self.log , func, *args, **kwargs)
         self.log.info("Execution completed for %s", func.__name__)
 
     def get_s3bucket(self, operations: str, bucket_name: str, obj_size: int):

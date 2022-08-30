@@ -7,9 +7,10 @@ test_1:
   sessions_per_node: 5
   number_of_buckets: 10
   number_of_objects: 500
+  delay:
+    start: 1h
+    end: 12h
+  delete_percentage_per_bucket: 10
+  put_percentage_per_bucket: 10
   tool: s3api
   operation: type_5_bucket_object_ops
-  delay:
-    minimum: 1h
-    maximum: 12h
-  delete_percentage_per_bucket: 10

@@ -162,6 +162,7 @@ def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
             convert_object_part_size_to_bytes(data)
             convert_range_read_to_bytes(data)
             convert_min_runtime_to_time_delta(test, delta_list, data)
+        convert_delay_to_seconds(data)
         # Convert sessions per node to sessions.
         if 'sessions_per_node' in data.keys():
             data['sessions'] = data['sessions_per_node'] * number_of_nodes
@@ -195,6 +196,25 @@ def convert_object_part_size_to_bytes(data: dict) -> None:
                 data[size_type] = [convert_to_bytes(item) for item in data[size_type]]
             else:
                 data[size_type] = convert_to_bytes(data[size_type])
+
+
+def convert_delay_to_seconds(data: dict) -> None:
+    """
+    Convert delay time in format 0d0h0m0s to second.
+    :param data: Workload data dictionary.
+    """
+    if "delay" in data:
+        if isinstance(data["delay"], dict):
+            if "start" not in data["delay"] or "end" not in data["delay"]:
+                raise AssertionError(f"Range using start and end keys missing for delay in {data}")
+            data["delay"]["start"] = int(convert_to_time_delta(
+                data["delay"]["start"]).total_seconds())
+            data["delay"]["end"] = int(convert_to_time_delta(data["delay"]["end"]).total_seconds())
+        elif isinstance(data["delay"], str):
+            data["delay"] = int(convert_to_time_delta(data["delay"]).total_seconds())
+        else:
+            raise AssertionError(f"Unsupported type for delay in {data}")
+        LOGGER.debug(data["delay"])
 
 
 def convert_range_read_to_bytes(data):

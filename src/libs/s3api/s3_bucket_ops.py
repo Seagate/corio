@@ -20,6 +20,9 @@
 #
 
 """Python Library to perform bucket operations using aiobotocore module."""
+import random
+import string
+import time
 
 from src.commons.utils.corio_utils import retries
 from src.libs.s3api.s3_restapi import S3RestApi
@@ -119,6 +122,22 @@ class S3Bucket(S3RestApi):
 
         return response
 
+    @retries()
+    async def create_n_buckets(self, bucket_prefix: str, bucket_count: int) -> list:
+        """
+        Create N number of s3 Bucket as per bucket count.
+
+        :param bucket_prefix: Prefix of the bucket.
+        :param bucket_count: Number of buckets to create.
+        :return: List of buckets.
+        """
+        bucket_list = []
+        for i in range(bucket_count):
+            bucket_name = f"{bucket_prefix}-{i}-{time.perf_counter_ns()}"
+            await self.create_bucket(bucket_name)
+            bucket_list.append(bucket_name)
+        return bucket_list
+
     @retries(asyncio=False)
     def create_s3_bucket(self, bucket_name: str = None) -> dict:
         """
@@ -166,3 +185,16 @@ class S3Bucket(S3RestApi):
         self.log.debug("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
+
+    @staticmethod
+    def get_bucket_name():
+        """
+        Generate a valid bucket name string.
+
+        first letter should be a number or lowercase letter, rest letters can include number,
+         lowercase, hyphens and dots. bucket length can vary from 3 to 63.
+        """
+        return (''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) +
+                ''.join(random.SystemRandom().choice(
+                    string.ascii_lowercase + string.digits + "." + '-') for _ in range(
+                    random.randint(2, 63)))))
