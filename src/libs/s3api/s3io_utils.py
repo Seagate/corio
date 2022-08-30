@@ -263,7 +263,7 @@ class S3ApiIOUtils(S3Api):
         return sleep_time
 
     async def overwrite_distribution_data(self, distribution, object_size) -> None:
-        """overwrite 10% of total objects in a given bucket"""
+        """overwrite given percentage of total objects in a given bucket"""
         tasks = []
 
         async def overwrite_read_data(data, bucket_name, object_count, objsize):

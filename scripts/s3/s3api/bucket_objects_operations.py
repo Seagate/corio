@@ -67,8 +67,9 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             distribution = self.distribution_of_buckets_objects_per_session(
                 buckets, number_of_objects, sessions)
             if delete_percentage_per_bucket and put_percentage_per_bucket:
-                self.put_delete_distribution(
-                    distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
+                self.put_delete_distribution(distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
+            if overwrite_percentage_per_bucket:
+                self.put_delete_distribution(distribution, overwrite_percentage_per_bucket)
             self.starts_sessions(self.write_data, distribution, object_size)
             while True:
                 if iteration > 1:
@@ -78,7 +79,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
                     time.sleep(sleep_time)
                 if overwrite_percentage_per_bucket:
-                    self.starts_sessions(self.overwrite_data, overwrite_percentage_per_bucket )
+                    self.starts_sessions(self.overwrite_distribution_data, distribution, object_size)
                 else:
                     self.starts_sessions(self.read_data, distribution)
                 if delete_percentage_per_bucket:
