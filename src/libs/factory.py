@@ -31,11 +31,11 @@ class ToolsFactory:
 
     def __str__(self):
         """Object representation."""
-        return f'Tool name is {self.tool}'
+        return f"Tool name is {self.tool}"
 
     def __repr__(self):
         """Object name."""
-        return f'Tool:{self.tool}'
+        return f"Tool:{self.tool}"
 
     def __call__(self):
         """Get Created object."""

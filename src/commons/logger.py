@@ -74,7 +74,8 @@ class StreamToLogger:
         """Add a file handler for the logging module. this logs all messages to ``file_name``."""
         if self.log_rotate:
             handler = CorIORotatingFileHandler(
-                self.file_path, maxbyte=self.max_byte, backupcount=self.backup_count)
+                self.file_path, maxbyte=self.max_byte, backupcount=self.backup_count
+            )
         else:
             handler = logging.FileHandler(filename=self.file_path)
         formatter = logging.Formatter(self.formatter)
@@ -136,7 +137,7 @@ def get_logger(level, name, **kwargs) -> object:
     level = logging.getLevelName(level)
     if level == logging.DEBUG:
         logger = logging.getLogger()
-        for pkg in ['boto', 'boto3', 'botocore', 's3transfer', name]:
+        for pkg in ["boto", "boto3", "botocore", "s3transfer", name]:
             logging.getLogger(pkg).setLevel(logging.DEBUG)
         fpath = os.path.join(dir_path, f"{name}_console.DEBUG")
     else:

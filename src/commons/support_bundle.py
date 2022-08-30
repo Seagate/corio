@@ -45,15 +45,25 @@ def collect_upload_rotate_support_bundles(dir_path: str, max_sb: int = 0) -> Non
         max_sb = max_sb if max_sb else CORIO_CFG["max_no_of_sb"]
         if not os.path.exists(sb_dir):
             os.makedirs(sb_dir)
-        master = [node for node in CLUSTER_CFG["nodes"] if node["node_type"] == "master"][-1]
-        host, user, password = master["hostname"], master["username"], master["password"]
+        master = [
+            node for node in CLUSTER_CFG["nodes"] if node["node_type"] == "master"
+        ][-1]
+        host, user, password = (
+            master["hostname"],
+            master["username"],
+            master["password"],
+        )
         if not host:
-            raise AssertionError(f"Failed to collect support bundles as cluster details are"
-                                 f" missing: {CLUSTER_CFG['nodes']}")
+            raise AssertionError(
+                f"Failed to collect support bundles as cluster details are"
+                f" missing: {CLUSTER_CFG['nodes']}"
+            )
         cluster_obj = ClusterServices(host, user, password)
         status, response = cluster_obj.collect_support_bundles(sb_dir)
         if not status:
-            raise AssertionError(f"Failed to generate support bundles. Response: {response}")
+            raise AssertionError(
+                f"Failed to generate support bundles. Response: {response}"
+            )
         rotate_logs(sb_dir, max_sb)
         sb_files = os.listdir(sb_dir)
         LOGGER.debug("SB list: %s", sb_files)
@@ -69,4 +79,6 @@ def support_bundle_process(interval: int) -> None:
     """
     while True:
         time.sleep(interval)
-        collect_upload_rotate_support_bundles(CMN_LOG_DIR, max_sb=CORIO_CFG["max_no_of_sb"])
+        collect_upload_rotate_support_bundles(
+            CMN_LOG_DIR, max_sb=CORIO_CFG["max_no_of_sb"]
+        )

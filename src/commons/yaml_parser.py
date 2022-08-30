@@ -44,11 +44,13 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         existing_params = config.keys()
         LOGGER.debug("Existing params are %s", existing_params)
         # Check for minimum required parameters (TestID, Tool, Operation)
-        required = master_cfg['common']
+        required = master_cfg["common"]
         if not existing_params or (set(required) - set(existing_params) != set()):
-            raise AssertionError(f"Minimum required parameters are missing {required} for {test}")
-        tool = config['tool']
-        operation = config['operation']
+            raise AssertionError(
+                f"Minimum required parameters are missing {required} for {test}"
+            )
+        tool = config["tool"]
+        operation = config["operation"]
         required_params = list(master_cfg[tool][operation].keys()) + required
         LOGGER.debug("Required params are %s", required_params)
         # Check for unknown parameters
@@ -90,28 +92,28 @@ def convert_to_bytes(size: str) -> int:
     :return equivalent bytes value for object size.
     """
     size, size_bytes = size.lower(), 0
-    if 'bytes' in size or 'byte' in size:
-        size_bytes = int(size.split('byte')[0])
-    if 'kb' in size:
-        size_bytes = int(size.split('kb')[0]) * const.KB
-    if 'kib' in size:
-        size_bytes = int(size.split('kib')[0]) * const.KIB
-    if 'mb' in size:
-        size_bytes = int(size.split('mb')[0]) * (const.KB ** 2)
-    if 'mib' in size:
-        size_bytes = int(size.split('mib')[0]) * (const.KIB ** 2)
-    if 'gb' in size:
-        size_bytes = int(size.split('gb')[0]) * (const.KB ** 3)
-    if 'gib' in size:
-        size_bytes = int(size.split('gib')[0]) * (const.KIB ** 3)
-    if 'tb' in size:
-        size_bytes = int(size.split('tb')[0]) * (const.KB ** 4)
-    if 'tib' in size:
-        size_bytes = int(size.split('tib')[0]) * (const.KIB ** 4)
-    if 'pb' in size:
-        size_bytes = int(size.split('tib')[0]) * (const.KB ** 5)
-    if 'pib' in size:
-        size_bytes = int(size.split('tib')[0]) * (const.KIB ** 5)
+    if "bytes" in size or "byte" in size:
+        size_bytes = int(size.split("byte")[0])
+    if "kb" in size:
+        size_bytes = int(size.split("kb")[0]) * const.KB
+    if "kib" in size:
+        size_bytes = int(size.split("kib")[0]) * const.KIB
+    if "mb" in size:
+        size_bytes = int(size.split("mb")[0]) * (const.KB**2)
+    if "mib" in size:
+        size_bytes = int(size.split("mib")[0]) * (const.KIB**2)
+    if "gb" in size:
+        size_bytes = int(size.split("gb")[0]) * (const.KB**3)
+    if "gib" in size:
+        size_bytes = int(size.split("gib")[0]) * (const.KIB**3)
+    if "tb" in size:
+        size_bytes = int(size.split("tb")[0]) * (const.KB**4)
+    if "tib" in size:
+        size_bytes = int(size.split("tib")[0]) * (const.KIB**4)
+    if "pb" in size:
+        size_bytes = int(size.split("tib")[0]) * (const.KB**5)
+    if "pib" in size:
+        size_bytes = int(size.split("tib")[0]) * (const.KIB**5)
     LOGGER.debug(size_bytes)
     return size_bytes
 
@@ -125,17 +127,17 @@ def convert_to_time_delta(time: str) -> datetime.timedelta:
     """
     time = time.lower()
     days = hrs = mnt = sec = 00
-    if 'd' in time:
-        days = int(time.split('d')[0])
-        time = time.split('d')[1]
-    if 'h' in time:
-        hrs = int(time.split('h')[0])
-        time = time.split('h')[1]
-    if 'm' in time:
-        mnt = int(time.split('m')[0])
-        time = time.split('m')[1]
-    if 's' in time:
-        sec = int(time.split('s')[0])
+    if "d" in time:
+        days = int(time.split("d")[0])
+        time = time.split("d")[1]
+    if "h" in time:
+        hrs = int(time.split("h")[0])
+        time = time.split("h")[1]
+    if "m" in time:
+        mnt = int(time.split("m")[0])
+        time = time.split("m")[1]
+    if "s" in time:
+        sec = int(time.split("s")[0])
     datetime_obj = datetime.timedelta(days=days, hours=hrs, minutes=mnt, seconds=sec)
     return datetime_obj
 
@@ -149,12 +151,15 @@ def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
     :return python dictionary containing file contents.
     """
     delta_list = []
-    workload_data = apply_master_config(read_yaml(yaml_file), read_yaml(const.CORIO_MASTER_CONFIG))
+    workload_data = apply_master_config(
+        read_yaml(yaml_file), read_yaml(const.CORIO_MASTER_CONFIG)
+    )
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.
         if "object_size" not in data:
             raise AssertionError(
-                f"Object size is compulsory, which is missing in workload {yaml_file}")
+                f"Object size is compulsory, which is missing in workload {yaml_file}"
+            )
         if "total_samples" in data and isinstance(data["object_size"], dict):
             convert_object_size_to_bytes_samples(data)
             convert_min_runtime_to_time_delta(test, delta_list, data)
@@ -164,9 +169,9 @@ def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
             convert_min_runtime_to_time_delta(test, delta_list, data)
         convert_delay_to_seconds(data)
         # Convert sessions per node to sessions.
-        if 'sessions_per_node' in data.keys():
-            data['sessions'] = data['sessions_per_node'] * number_of_nodes
-            data.pop('sessions_per_node')
+        if "sessions_per_node" in data.keys():
+            data["sessions"] = data["sessions_per_node"] * number_of_nodes
+            data.pop("sessions_per_node")
     LOGGER.debug("test object %s: ", workload_data)
     return workload_data
 
@@ -174,12 +179,14 @@ def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
 def convert_min_runtime_to_time_delta(test: str, delta_list: list, data: dict) -> None:
     """Convert min_runtime to time_delta."""
     if test.lower() == "test_1" or len(delta_list) == 0:
-        data['start_time'] = datetime.timedelta(hours=00, minutes=00, seconds=00)
-        delta_list.append(convert_to_time_delta(data['min_runtime']))
+        data["start_time"] = datetime.timedelta(hours=00, minutes=00, seconds=00)
+        delta_list.append(convert_to_time_delta(data["min_runtime"]))
     else:
-        data['start_time'] = delta_list.pop()
-        delta_list.append(data['start_time'] + convert_to_time_delta(data['min_runtime']))
-    data['min_runtime'] = convert_to_time_delta(data['min_runtime'])
+        data["start_time"] = delta_list.pop()
+        delta_list.append(
+            data["start_time"] + convert_to_time_delta(data["min_runtime"])
+        )
+    data["min_runtime"] = convert_to_time_delta(data["min_runtime"])
 
 
 def convert_object_part_size_to_bytes(data: dict) -> None:
@@ -188,8 +195,10 @@ def convert_object_part_size_to_bytes(data: dict) -> None:
         if size_type in data:
             if isinstance(data[size_type], dict):
                 if "start" not in data[size_type] or "end" not in data[size_type]:
-                    raise AssertionError(f"Range using start and end keys for '{data[size_type]}'"
-                                         f"missing in workload '{data}'")
+                    raise AssertionError(
+                        f"Range using start and end keys for '{data[size_type]}'"
+                        f"missing in workload '{data}'"
+                    )
                 data[size_type]["start"] = convert_to_bytes(data[size_type]["start"])
                 data[size_type]["end"] = convert_to_bytes(data[size_type]["end"])
             elif isinstance(data[size_type], list):
@@ -223,7 +232,8 @@ def convert_range_read_to_bytes(data):
         if isinstance(data["range_read"], dict):
             if "start" not in data["range_read"] or "end" not in data["range_read"]:
                 raise AssertionError(
-                    f"Please define range using start and end keys: {data['range_read']}")
+                    f"Please define range using start and end keys: {data['range_read']}"
+                )
             data["range_read"]["start"] = convert_to_bytes(data["range_read"]["start"])
             data["range_read"]["end"] = convert_to_bytes(data["range_read"]["end"])
         elif isinstance(data["range_read"], str):
@@ -247,13 +257,13 @@ def convert_object_size_to_bytes_samples(data):
         2Gb: 0.01%
       total_samples: 10000
     """
-    object_size, distribution = zip(*data['object_size'].items())
+    object_size, distribution = zip(*data["object_size"].items())
     object_size = convert_object_size_to_bytes(object_size)
     samples = data["total_samples"]
     distribution = list(distribution)
     distribution = convert_distribution_to_sample(distribution, samples)
     new_data = dict(zip(object_size, distribution))
-    data['object_size'] = new_data
+    data["object_size"] = new_data
 
 
 def convert_object_size_to_bytes(object_size: tuple) -> tuple:
@@ -265,9 +275,6 @@ def convert_distribution_to_sample(distribution: list, samples: int) -> tuple:
     """Convert object size distribution to samples."""
     for sample, _ in enumerate(distribution):
         distribution[sample] = int(
-            round(
-                ((float(distribution[sample][:-1]) / 100.0) * samples),
-                2
-            )
+            round(((float(distribution[sample][:-1]) / 100.0) * samples), 2)
         )
     return tuple(distribution)

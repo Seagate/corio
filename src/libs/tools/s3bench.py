@@ -43,8 +43,15 @@ class S3bench:
     """S3bench class for executing given s3bench workload."""
 
     # pylint: disable=too-many-arguments,too-many-locals
-    def __init__(self, access: str, secret: str, test_id: str,
-                 seed: int, duration: timedelta = None, **kwargs) -> None:
+    def __init__(
+        self,
+        access: str,
+        secret: str,
+        test_id: str,
+        seed: int,
+        duration: timedelta = None,
+        **kwargs,
+    ) -> None:
         """S3bench workload tests generate following log files.
 
         1. {log_file}-report-i.log -> CLI redirection logs
@@ -98,8 +105,9 @@ class S3bench:
         self.min_duration = 10  # In seconds
         self.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retries)
         # conversion minutes into milliseconds.
-        self.http_client_timeout = (kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) *
-                                    60000)
+        self.http_client_timeout = (
+            kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) * 60000
+        )
         if not duration:
             self.finish_time = datetime.now() + timedelta(hours=int(100 * 24))
         else:
@@ -135,7 +143,9 @@ class S3bench:
         :return: Subprocess completed returns False or killed due to timeout returns True
         """
         LOGGER.info("Starting: %s wait: %s", self.cmd, duration)
-        with subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid) as proc:  # nosec
+        with subprocess.Popen(
+            self.cmd, shell=False, preexec_fn=os.setsid
+        ) as proc:  # nosec
             pgid = os.getpgid(proc.pid)
             counter = 0
             # Poll for either process completion or for timeout
@@ -184,10 +194,12 @@ class S3bench:
             else:
                 part_size = random.randrange(self.part_low, self.part_high)
             bucket = f"{self.bucket}-{i}-{time.time()}"
-            cmd = f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} " \
-                  f"-endpoint={self.endpoint} -bucket={bucket} -objectSize={object_size}b " \
-                  f"-numClients={self.num_clients} -numSamples={self.num_samples} " \
-                  f"-objectNamePrefix={self.object_prefix} -multipartSize={part_size}b -t json "
+            cmd = (
+                f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} "
+                f"-endpoint={self.endpoint} -bucket={bucket} -objectSize={object_size}b "
+                f"-numClients={self.num_clients} -numSamples={self.num_samples} "
+                f"-objectNamePrefix={self.object_prefix} -multipartSize={part_size}b -t json "
+            )
 
             if self.region:
                 cmd = cmd + f"-region {self.region} "
@@ -210,19 +222,24 @@ class S3bench:
             cli_log = f"{self.cli_log}-{i}.log"
             label = f"{self.label}-{i}"
             self.cmd = f"{cmd} -o {report} -label {label} >> {cli_log} 2>&1"
-            timedelta_v = (self.finish_time - datetime.now())
+            timedelta_v = self.finish_time - datetime.now()
             timedelta_sec = timedelta_v.total_seconds()
             if timedelta_sec < self.min_duration:
                 if i == 1:
-                    LOGGER.info("s3bench workload did not execute since given duration is less "
-                                "than %s seconds.", self.min_duration)
+                    LOGGER.info(
+                        "s3bench workload did not execute since given duration is less "
+                        "than %s seconds.",
+                        self.min_duration,
+                    )
                     return False, None
                 LOGGER.info("s3bench workload execution done.")
                 return True, None
             LOGGER.info("Remaining test time %s", timedelta_v)
             timeout = self.execute_command(timedelta_sec)
             if timeout:
-                LOGGER.info("Terminated s3bench workload due to timeout. Checking results.")
+                LOGGER.info(
+                    "Terminated s3bench workload due to timeout. Checking results."
+                )
                 return self.check_terminated_results(cli_log)
             status, ops = self.check_log_file_error(report, cli_log)
             if not status:
@@ -253,7 +270,9 @@ class S3bench:
             errors = test["Errors Count"]
             ops[operation] = errors
             if test["Errors Count"] != 0:
-                LOGGER.error("ERROR: %s operation failed with %s errors", operation, errors)
+                LOGGER.error(
+                    "ERROR: %s operation failed with %s errors", operation, errors
+                )
                 error = False
             else:
                 LOGGER.info("%s operation passed", operation)
@@ -267,8 +286,15 @@ class S3bench:
         :param cli_log: CLI log file name.
         :return: Tuple of Test Pass/Fail with dict of failures per operation
         """
-        errors = ["with error", "panic", "status code", "fatal error",
-                  "flag provided but not defined", "InternalError", "ServiceUnavailable"]
+        errors = [
+            "with error",
+            "panic",
+            "status code",
+            "fatal error",
+            "flag provided but not defined",
+            "InternalError",
+            "ServiceUnavailable",
+        ]
         pattern = r"{0} \| [\d\/\.% \(\)]+ \| [a-z\d ]+ \| errors ([1-9]+)"
         ops = {"Write": 0, "Read": 0, "Validate": 0, "HeadObj": 0}
         error = True
@@ -282,7 +308,7 @@ class S3bench:
                     ops[operation] = int(matches[-1].group(1))
                     error = False
             error_ops = {f"{key} Errors": value for key, value in ops.items()}
-            errors_pattern = fr"^.*(?:{'|'.join(errors)}).*$"
+            errors_pattern = rf"^.*(?:{'|'.join(errors)}).*$"
             matches = list(re.finditer(errors_pattern, data, re.MULTILINE))
             if len(matches) != 0:
                 error_ops["Error String"] = matches[0].group()

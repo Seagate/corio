@@ -38,7 +38,9 @@ from src.libs.tools.s3bench import S3bench
 class TestMixObjectOps(S3Bucket, S3Object):
     """S3 mix object operations class for executing given io stability workload."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, **kwargs) -> None:
+    def __init__(
+        self, access_key: str, secret_key: str, endpoint_url: str, **kwargs
+    ) -> None:
         """
         s3 Mix object operations init class.
 
@@ -52,8 +54,13 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param session: session name.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=f"{kwargs.get('test_id')}_mix_s3io_operations")
+        super().__init__(
+            access_key,
+            secret_key,
+            endpoint_url=endpoint_url,
+            use_ssl=kwargs.get("use_ssl"),
+            test_id=f"{kwargs.get('test_id')}_mix_s3io_operations",
+        )
         random.seed(kwargs.get("seed"))
         self.access_key = access_key
         self.secret_key = secret_key
@@ -91,8 +98,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         cls.region = kwargs.get("region", "us-east-1")
         cls.s3max_retries = kwargs.get("s3max_retries", S3_CFG.s3max_retry)
         # conversion minutes into milliseconds.
-        cls.http_client_timeout = (kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) *
-                                   60000)
+        cls.http_client_timeout = (
+            kwargs.get("http_client_timeout", S3_CFG.http_client_timeout) * 60000
+        )
         if not cls.total_storage:
             host, user, password = get_master_details()
             cluster_obj = ClusterServices(host, user, password)
@@ -103,16 +111,22 @@ class TestMixObjectOps(S3Bucket, S3Object):
         cls.total_written_data = 0
         cls.storage_size_to_fill = int(cls.total_storage / 100 * cls.write_percentage)
         cls.storage_size_to_read = int(cls.total_storage / 100 * cls.read_percentage)
-        cls.storage_size_to_delete = int(cls.total_storage / 100 * cls.delete_percentage)
-        cls.size_to_cleanup_all_data = int(cls.total_storage / 100 * cls.cleanup_percentage)
+        cls.storage_size_to_delete = int(
+            cls.total_storage / 100 * cls.delete_percentage
+        )
+        cls.size_to_cleanup_all_data = int(
+            cls.total_storage / 100 * cls.cleanup_percentage
+        )
         cls.s3_url = None
         cls.report_path = os.path.join(
-            LATEST_LOG_PATH, f"{kwargs.get('test_id')}_mix_s3io_operations_report.log")
+            LATEST_LOG_PATH, f"{kwargs.get('test_id')}_mix_s3io_operations_report.log"
+        )
         cls.label = kwargs.get("test_id")
         cls.write_samples = 0
         cls.read_samples = 0
         cls.delete_samples = 0
         cls.file_size = 0
+
     # pylint: disable=broad-except
 
     def execute_mix_object_workload(self):
@@ -130,7 +144,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
                     self.log.info("Running with: %s", self.object_name)
                     if isinstance(self.object_size, dict):
                         self.file_size = random.randrange(
-                            self.object_size["start"], self.object_size["end"])
+                            self.object_size["start"], self.object_size["end"]
+                        )
                     else:
                         self.file_size = self.object_size
                     self.log.info("Single object size: %s bytes", self.file_size)
@@ -148,8 +163,11 @@ class TestMixObjectOps(S3Bucket, S3Object):
                     read_data += self.read_samples * self.file_size
                     read_iter += 1
                 read_percentage = int(read_data / self.total_storage * 100)
-                self.log.info("Able to read %s%% of data from cluster in %s iterations.",
-                              read_percentage, read_iter)
+                self.log.info(
+                    "Able to read %s%% of data from cluster in %s iterations.",
+                    read_percentage,
+                    read_iter,
+                )
                 # Delete data as per delete percentage.
                 if self.storage_size_to_delete:
                     deleted_data = 0
@@ -160,15 +178,21 @@ class TestMixObjectOps(S3Bucket, S3Object):
                 # Cleanup data as per cleanup percentage.
                 if self.size_to_cleanup_all_data:
                     if self.total_written_data >= self.size_to_cleanup_all_data:
-                        self.log.info("cleanup objects from %s as storage consumption reached "
-                                      "limit %s%% ", self.s3_url, self.cleanup_percentage)
+                        self.log.info(
+                            "cleanup objects from %s as storage consumption reached "
+                            "limit %s%% ",
+                            self.s3_url,
+                            self.cleanup_percentage,
+                        )
                         self.delete_s3_objects(self.bucket_name)
                         self.total_written_data *= 0
                         self.log.info("Data cleanup competed...")
                 self.display_storage_consumed(operation="")
                 self.log.info("iteration %s is completed...", self.iteration)
             except Exception as err:
-                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                self.log.exception(
+                    "bucket url: {%s}\nException: {%s}", self.s3_url, err
+                )
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 self.delete_s3_bucket(self.bucket_name, force=True)
@@ -183,12 +207,14 @@ class TestMixObjectOps(S3Bucket, S3Object):
             self.log.info(
                 "Storage consumed %s%% after %s operations.",
                 storage_consumed,
-                operation)
+                operation,
+            )
         else:
             self.log.info(
                 "Storage consumed %s%% after iteration %s.",
                 storage_consumed,
-                self.iteration)
+                self.iteration,
+            )
 
     def get_sample_details(self, file_size: int) -> tuple:
         """
@@ -196,7 +222,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
 
         :param file_size: Single object size used to calculate the number of sample.
         """
-        err_str = "Number of samples '%s' should be greater/equal to number of sessions '%s'."
+        err_str = (
+            "Number of samples '%s' should be greater/equal to number of sessions '%s'."
+        )
         sample_msg = "Number of samples '%s' will be used for %s operation."
         per_limit = "%s percentage should be less than or equal to 100%"
         # Logic behind adding extra 1 sample is to cover fractional part.
@@ -211,8 +239,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         r_chunks = modf(self.storage_size_to_read / file_size)
         self.read_samples = int(r_chunks[1]) + 1 if r_chunks[0] else int(r_chunks[1])
         # Added if we are reading data in iteration more than 100 percent.
-        self.read_samples = self.read_samples if self.read_percentage <= 100 \
-            else self.write_samples
+        self.read_samples = (
+            self.read_samples if self.read_percentage <= 100 else self.write_samples
+        )
         if self.read_samples < self.sessions:
             self.log.warning(err_str, self.read_samples, self.sessions)
         else:
@@ -234,13 +263,18 @@ class TestMixObjectOps(S3Bucket, S3Object):
         """
         sessions = self.sessions if number_sample > self.sessions else number_sample
         if number_sample < self.sessions:
-            self.log.info("Number of sessions '%s' adjusted as per number of samples '%s'",
-                          sessions, number_sample)
-        return f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} " \
-               f"-endpoint={self.endpoint_url} -bucket={self.bucket_name} " \
-               f"-numClients={sessions} -skipSSLCertVerification=True " \
-               f"-objectNamePrefix={self.object_name} " \
-               f"-numSamples={number_sample} -objectSize={object_size}b -region {self.region} "
+            self.log.info(
+                "Number of sessions '%s' adjusted as per number of samples '%s'",
+                sessions,
+                number_sample,
+            )
+        return (
+            f"s3bench -accessKey={self.access_key} -accessSecret={self.secret_key} "
+            f"-endpoint={self.endpoint_url} -bucket={self.bucket_name} "
+            f"-numClients={sessions} -skipSSLCertVerification=True "
+            f"-objectNamePrefix={self.object_name} "
+            f"-numSamples={number_sample} -objectSize={object_size}b -region {self.region} "
+        )
 
     def cmd_reporting_params(self):
         """Append reporting parameters to s3bench command."""
@@ -262,7 +296,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         status, resp = S3bench.check_log_file_error(self.report_path, self.log_path)
         assert status, f"Observed failures for '{cmd}', response: {resp}"
 
-    def write_data(self, object_size: int, number_sample: int, validate: bool = False) -> None:
+    def write_data(
+        self, object_size: int, number_sample: int, validate: bool = False
+    ) -> None:
         """
         Write data to s3.
 
@@ -271,7 +307,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param validate: validate data after write.
         """
         self.log.info("Writing data...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         if validate:
             cmd += " -skipRead -skipCleanup -validate"
@@ -281,7 +319,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         self.total_written_data += object_size * number_sample
         self.log.info("writing completed...")
 
-    def read_data(self, object_size: int, number_sample: int, validate: bool = False) -> None:
+    def read_data(
+        self, object_size: int, number_sample: int, validate: bool = False
+    ) -> None:
         """
         Read data from s3.
 
@@ -290,7 +330,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param validate: validate data after reading.
         """
         self.log.info("Reading data...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         if validate:
             cmd += " -skipWrite -skipCleanup -validate"
@@ -299,7 +341,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         self.execute_validate_run(cmd)
         self.log.info("Reading completed...")
 
-    def delete_data(self, object_size: int, number_sample: int, validate: bool = False) -> None:
+    def delete_data(
+        self, object_size: int, number_sample: int, validate: bool = False
+    ) -> None:
         """
         Delete data from s3.
 
@@ -308,7 +352,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param validate: validate data before delete.
         """
         self.log.info("Deleting data...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         if validate:
             cmd += " -skipWrite -skipRead -validate"
@@ -326,7 +372,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param number_sample: total number objects to validate.
         """
         self.log.info("Validating data...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         cmd += " -skipWrite -skipRead -skipCleanup -validate"
         self.execute_validate_run(cmd)
@@ -340,7 +388,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param number_sample: total number objects to cleanup.
         """
         self.log.info("Cleaning data...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         cmd += " -skipWrite -skipRead"
         self.execute_validate_run(cmd)
@@ -354,7 +404,9 @@ class TestMixObjectOps(S3Bucket, S3Object):
         :param number_sample: total number objects to write, read, validate, delete.
         """
         self.log.info("Object CRUD operation started...")
-        self.log.info("Single object size: %s, Number of samples: %s", object_size, number_sample)
+        self.log.info(
+            "Single object size: %s, Number of samples: %s", object_size, number_sample
+        )
         cmd = self.s3bench_cmd(object_size, number_sample)
         cmd += " -validate"
         self.execute_validate_run(cmd)

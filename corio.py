@@ -90,29 +90,42 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
             test_ids.append(test_value["TEST_ID"])
             if tests_details:
                 if test_value["TEST_ID"] in tests_details:
-                    tests_to_execute[test_value["TEST_ID"]] = \
-                        tests_details[test_value["TEST_ID"]]
-                    tests_to_execute[test_value["TEST_ID"]]["start_time"] = \
-                        test_value["start_time"]
-                    tests_to_execute[test_value["TEST_ID"]]["min_runtime"] = \
-                        test_value["min_runtime"]
+                    tests_to_execute[test_value["TEST_ID"]] = tests_details[
+                        test_value["TEST_ID"]
+                    ]
+                    tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value[
+                        "start_time"
+                    ]
+                    tests_to_execute[test_value["TEST_ID"]]["min_runtime"] = test_value[
+                        "min_runtime"
+                    ]
                 else:
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
-    duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
+    duplicate_ids = [
+        test_id for test_id, count in Counter(test_ids).items() if count > 1
+    ]
     if duplicate_ids:
-        raise AssertionError(f"Found duplicate ids in workload files. ids {set(duplicate_ids)}")
+        raise AssertionError(
+            f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
+        )
     if tests_details:
         # If jira update selected then will report missing workload test ids from jira TP.
         if missing_jira_ids:
-            raise AssertionError(f"List of workload test ids {missing_jira_ids} which are missing"
-                                 f" from jira tp: {tests_details.key()}")
+            raise AssertionError(
+                f"List of workload test ids {missing_jira_ids} which are missing"
+                f" from jira tp: {tests_details.key()}"
+            )
     if tests_to_execute:
-        LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
+        LOGGER.info(
+            "List of tests to be executed with jira update: %s", tests_to_execute
+        )
     return tests_to_execute
 
 
-def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str) -> list:
+def get_test_ids_from_terminated_workload(
+    workload_dict: dict, workload_key: str
+) -> list:
     """Get all test-id from terminated workload due to failure."""
     test_ids = []
     for test in workload_dict[workload_key].values():
@@ -131,8 +144,8 @@ def main(options):
     jira_obj = JiraApp() if options.test_plan else None
     if jira_obj:
         tests_details = jira_obj.get_all_tests_details_from_tp(
-            options.test_plan,
-            reset_status=True)
+            options.test_plan, reset_status=True
+        )
     workload_list = corio_utils.get_workload_list(options.test_input)
     LOGGER.info("Test YAML Files to be executed : %s", workload_list)
     parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
@@ -141,11 +154,18 @@ def main(options):
     LOGGER.info("Parsed files data:\n %s", pformat(parsed_input))
     return_dict = multiprocessing.Manager().dict()
     processes = scheduler.schedule_execution_plan(parsed_input, options, return_dict)
-    sched = scheduler.schedule_test_status_update(parsed_input, corio_start_time,
-                                                  periodic_time=CORIO_CFG.report_interval_mins,
-                                                  sequential_run=options.sequential_run)
-    mobj = SendMailNotification(corio_start_time, options.test_plan,
-                                health_check=options.health_check, endpoint=S3_CFG.endpoint)
+    sched = scheduler.schedule_test_status_update(
+        parsed_input,
+        corio_start_time,
+        periodic_time=CORIO_CFG.report_interval_mins,
+        sequential_run=options.sequential_run,
+    )
+    mobj = SendMailNotification(
+        corio_start_time,
+        options.test_plan,
+        health_check=options.health_check,
+        endpoint=S3_CFG.endpoint,
+    )
     mobj.email_alert(action="start")
     try:
         if options.degraded_mode:
@@ -157,25 +177,43 @@ def main(options):
             schedule.run_pending()
             if jira_obj:
                 jira_obj.update_jira_status(
-                    corio_start_time=corio_start_time, tests_details=tests_to_execute)
+                    corio_start_time=corio_start_time, tests_details=tests_to_execute
+                )
             terminated_tp = scheduler.monitor_processes(processes, return_dict)
             if terminated_tp:
-                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
+                test_ids = get_test_ids_from_terminated_workload(
+                    parsed_input, terminated_tp
+                )
                 break
             if tuple(processes.keys()) in const.terminate_process_list:
                 break
-    except (Exception, KeyboardInterrupt, MemoryError, HealthCheckError, DegradedModeError) as err:
+    except (
+        Exception,
+        KeyboardInterrupt,
+        MemoryError,
+        HealthCheckError,
+        DegradedModeError,
+    ) as err:
         LOGGER.exception(err)
         terminated_tp = type(err).__name__
     finally:
         scheduler.terminate_processes(processes)
-        scheduler.terminate_update_test_status(parsed_input, corio_start_time, terminated_tp,
-                                               test_ids, sched, action="final",
-                                               sequential_run=options.sequential_run,)
+        scheduler.terminate_update_test_status(
+            parsed_input,
+            corio_start_time,
+            terminated_tp,
+            test_ids,
+            sched,
+            action="final",
+            sequential_run=options.sequential_run,
+        )
         if jira_obj:
             jira_obj.update_jira_status(
-                corio_start_time=corio_start_time, tests_details=tests_to_execute, aborted=True,
-                terminated_tests=test_ids)
+                corio_start_time=corio_start_time,
+                tests_details=tests_to_execute,
+                aborted=True,
+                terminated_tests=test_ids,
+            )
         if options.support_bundle:
             support_bundle.collect_upload_rotate_support_bundles(const.CMN_LOG_DIR)
         mobj.email_alert(action="stop", tp=terminated_tp, ids=test_ids)

@@ -30,8 +30,14 @@ from src.libs.s3api import S3Api
 class TestBucketOps(S3Api):
     """S3 Bucket Operations class for executing given io stability workload."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        access_key: str,
+        secret_key: str,
+        endpoint_url: str,
+        test_id: str,
+        **kwargs,
+    ) -> None:
         """
         s3 bucket operations init class.
 
@@ -45,8 +51,13 @@ class TestBucketOps(S3Api):
         :param session: session name.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=f"{test_id}_bucket_operations")
+        super().__init__(
+            access_key,
+            secret_key,
+            endpoint_url=endpoint_url,
+            use_ssl=kwargs.get("use_ssl"),
+            test_id=f"{test_id}_bucket_operations",
+        )
         random.seed(kwargs.get("seed"))
         self.object_per_iter = kwargs.get("number_of_objects", 500)
         self.object_size = kwargs.get("object_size")
@@ -60,14 +71,18 @@ class TestBucketOps(S3Api):
         """Execute bucket operations workload for specific duration."""
         while True:
             try:
-                self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
+                self.log.info(
+                    "Iteration %s is started for %s...", self.iteration, self.session_id
+                )
                 if isinstance(self.object_size, dict):
                     file_size = random.randrange(
-                        self.object_size["start"],
-                        self.object_size["end"])
+                        self.object_size["start"], self.object_size["end"]
+                    )
                 else:
                     file_size = self.object_size
-                bucket_name = f'bucket-op-{self.test_id}-iter{self.iteration}-{perf_counter_ns()}'
+                bucket_name = (
+                    f"bucket-op-{self.test_id}-iter{self.iteration}-{perf_counter_ns()}"
+                )
                 self.log.info("Create bucket %s", bucket_name)
                 await self.create_bucket(bucket_name)
                 await self.upload_n_number_objects(bucket_name, file_size)
@@ -82,9 +97,12 @@ class TestBucketOps(S3Api):
                 self.log.info(
                     "Iteration %s is completed of %s...",
                     self.iteration,
-                    self.session_id)
+                    self.session_id,
+                )
             except Exception as err:
-                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
+                self.log.exception(
+                    "bucket url: {%s}\nException: {%s}", self.s3_url, err
+                )
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 return True, "Bucket operation execution completed successfully."
@@ -95,13 +113,15 @@ class TestBucketOps(S3Api):
         self.log.info(
             "Upload %s number of objects to bucket %s",
             self.object_per_iter,
-            bucket_name)
+            bucket_name,
+        )
         for i in range(0, self.object_per_iter):
-            file_name = f'object-{i}-{perf_counter_ns()}'
+            file_name = f"object-{i}-{perf_counter_ns()}"
             self.log.info(
                 "Object '%s', object size %s",
                 file_name,
-                corio_utils.convert_size(file_size))
+                corio_utils.convert_size(file_size),
+            )
             file_path = corio_utils.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
             self.log.info("'%s' uploaded successfully.", self.s3_url)

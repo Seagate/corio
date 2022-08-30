@@ -31,7 +31,7 @@ class WarpInterface(Warp):
 
     def __str__(self):
         """Object Representation."""
-        return 'warp'
+        return "warp"
 
     def run(self):
         """Run warp."""

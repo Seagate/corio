@@ -46,34 +46,42 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
     test_failed = kwargs.get("test_failed")
     action = kwargs.get("action", "")
     status_fpath = get_report_file_path(corio_start_time)
-    execution_status = monitor_sessions_iterations(parsed_input, corio_start_time, **kwargs)
+    execution_status = monitor_sessions_iterations(
+        parsed_input, corio_start_time, **kwargs
+    )
     kwargs["execution_status"] = execution_status
     LOGGER.info("Logging current status to %s", status_fpath)
-    with open(status_fpath, 'w', encoding="utf-8") as status_file:
+    with open(status_fpath, "w", encoding="utf-8") as status_file:
         status_file.write(f"\nLogging Status at {datetime.now()}")
-        if test_failed == 'KeyboardInterrupt':
+        if test_failed == "KeyboardInterrupt":
             status_file.write("\nTest execution stopped due to Keyboard interrupt.")
         elif test_failed is None:
             if action == "final":
-                status_file.write('\nTest execution completed.')
+                status_file.write("\nTest execution completed.")
             else:
-                status_file.write('\nTest execution still in progress...')
+                status_file.write("\nTest execution still in progress...")
         else:
-            status_file.write(f'\nTest execution terminated due to error in {test_failed}')
-        status_file.write(f'\nTotal execution Duration : {datetime.now() - corio_start_time}')
+            status_file.write(
+                f"\nTest execution terminated due to error in {test_failed}"
+            )
+        status_file.write(
+            f"\nTotal execution Duration : {datetime.now() - corio_start_time}"
+        )
         status_file.write("\n\nTestWise Execution Details:")
         for key, value in parsed_input.items():
             dataframe = pd.DataFrame()
-            pd.set_option('display.colheader_justify', 'center')
+            pd.set_option("display.colheader_justify", "center")
             for key1, value1 in value.items():
-                input_dict = {"TEST_NO": key1,
-                              "TEST_ID": value1['TEST_ID'],
-                              "SESSIONS": int(value1['sessions'])}
+                input_dict = {
+                    "TEST_NO": key1,
+                    "TEST_ID": value1["TEST_ID"],
+                    "SESSIONS": int(value1["sessions"]),
+                }
                 convert_object_size(input_dict, value1)
                 update_tests_status(input_dict, corio_start_time, value1, **kwargs)
                 dataframe = dataframe.append(input_dict, ignore_index=True)
             # Convert sessions into integer.
-            dataframe = dataframe.astype({"SESSIONS": 'int'})
+            dataframe = dataframe.astype({"SESSIONS": "int"})
             status_file.write(f"\n\nTEST YAML FILE : {key}\n")
             dataframe.to_string(status_file)
 
@@ -85,23 +93,27 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
     :param input_dict: Dict for all the input yaml files.
     :param value: Dict/List/int for object size.
     """
-    if isinstance(value['object_size'], (list, tuple)):
-        input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value['object_size']]
-    elif isinstance(value['object_size'], dict):
-        if 'start' in value['object_size']:
-            input_dict["OBJECT_SIZE"] = {"START": convert_size(value['object_size']['start']),
-                                         "END": convert_size(value['object_size']['end'])}
+    if isinstance(value["object_size"], (list, tuple)):
+        input_dict["OBJECT_SIZE"] = [convert_size(x) for x in value["object_size"]]
+    elif isinstance(value["object_size"], dict):
+        if "start" in value["object_size"]:
+            input_dict["OBJECT_SIZE"] = {
+                "START": convert_size(value["object_size"]["start"]),
+                "END": convert_size(value["object_size"]["end"]),
+            }
         else:
             object_dict = {}
-            for key, _value in value['object_size'].items():
+            for key, _value in value["object_size"].items():
                 object_dict.update({convert_size(key): _value})
             if object_dict:
                 input_dict["OBJECT_SIZE"] = object_dict
     else:
-        input_dict["OBJECT_SIZE"] = convert_size(value['object_size'])
+        input_dict["OBJECT_SIZE"] = convert_size(value["object_size"])
 
 
-def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dict, **kwargs):
+def update_tests_status(
+    input_dict: dict, corio_start_time: datetime, value: dict, **kwargs
+):
     """
     Update tests status in report.
 
@@ -113,12 +125,14 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
     terminated_tests = kwargs.get("terminated_tests", [])
     # Reason of the test execution failure.
     execution_status = kwargs.get("execution_status")
-    test_failed = kwargs.get("test_failed", '')
-    test_start_time = corio_start_time + value['start_time']
+    test_failed = kwargs.get("test_failed", "")
+    test_start_time = corio_start_time + value["start_time"]
     if datetime.now() > test_start_time:
-        input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict[
+            "START_TIME"
+        ] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "In Progress"
-        if datetime.now() > (test_start_time + value['min_runtime']):
+        if datetime.now() > (test_start_time + value["min_runtime"]):
             execution_time = execution_status[input_dict["TEST_ID"]]["execution_time"]
             if execution_time:
                 input_dict["RESULT_UPDATE"] = f"Passed at {execution_time}"
@@ -132,7 +146,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
             if input_dict["TEST_ID"] in terminated_tests:
                 LOGGER.error(
                     "Test execution terminated due to error in %s.",
-                    input_dict["TEST_ID"])
+                    input_dict["TEST_ID"],
+                )
                 input_dict["RESULT_UPDATE"] = "Fail"
             elif test_failed:
                 input_dict["RESULT_UPDATE"] = "Aborted"
@@ -141,6 +156,8 @@ def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dic
             total_execution_time = datetime.now() - test_start_time
             input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
     else:
-        input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict[
+            "START_TIME"
+        ] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "Not Triggered"
         input_dict["TOTAL_TEST_EXECUTION"] = "NA"
