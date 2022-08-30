@@ -54,5 +54,6 @@ SCRIPT_MAPPING = {
         mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
     'type_5_bucket_object_ops': [
         bucket_objects_operations.TestType5BucketObjectOps, 'execute_bucket_object_workload'],
-    'type_5_object_ops': [object_operations.TestS3Object, 'execute_object_workload']
+    'type_5_object_ops': [
+        bucket_objects_operations.TestType5BucketObjectOps, 'execute_bucket_object_workload']
     }

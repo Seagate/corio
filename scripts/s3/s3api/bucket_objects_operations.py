@@ -60,23 +60,31 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             number_of_objects = self.kwargs.get("number_of_objects")
             delete_percentage_per_bucket = self.kwargs.get("delete_percentage_per_bucket")
             put_percentage_per_bucket = self.kwargs.get("put_percentage_per_bucket")
+            overwrite_percentage_per_bucket = self.kwargs.get("overwrite_percentage_per_bucket")
             self.log.info("Iteration %s is started.", iteration)
             buckets = await self.create_n_buckets("bucket-objects-ops", number_of_buckets)
             self.log.info("Bucket list: %s", buckets)
             distribution = self.distribution_of_buckets_objects_per_session(
                 buckets, number_of_objects, sessions)
-            self.put_delete_distribution(
-                distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
+            if delete_percentage_per_bucket and put_percentage_per_bucket:
+                self.put_delete_distribution(
+                    distribution, delete_percentage_per_bucket, put_percentage_per_bucket)
             self.starts_sessions(self.write_data, distribution, object_size)
             while True:
                 if iteration > 1:
                     self.log.info("Iteration %s is started.", iteration)
-                sleep_time = self.get_random_sleep_time(delay)
-                self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
-                time.sleep(sleep_time)
-                self.starts_sessions(self.read_data, distribution)
-                self.starts_sessions(self.delete_distribution_data, distribution)
-                self.starts_sessions(self.write_distribution_data, distribution, object_size)
+                if delay:
+                    sleep_time = self.get_random_sleep_time(delay)
+                    self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
+                    time.sleep(sleep_time)
+                if overwrite_percentage_per_bucket:
+                    self.starts_sessions(self.overwrite_data, overwrite_percentage_per_bucket )
+                else:
+                    self.starts_sessions(self.read_data, distribution)
+                if delete_percentage_per_bucket:
+                    self.starts_sessions(self.delete_distribution_data, distribution)
+                if put_percentage_per_bucket:
+                    self.starts_sessions(self.write_distribution_data, distribution, object_size)
                 self.log.info("Iteration %s is completed.", iteration)
                 if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                     self.starts_sessions(self.cleanup_data, buckets, sessions)
