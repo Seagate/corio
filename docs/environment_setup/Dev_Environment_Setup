@@ -1,9 +1,13 @@
-#Specific to Cent OS and RHEL
+# Specific to Cent OS and RHEL
 yum update -y
-yum install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel wget make sqlite-devel
+# Below packages are required to compile python from source with sqlite and lzma dependencies
+yum install -y wget make
+yum  install -y *sqlite* --skip-broken
+yum install -y *lzma*
+# Below packages are for getting gcc and dependent packages
+yum install -y gcc openssl-devel bzip2-devel libffi-devel zlib-devel sqlite-devel xz-devel
 yum groupinstall "Development Tools"
 yum install -y python3-devel librdkafka nfs-utils python3-tkinter
-yum  install *sqlite3* -y
 wget https://www.python.org/ftp/python/3.7.12/Python-3.7.12.tar.xz
 tar xf Python-3.7.12.tar.xz
 ./configure --enable-optimizations --enable-loadable-sqlite-extensions
@@ -16,7 +20,10 @@ make install
 Create a soft link to point installation
 ln -s /usr/local/bin/python3.7 python3.7
 
+# following aliases may be added in /root/.bashrc
 
+alias python3="/usr/local/bin/python3.7"
+alias python3.7="/usr/local/bin/python3.7"
 
-
-
+# Execute following command after adding in /root/.bashrc
+source /root/.bashrc

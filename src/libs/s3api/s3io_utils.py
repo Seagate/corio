@@ -42,7 +42,7 @@ class S3ApiIOUtils(S3Api):
             random.seed(kwargs.get("seed"))
 
     def distribution_of_buckets_objects_per_session(self, bucket_list: list, object_count: int,
-                                                    sessions: int) -> dict:
+            sessions: int) -> dict:
         """
         Get the objects per bucket and buckets per session distribution dictionary.
 
@@ -88,8 +88,10 @@ class S3ApiIOUtils(S3Api):
         self.log.debug(distribution)
         return distribution
 
-    def put_delete_distribution(self, distribution: dict, delete_obj_percent: int,
-                                put_object_percent: int) -> None:
+    def put_delete_distribution(self, distribution: dict,
+            delete_obj_percent: int = 0,
+            put_object_percent: int = 0,
+            overwrite_object_percent: int = 0) -> None:
         """
         Modify distribution dict with delete object percentage and put object percentage.
 
@@ -117,17 +119,21 @@ class S3ApiIOUtils(S3Api):
                   'object_count': 250,
                   'put_object_count': 25}],
              5: [{'bucket_name': 'bcd',
-                  'delete_object_count': 25,
                   'object_count': 250,
                   'put_object_count': 25}]}
         :param distribution: Distribution of buckets, objects per sessions.
         :param delete_obj_percent: Delete percentage of total objects.
         :param put_object_percent: Put object percentage of total objects.
+        :param overwrite_object_percent : overwrite object percentage of total objects
         """
         for _, value in distribution.items():
             for ele in value:
-                ele["delete_object_count"] = int(ele["object_count"] * delete_obj_percent / 100)
-                ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
+                if delete_obj_percent:
+                    ele["delete_object_count"] = int(ele["object_count"] * delete_obj_percent / 100)
+                if put_object_percent:
+                    ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
+                if overwrite_object_percent:
+                    ele["overwrite_object_count"] = int(ele["object_count"] * overwrite_object_percent / 100)
         self.log.debug(distribution)
 
     def starts_sessions(self, func, *args, **kwargs):
@@ -195,7 +201,7 @@ class S3ApiIOUtils(S3Api):
             file_list = data.get("files", [])
             shuffle(file_list)
             file_iter = iter(cycle(file_list))
-            for _ in range(1, data["delete_object_count"]+1):
+            for _ in range(1, data["delete_object_count"] + 1):
                 file_name = next(file_iter, "")
                 if file_name:
                     await self.delete_object(data["bucket_name"], file_name)
@@ -255,3 +261,22 @@ class S3ApiIOUtils(S3Api):
         else:
             sleep_time = delay
         return sleep_time
+
+    async def overwrite_distribution_data(self, distribution, object_size) -> None:
+        """overwrite given percentage of total objects in a given bucket"""
+        tasks = []
+
+        async def overwrite_read_data(data, bucket_name, object_count, objsize):
+            """Upload and read n number of objects to s3 bucket."""
+            for cnt in range(1, object_count + 1):
+                file_name = random.choice(data["files"])
+                file_size = self.get_object_size(objsize)
+                file_path = corio_utils.create_file(file_name, file_size)
+                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                os.remove(file_path)
+                await self.get_object(bucket_name, file_name)
+        for _, values in distribution.items():
+            for value in values:
+                tasks.append(
+                    overwrite_read_data(value, value["bucket_name"], value["overwrite_object_count"], object_size))
+        await schedule_tasks(self.log, tasks)
