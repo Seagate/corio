@@ -42,13 +42,8 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
         :param session: session name.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(
-            access_key,
-            secret_key,
-            endpoint_url=endpoint_url,
-            use_ssl=kwargs.get("use_ssl"),
-            test_id=f"{kwargs.get('test_id')}_bucket_objects_operations",
-        )
+        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
+            "use_ssl"), test_id=f"{kwargs.get('test_id')}_bucket_objects_operations")
         random.seed(kwargs.get("seed"))
         self.kwargs = kwargs
         self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
@@ -86,7 +81,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     self.log.info("Iteration %s is started.", iteration)
                 if delay:
                     sleep_time = self.get_random_sleep_time(delay)
-                    self.log.info("sleep for %s hrs", sleep_time / (60**2))
+                    self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
                     time.sleep(sleep_time)
                 if read_percentage_per_bucket:
                     self.starts_sessions(
@@ -94,8 +89,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     )
                 elif overwrite_percentage_per_bucket:
                     self.starts_sessions(
-                        self.overwrite_distribution_data, distribution, object_size
-                    )
+                        self.overwrite_distribution_data, distribution, object_size)
                 else:
                     self.starts_sessions(self.read_data, distribution)
                 if delete_percentage_per_bucket:
@@ -116,4 +110,4 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
         if self.s3_url:
             exception = f"bucket url: '{self.s3_url}', {exception}"
         self.log.exception(exception)
-        assert False, exception
+        return False, exception

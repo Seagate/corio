@@ -34,15 +34,14 @@ class S3ApiIOUtils(S3Api):
     """Utils for s3api."""
 
     def __int__(self, *args, **kwargs):
-        """Initialize s3 utils."""
+        """Init for s3 utils."""
         super().__init__(*args, **kwargs)
         seed = kwargs.get("seed")
         if seed:
             random.seed(kwargs.get("seed"))
 
-    def distribution_of_buckets_objects_per_session(
-            self, bucket_list: list, object_count: int, sessions: int
-            ) -> dict:
+    def distribution_of_buckets_objects_per_session(self, bucket_list: list, object_count: int,
+                                                    sessions: int) -> dict:
         """
         Get the objects per bucket and buckets per session distribution dictionary.
 
@@ -65,54 +64,37 @@ class S3ApiIOUtils(S3Api):
                 bucket_name = next(bkt_itr)
                 while bucket_name in buckets and buckets[bucket_name] == ctr_itr[bucket_name]:
                     bucket_name = next(bkt_itr)
-                distribution[i] = [
-                    {
-                        "bucket_name": bucket_name,
-                        "object_count": round(object_count / ctr_itr[bucket_name]),
-                        }
-                    ]
-                buckets[bucket_name] = (
-                    1 if bucket_name not in buckets else buckets.get(bucket_name) + 1
-                )
+                distribution[i] = [{"bucket_name": bucket_name, "object_count": round(
+                    object_count / ctr_itr[bucket_name])}]
+                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
+                    bucket_name) + 1
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
             for _ in range(len(ctr_itr)):
                 bucket_name = next(bkt_itr)
-                while bucket_name in buckets and ctr_itr[bucket_name] in [
-                    1,
-                    buckets[bucket_name],
-                    ]:
+                while bucket_name in buckets and ctr_itr[bucket_name] in [1, buckets[bucket_name]]:
                     bucket_name = next(bkt_itr)
                 session = next(sess_itr)
                 if session in distribution:
-                    distribution[session].append(
-                        {
-                            "bucket_name": bucket_name,
-                            "object_count": round(object_count / ctr_itr[bucket_name]),
-                            }
-                        )
+                    distribution[session].append({"bucket_name": bucket_name, "object_count": round(
+                        object_count / ctr_itr[bucket_name])})
                 else:
-                    distribution[session] = [
-                        {
-                            "bucket_name": bucket_name,
-                            "object_count": round(object_count / ctr_itr[bucket_name]),
-                            }
-                        ]
-                buckets[bucket_name] = (
-                    1 if bucket_name not in buckets else buckets.get(bucket_name, 0) + 1
-                )
+                    distribution[session] = [{"bucket_name": bucket_name, "object_count": round(
+                        object_count / ctr_itr[bucket_name])}]
+                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
+                    bucket_name, 0) + 1
         del buckets, bkt_itr, ctr_itr, sess_itr
         self.log.debug(distribution)
         return distribution
 
     def put_delete_distribution(
-            self,
-            distribution: dict,
-            delete_obj_percent: int = 0,
-            put_object_percent: int = 0,
-            overwrite_object_percent: int = 0,
-            **kwargs,
-            ) -> None:
+        self,
+        distribution: dict,
+        delete_obj_percent: int = 0,
+        put_object_percent: int = 0,
+        overwrite_object_percent: int = 0,
+        **kwargs,
+    ) -> None:
         """
         Modify distribution dict with delete object percentage and put object percentage.
 
@@ -164,21 +146,17 @@ class S3ApiIOUtils(S3Api):
         for _, value in distribution.items():
             for ele in value:
                 if delete_obj_percent:
-                    ele["delete_object_count"] = int(
-                        ele["object_count"] * delete_obj_percent / 100
-                        )
+                    ele["delete_object_count"] = int(ele["object_count"] * delete_obj_percent / 100)
                 if put_object_percent:
-                    ele["put_object_count"] = int(
-                        ele["object_count"] * put_object_percent / 100
-                        )
+                    ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
                 if overwrite_object_percent:
                     ele["overwrite_object_count"] = int(
                         ele["object_count"] * overwrite_object_percent / 100
-                        )
+                    )
                 if read_percentage_per_bucket:
                     ele["read_object_count"] = int(
                         ele["object_count"] * read_percentage_per_bucket / 100
-                        )
+                    )
         self.log.debug(distribution)
 
     def starts_sessions(self, func, *args, **kwargs):
@@ -194,9 +172,9 @@ class S3ApiIOUtils(S3Api):
     def get_object_size(self, object_size) -> int:
         """Get the object size in bytes."""
         if isinstance(object_size, list):
-            file_size = object_size[random.randrange(0, len(object_size))]
+            file_size = object_size[random.randrange(0, len(object_size))]  # nosec
         elif isinstance(object_size, dict):
-            file_size = random.randrange(object_size["start"], object_size["end"])
+            file_size = random.randrange(object_size["start"], object_size["end"])  # nosec
         else:
             file_size = object_size
         self.log.debug(file_size)
@@ -220,8 +198,7 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(value, value["bucket_name"], value["object_count"], object_size)
-                    )
+                    put_data(value, value["bucket_name"], value["object_count"], object_size))
         await schedule_tasks(self.log, tasks)
 
     async def read_data(self, distribution):
@@ -229,7 +206,7 @@ class S3ApiIOUtils(S3Api):
         tasks = []
 
         async def read_data(data):
-            """Upload n number of objects to s3 bucket."""
+            """Read n number of objects from s3 bucket."""
             for file_name in data["files"]:
                 await self.get_object(data["bucket_name"], file_name)
 
@@ -296,13 +273,7 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(
-                        value,
-                        value["bucket_name"],
-                        value["put_object_count"],
-                        object_size,
-                        )
-                    )
+                    put_data(value, value["bucket_name"], value["put_object_count"], object_size))
         await schedule_tasks(self.log, tasks)
 
     async def cleanup_data(self, distribution: dict) -> None:
@@ -325,9 +296,9 @@ class S3ApiIOUtils(S3Api):
     def get_random_sleep_time(delay) -> int:
         """Get the random delay time from dict/list/tuple/int."""
         if isinstance(delay, dict):
-            sleep_time = random.randrange(delay["start"], delay["end"])
+            sleep_time = random.randrange(delay["start"], delay["end"])  # nosec
         elif isinstance(delay, (list, tuple)):
-            sleep_time = random.choice(delay)
+            sleep_time = random.choice(delay)  # nosec
         else:
             sleep_time = delay
         return sleep_time
@@ -339,21 +310,14 @@ class S3ApiIOUtils(S3Api):
         async def overwrite_read_data(data, bucket_name, object_count, objsize):
             """Upload and read n number of objects to s3 bucket."""
             for _ in range(1, object_count + 1):
-                file_name = random.choice(data["files"])
+                file_name = random.choice(data["files"])  # nosec
                 file_size = self.get_object_size(objsize)
                 file_path = corio_utils.create_file(file_name, file_size)
                 await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
                 await self.get_object(bucket_name, file_name)
-
         for _, values in distribution.items():
             for value in values:
-                tasks.append(
-                    overwrite_read_data(
-                        value,
-                        value["bucket_name"],
-                        value["overwrite_object_count"],
-                        object_size,
-                        )
-                    )
+                tasks.append(overwrite_read_data(value, value["bucket_name"],
+                                                 value["overwrite_object_count"], object_size))
         await schedule_tasks(self.log, tasks)
