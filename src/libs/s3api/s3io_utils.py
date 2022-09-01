@@ -47,11 +47,11 @@ class S3ApiIOUtils(S3Api):
         Get the objects per bucket and buckets per session distribution dictionary.
 
         I/P: bucket_list=["abc", "bcd", "cde"], object_count=500, sessions=5
-        O/P: {1: [{'bucket_name': 'cde', 'object_count': 500}],
-             2: [{'bucket_name': 'abc', 'object_count': 250}],
-             3: [{'bucket_name': 'bcd', 'object_count': 250}],
-             4: [{'bucket_name': 'abc', 'object_count': 250}],
-             5: [{'bucket_name': 'bcd', 'object_count': 250}]}
+        O/P: {'session1': [{'bucket_name': 'cde', 'object_count': 500}],
+             'session2': [{'bucket_name': 'abc', 'object_count': 250}],
+             'session3': [{'bucket_name': 'bcd', 'object_count': 250}],
+             'session4': [{'bucket_name': 'abc', 'object_count': 250}],
+             'session5': [{'bucket_name': 'bcd', 'object_count': 250}]}
         :param bucket_list: List of s3 buckets.
         :param object_count: Number of s3 object count.
         :param sessions: Number of sessions.
@@ -65,14 +65,14 @@ class S3ApiIOUtils(S3Api):
                 bucket_name = next(bkt_itr)
                 while bucket_name in buckets and buckets[bucket_name] == ctr_itr[bucket_name]:
                     bucket_name = next(bkt_itr)
-                distribution[i] = [
+                distribution[f"session{i}"] = [
                     {
                         "bucket_name": bucket_name,
                         "object_count": round(object_count / ctr_itr[bucket_name]),
                     }
                 ]
                 buckets[bucket_name] = (
-                    1 if bucket_name not in buckets else buckets.get(bucket_name) + 1
+                    1 if bucket_name not in buckets else buckets.get(bucket_name, 1) + 1
                 )
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
@@ -80,7 +80,7 @@ class S3ApiIOUtils(S3Api):
                 bucket_name = next(bkt_itr)
                 while bucket_name in buckets and ctr_itr[bucket_name] in [1, buckets[bucket_name]]:
                     bucket_name = next(bkt_itr)
-                session = next(sess_itr)
+                session = f"session{next(sess_itr)}"
                 if session in distribution:
                     distribution[session].append(
                         {
@@ -99,10 +99,10 @@ class S3ApiIOUtils(S3Api):
                     1 if bucket_name not in buckets else buckets.get(bucket_name, 0) + 1
                 )
         del buckets, bkt_itr, ctr_itr, sess_itr
-        self.log.debug(distribution)
+        self.log.info("Distribution of objects per buckets per sessions: %s", distribution)
         return distribution
 
-    def put_delete_distribution(
+    def generate_objects_distribution(
         self,
         distribution: dict,
         delete_obj_percent: int = 0,
@@ -121,7 +121,7 @@ class S3ApiIOUtils(S3Api):
             delete_obj_percent=10, put_object_percent=10, overwrite_object_percent=10,
             read_percentage_per_bucket=10
         O/P:
-            {1: [{'bucket_name': 'cde',
+            {"session1": [{'bucket_name': 'cde',
                   'delete_object_count': 50,
                   'object_count': 500,
                   'put_object_count': 50,
@@ -172,7 +172,10 @@ class S3ApiIOUtils(S3Api):
                     ele["read_object_count"] = int(
                         ele["object_count"] * read_percentage_per_bucket / 100
                     )
-        self.log.debug(distribution)
+        self.log.info(
+            "Distribution of percentage(read/write/delete) of objects per buckets per sessions: %s",
+            distribution,
+        )
 
     def starts_sessions(self, func, *args, **kwargs):
         """Start workload execution on s3 bucket as per distribution data."""
@@ -197,14 +200,23 @@ class S3ApiIOUtils(S3Api):
 
         async def put_data(data, bucket_name, object_count, objsize):
             """Upload n number of objects to s3 bucket."""
-            data["files"] = []
-            for cnt in range(1, object_count + 1):
+            data["files"] = {}
+            for _ in range(object_count):
                 file_size = self.get_object_size(objsize)
-                file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
+                file_name = f"s3object-{file_size}bytes-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
-                os.remove(file_path)
-                data["files"].append(file_name)
+                checksum_in = self.checksum_file(file_path)
+                self.s3_url = f"s3://{bucket_name}/{file_name}"
+                response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                data["files"][file_name] = {
+                    "s3url": self.s3_url,
+                    "key_size": file_size,
+                    "key_checksum": checksum_in,
+                    "bucket": bucket_name,
+                    "key": file_name,
+                    "etag": response["ETag"],
+                }
+                self.remove_file(file_path)
 
         for _, values in distribution.items():
             for value in values:
@@ -213,16 +225,20 @@ class S3ApiIOUtils(S3Api):
                 )
         await schedule_tasks(self.log, tasks)
 
-    async def read_data(self, distribution):
-        """Read given percentage of object distribution data from s3 bucket."""
+    async def read_data(self, distribution, validate=True):
+        """Read & validate given percentage of object distribution data from s3 bucket."""
         tasks = []
 
         async def read_data(data):
             """Read n number of objects from s3 bucket."""
             for file_name in data["files"]:
-                await self.get_object(data["bucket_name"], file_name)
+                response = await self.get_object(data["bucket_name"], file_name)
+                if validate:
+                    assert (
+                        data["files"][file_name]["etag"] == response["ETag"]
+                    ), f"Failed to match ETag for {file_name}"
 
-        for _, values in distribution.items():
+    for _, values in distribution.items():
             for value in values:
                 tasks.append(read_data(value))
         await schedule_tasks(self.log, tasks)
@@ -246,22 +262,21 @@ class S3ApiIOUtils(S3Api):
         await schedule_tasks(self.log, tasks)
 
     async def delete_distribution_data(self, distribution):
-        """Read given percentage of object distribution data from s3 bucket."""
+        """Delete given percentage of object distribution data randomly from s3 bucket."""
         tasks = []
 
         async def delete_data(data):
-            """Upload n number of objects to s3 bucket."""
-            file_list = data.get("files", [])
+            """Delete n number of objects randomly from s3 bucket."""
+            file_list = data["files"].keys()
             shuffle(file_list)
             file_iter = iter(cycle(file_list))
-            for _ in range(1, data["delete_object_count"] + 1):
+            for _ in range(data["delete_object_count"]):
                 file_name = next(file_iter, "")
-                if file_name:
+                if file_name and file_name in data["files"]:
                     await self.delete_object(data["bucket_name"], file_name)
-                    if file_name in data["files"]:
-                        data["files"].remove(file_name)
+                    data["files"].pop(file_name, "")
                 else:
-                    break
+                    self.log.warning("File '%s' does not exists.", file_name)
 
         for _, values in distribution.items():
             for value in values:
@@ -274,13 +289,22 @@ class S3ApiIOUtils(S3Api):
 
         async def put_data(data, bucket_name, object_count, objsize):
             """Upload n number of objects to s3 bucket."""
-            for cnt in range(1, object_count + 1):
+            for _ in range(object_count):
                 file_size = self.get_object_size(objsize)
-                file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
+                file_name = f"s3object-{file_size}bytes-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
-                os.remove(file_path)
-                data["files"].append(file_name)
+                checksum_in = self.checksum_file(file_path)
+                self.s3_url = f"s3://{bucket_name}/{file_name}"
+                response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                self.remove_file(file_path)
+                data["files"][file_name] = {
+                    "s3url": self.s3_url,
+                    "key_size": file_size,
+                    "key_checksum": checksum_in,
+                    "bucket": bucket_name,
+                    "key": file_name,
+                    "etag": response["ETag"],
+                }
 
         for _, values in distribution.items():
             for value in values:
@@ -307,7 +331,7 @@ class S3ApiIOUtils(S3Api):
 
     @staticmethod
     def get_random_sleep_time(delay) -> int:
-        """Get the random delay time from dict/list/tuple/int."""
+        """Get the random delay time from dict/list/tuple/int in seconds."""
         if isinstance(delay, dict):
             sleep_time = random.randrange(delay["start"], delay["end"])  # nosec
         elif isinstance(delay, (list, tuple)):
@@ -316,19 +340,35 @@ class S3ApiIOUtils(S3Api):
             sleep_time = delay
         return sleep_time
 
-    async def overwrite_distribution_data(self, distribution, object_size) -> None:
-        """Overwrite given percentage of total objects in a given bucket."""
+    async def overwrite_distribution_data(self, distribution, object_size, validate=True) -> None:
+        """Overwrite given percentage of total objects in a given s3 bucket."""
         tasks = []
 
         async def overwrite_read_data(data, bucket_name, object_count, objsize):
-            """Upload and read n number of objects to s3 bucket."""
-            for _ in range(1, object_count + 1):
+            """Overwrite and read same number of objects from s3 bucket."""
+            for _ in range(object_count):
                 file_name = random.choice(data["files"])  # nosec
                 file_size = self.get_object_size(objsize)
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
-                os.remove(file_path)
-                await self.get_object(bucket_name, file_name)
+                checksum_in = self.checksum_file(file_path)
+                self.s3_url = f"s3://{bucket_name}/{file_name}"
+                response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
+                self.remove_file(file_path)
+                data["files"][file_name] = {
+                    "s3url": self.s3_url,
+                    "key_size": file_size,
+                    "key_checksum": checksum_in,
+                    "bucket": bucket_name,
+                    "key": file_name,
+                    "etag": response["ETag"],
+                }
+                response = await self.get_object(bucket_name, file_name)
+                if validate:
+                    if validate:
+                        assert data["files"][file_name]["etag"] == response["ETag"], (
+                            f"Failed to match ETag for {file_name}: data: "
+                            f"{data['files'][file_name]}, response: {response}"
+                        )
 
         for _, values in distribution.items():
             for value in values:
@@ -338,3 +378,10 @@ class S3ApiIOUtils(S3Api):
                     )
                 )
         await schedule_tasks(self.log, tasks)
+
+    def remove_file(self, file_path: str) -> None:
+        """Remove the existing file."""
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        else:
+            self.log.warning("File '%s' does not exists.", file_path)

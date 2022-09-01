@@ -110,7 +110,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             if self.s3_url:
                 exception = f"bucket url: '{self.s3_url}', {exception}"
             self.log.exception(exception)
-            raise exception from Exception
+            assert False, exception
 
     def create_distribution_as_per_percentage(self, buckets, sessions):
         """Create object distribution as per given percentage."""
