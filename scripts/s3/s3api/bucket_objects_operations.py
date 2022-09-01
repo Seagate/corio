@@ -42,8 +42,13 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
         :param session: session name.
         :param duration: Duration timedelta object, if not given will run for 100 days.
         """
-        super().__init__(access_key, secret_key, endpoint_url=endpoint_url, use_ssl=kwargs.get(
-            "use_ssl"), test_id=f"{kwargs.get('test_id')}_bucket_objects_operations")
+        super().__init__(
+            access_key,
+            secret_key,
+            endpoint_url=endpoint_url,
+            use_ssl=kwargs.get("use_ssl"),
+            test_id=f"{kwargs.get('test_id')}_bucket_objects_operations",
+        )
         random.seed(kwargs.get("seed"))
         self.kwargs = kwargs
         self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
@@ -56,15 +61,12 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
             sessions = self.kwargs.get("sessions")
             delay = self.kwargs.get("delay")
             object_size = self.kwargs.get("object_size")
-            number_of_buckets = self.kwargs.get("number_of_buckets")
-            number_of_objects = self.kwargs.get("number_of_objects")
-            delete_percentage_per_bucket = self.kwargs.get("delete_percentage_per_bucket")
-            put_percentage_per_bucket = self.kwargs.get("put_percentage_per_bucket")
-            overwrite_percentage_per_bucket = self.kwargs.get("overwrite_percentage_per_bucket")
-            read_percentage_per_bucket = self.kwargs.get("read_percentage_per_bucket")
             self.log.info("Iteration %s is started.", iteration)
-            buckets = await self.create_n_buckets("bucket-objects-ops", number_of_buckets)
+            buckets = await self.create_n_buckets(
+                "bucket-objects-ops", self.kwargs.get("number_of_buckets")
+            )
             self.log.info("Bucket list: %s", buckets)
+            distribution = self.create_distribution_as_per_percentage(buckets, sessions)
             distribution = self.distribution_of_buckets_objects_per_session(
                 buckets, number_of_objects, sessions
             )
@@ -81,20 +83,22 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     self.log.info("Iteration %s is started.", iteration)
                 if delay:
                     sleep_time = self.get_random_sleep_time(delay)
-                    self.log.info("sleep for %s hrs", sleep_time / (60 ** 2))
+                    self.log.info("sleep for %s hrs", sleep_time / (60**2))
                     time.sleep(sleep_time)
+                if self.kwargs.get("overwrite_percentage_per_bucket"):
                 if read_percentage_per_bucket:
                     self.starts_sessions(
                         self.overwrite_distribution_data, distribution, object_size
                     )
                 elif overwrite_percentage_per_bucket:
                     self.starts_sessions(
-                        self.overwrite_distribution_data, distribution, object_size)
+                        self.overwrite_distribution_data, distribution, object_size
+                    )
                 else:
                     self.starts_sessions(self.read_data, distribution)
-                if delete_percentage_per_bucket:
+                if self.kwargs.get("delete_percentage_per_bucket"):
                     self.starts_sessions(self.delete_distribution_data, distribution)
-                if put_percentage_per_bucket:
+                if self.kwargs.get("put_percentage_per_bucket"):
                     self.starts_sessions(self.write_distribution_data, distribution, object_size)
                 self.log.info("Iteration %s is completed.", iteration)
                 if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
@@ -102,12 +106,21 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     return True, "bucket object workload execution completed successfully."
                 iteration += 1
         except Exception as err:
-            self.raise_exception(err)
+            exception = f"Exception: {err}"
+            if self.s3_url:
+                exception = f"bucket url: '{self.s3_url}', {exception}"
+            self.log.exception(exception)
+            raise exception from Exception
 
-    def raise_exception(self, err):
-        """Raise exception."""
-        exception = f"Exception: {err}"
-        if self.s3_url:
-            exception = f"bucket url: '{self.s3_url}', {exception}"
-        self.log.exception(exception)
-        return False, exception
+    def create_distribution_as_per_percentage(self, buckets, sessions):
+        """Create object distribution as per given percentage."""
+        distribution = self.distribution_of_buckets_objects_per_session(
+            buckets, self.kwargs.get("number_of_objects"), sessions
+        )
+        self.generate_objects_distribution(
+            distribution,
+            self.kwargs.get("delete_percentage_per_bucket"),
+            self.kwargs.get("put_percentage_per_bucket"),
+            self.kwargs.get("overwrite_percentage_per_bucket"),
+        )
+        return distribution

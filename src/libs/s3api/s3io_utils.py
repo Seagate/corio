@@ -40,8 +40,9 @@ class S3ApiIOUtils(S3Api):
         if seed:
             random.seed(kwargs.get("seed"))
 
-    def distribution_of_buckets_objects_per_session(self, bucket_list: list, object_count: int,
-                                                    sessions: int) -> dict:
+    def distribution_of_buckets_objects_per_session(
+        self, bucket_list: list, object_count: int, sessions: int
+    ) -> dict:
         """
         Get the objects per bucket and buckets per session distribution dictionary.
 
@@ -64,10 +65,15 @@ class S3ApiIOUtils(S3Api):
                 bucket_name = next(bkt_itr)
                 while bucket_name in buckets and buckets[bucket_name] == ctr_itr[bucket_name]:
                     bucket_name = next(bkt_itr)
-                distribution[i] = [{"bucket_name": bucket_name, "object_count": round(
-                    object_count / ctr_itr[bucket_name])}]
-                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
-                    bucket_name) + 1
+                distribution[i] = [
+                    {
+                        "bucket_name": bucket_name,
+                        "object_count": round(object_count / ctr_itr[bucket_name]),
+                    }
+                ]
+                buckets[bucket_name] = (
+                    1 if bucket_name not in buckets else buckets.get(bucket_name) + 1
+                )
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
             for _ in range(len(ctr_itr)):
@@ -76,13 +82,22 @@ class S3ApiIOUtils(S3Api):
                     bucket_name = next(bkt_itr)
                 session = next(sess_itr)
                 if session in distribution:
-                    distribution[session].append({"bucket_name": bucket_name, "object_count": round(
-                        object_count / ctr_itr[bucket_name])})
+                    distribution[session].append(
+                        {
+                            "bucket_name": bucket_name,
+                            "object_count": round(object_count / ctr_itr[bucket_name]),
+                        }
+                    )
                 else:
-                    distribution[session] = [{"bucket_name": bucket_name, "object_count": round(
-                        object_count / ctr_itr[bucket_name])}]
-                buckets[bucket_name] = 1 if bucket_name not in buckets else buckets.get(
-                    bucket_name, 0) + 1
+                    distribution[session] = [
+                        {
+                            "bucket_name": bucket_name,
+                            "object_count": round(object_count / ctr_itr[bucket_name]),
+                        }
+                    ]
+                buckets[bucket_name] = (
+                    1 if bucket_name not in buckets else buckets.get(bucket_name, 0) + 1
+                )
         del buckets, bkt_itr, ctr_itr, sess_itr
         self.log.debug(distribution)
         return distribution
@@ -96,7 +111,7 @@ class S3ApiIOUtils(S3Api):
         **kwargs,
     ) -> None:
         """
-        Modify distribution dict with delete object percentage and put object percentage.
+        Modify/generate objects distribution as per put, delete, overwrite object percentage.
 
         I/P: distribution= {1: [{'bucket_name': 'cde', 'object_count': 500}],
                              2: [{'bucket_name': 'abc', 'object_count': 250}],
@@ -160,11 +175,7 @@ class S3ApiIOUtils(S3Api):
         self.log.debug(distribution)
 
     def starts_sessions(self, func, *args, **kwargs):
-        """
-        Start workload execution.
-
-        :param func: Name of the function.
-        """
+        """Start workload execution on s3 bucket as per distribution data."""
         self.log.info("Execution started for %s", func.__name__)
         run_event_loop_until_complete(self.log, func, *args, **kwargs)
         self.log.info("Execution completed for %s", func.__name__)
@@ -181,7 +192,7 @@ class S3ApiIOUtils(S3Api):
         return file_size
 
     async def write_data(self, distribution, object_size):
-        """Write distribution data to s3."""
+        """Write given percentage of object distribution data to s3 bucket."""
         tasks = []
 
         async def put_data(data, bucket_name, object_count, objsize):
@@ -198,11 +209,12 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(value, value["bucket_name"], value["object_count"], object_size))
+                    put_data(value, value["bucket_name"], value["object_count"], object_size)
+                )
         await schedule_tasks(self.log, tasks)
 
     async def read_data(self, distribution):
-        """Read distribution data from s3."""
+        """Read given percentage of object distribution data from s3 bucket."""
         tasks = []
 
         async def read_data(data):
@@ -234,7 +246,7 @@ class S3ApiIOUtils(S3Api):
         await schedule_tasks(self.log, tasks)
 
     async def delete_distribution_data(self, distribution):
-        """Read distribution data from s3."""
+        """Read given percentage of object distribution data from s3 bucket."""
         tasks = []
 
         async def delete_data(data):
@@ -257,7 +269,7 @@ class S3ApiIOUtils(S3Api):
         await schedule_tasks(self.log, tasks)
 
     async def write_distribution_data(self, distribution, object_size):
-        """Write distribution data to s3."""
+        """Write given percentage of object distribution to a s3 bucket."""
         tasks = []
 
         async def put_data(data, bucket_name, object_count, objsize):
@@ -273,15 +285,16 @@ class S3ApiIOUtils(S3Api):
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(value, value["bucket_name"], value["put_object_count"], object_size))
+                    put_data(value, value["bucket_name"], value["put_object_count"], object_size)
+                )
         await schedule_tasks(self.log, tasks)
 
     async def cleanup_data(self, distribution: dict) -> None:
-        """Delete s3 buckets in parallel forcefully by default."""
+        """Delete given percentage of objects from s3 buckets in parallel forcefully by default."""
         tasks = []
 
         async def delete_buckets(buckets):
-            """Delete s3 buckets."""
+            """Delete s3 buckets along with objects."""
             for bucket in buckets:
                 await self.delete_bucket(bucket, force=True)
 
@@ -316,8 +329,12 @@ class S3ApiIOUtils(S3Api):
                 await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
                 await self.get_object(bucket_name, file_name)
+
         for _, values in distribution.items():
             for value in values:
-                tasks.append(overwrite_read_data(value, value["bucket_name"],
-                                                 value["overwrite_object_count"], object_size))
+                tasks.append(
+                    overwrite_read_data(
+                        value, value["bucket_name"], value["overwrite_object_count"], object_size
+                    )
+                )
         await schedule_tasks(self.log, tasks)
