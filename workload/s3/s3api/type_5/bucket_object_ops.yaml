@@ -3,7 +3,7 @@ test_1:
   object_size:
     start: 0b
     end: 1Gb
-  min_runtime: 2h
+  min_runtime: 30d
   sessions_per_node: 5
   number_of_buckets: 10
   number_of_objects: 500
