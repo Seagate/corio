@@ -31,7 +31,8 @@ LOGGER = logging.getLogger(ROOT)
 
 
 def check_health(return_dict=None):
-    """K8s based health check.
+    """Module for K8s based health check.
+
     :param return_dict : dictionary to share data between parallel processes.
     """
     host, user, password = None, None, None

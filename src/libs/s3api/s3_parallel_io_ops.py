@@ -63,8 +63,9 @@ class S3ApiParallelIO(S3Api):
         validate=False,
     ) -> None:
         """
-        Read data from s3 bucket as per object size, object prefix and number of samples in
-        parallel as per sessions.
+        Read data from s3 bucket as per object size.
+
+        Object prefix and number of samples in parallel as per sessions.
 
         :param bucket_name: Name of the s3 bucket.
         :param object_size: Object size per sample.
@@ -113,8 +114,9 @@ class S3ApiParallelIO(S3Api):
         self, bucket_name: str, object_size: int, sessions: int, object_prefix: str
     ) -> None:
         """
-        Delete data from s3 bucket as per object size, object prefix and number of samples in
-        parallel as per sessions.
+        Delete data from s3 bucket as per object size.
+
+        Object prefix and number of samples in parallel as per sessions.
 
         :param bucket_name: Name of the bucket.
         :param object_size: Object size per sample.
@@ -156,8 +158,9 @@ class S3ApiParallelIO(S3Api):
         self, bucket_name: str, object_size: int, sessions: int, object_prefix: str
     ) -> None:
         """
-        Validate data from s3 bucket as per object size, object prefix and number of samples in
-        parallel as per sessions.
+        Validate data from s3 bucket as per object size.
+
+        Object prefix and number of samples in parallel as per sessions.
 
         :param bucket_name: Name of the s3 bucket.
         :param object_size: Object size per sample.
@@ -230,8 +233,9 @@ class S3ApiParallelIO(S3Api):
         self, bucket_name: str, object_size: int, object_prefix: str, sessions: int
     ) -> None:
         """
-        Write data to s3 bucket as per object size, object prefix and number of samples in
-        parallel as per sessions.
+        Write data to s3 bucket as per object size.
+        
+        Object prefix and number of samples in parallel as per sessions.
 
         :param object_prefix: Object name prefix used while creating unique object.
         :param bucket_name: Name of the s3 bucket.

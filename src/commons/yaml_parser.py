@@ -32,7 +32,8 @@ LOGGER = logging.getLogger(const.ROOT)
 
 def apply_master_config(workload: dict, master_cfg: dict) -> dict:
     """
-    Add missing parameters to tests based on operation and tool mentioned in the test
+    Add missing parameters to tests based on operation and tool mentioned in the test.
+
     :param workload: Parsed test config
     :param master_cfg: Parsed master config
     :return: dict: Final test dictionary to be scheduled.
@@ -210,6 +211,7 @@ def convert_object_part_size_to_bytes(data: dict) -> None:
 def convert_delay_to_seconds(data: dict) -> None:
     """
     Convert delay time in format 0d0h0m0s to second.
+
     :param data: Workload data dictionary.
     """
     if "delay" in data:
@@ -247,6 +249,7 @@ def convert_range_read_to_bytes(data):
 
 def convert_object_size_to_bytes_samples(data):
     """Convert object_operations_type1 to bytes and distribution to samples.
+
     sample data:
     test_1:
       TEST_ID: TEST-40039
