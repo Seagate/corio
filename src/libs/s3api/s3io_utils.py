@@ -23,6 +23,7 @@ from collections import Counter
 from itertools import cycle
 from random import shuffle
 from time import perf_counter_ns
+from typing import Union
 
 from src.commons.utils import corio_utils
 from src.commons.utils.asyncio_utils import run_event_loop_until_complete
@@ -38,7 +39,7 @@ class S3ApiIOUtils(S3Api):
         super().__init__(*args, **kwargs)
         seed = kwargs.get("seed")
         if seed:
-            random.seed(kwargs.get("seed"))
+            random.seed(seed)
 
     def distribution_of_buckets_objects_per_session(
         self, bucket_list: list, object_count: int, sessions: int
@@ -72,7 +73,7 @@ class S3ApiIOUtils(S3Api):
                     }
                 ]
                 buckets[bucket_name] = (
-                    1 if bucket_name not in buckets else buckets.get(bucket_name, 1) + 1
+                    1 if bucket_name not in buckets else buckets.get(bucket_name, 0) + 1
                 )
         else:
             ctr_itr = Counter([next(bkt_itr) for _ in range(len(bucket_list))])
@@ -113,11 +114,11 @@ class S3ApiIOUtils(S3Api):
         """
         Modify/generate objects distribution as per put, delete, overwrite object percentage.
 
-        I/P: distribution= {1: [{'bucket_name': 'cde', 'object_count': 500}],
-                             2: [{'bucket_name': 'abc', 'object_count': 250}],
-                             3: [{'bucket_name': 'bcd', 'object_count': 250}],
-                             4: [{'bucket_name': 'abc', 'object_count': 250}],
-                             5: [{'bucket_name': 'bcd', 'object_count': 250}]},
+        I/P: distribution= {"session1": [{'bucket_name': 'cde', 'object_count': 500}],
+                             "session2": [{'bucket_name': 'abc', 'object_count': 250}],
+                             "session3": [{'bucket_name': 'bcd', 'object_count': 250}],
+                             "session4": [{'bucket_name': 'abc', 'object_count': 250}],
+                             "session5": [{'bucket_name': 'bcd', 'object_count': 250}]},
             delete_obj_percent=10, put_object_percent=10, overwrite_object_percent=10,
             read_percentage_per_bucket=10
         O/P:
@@ -127,25 +128,25 @@ class S3ApiIOUtils(S3Api):
                   'put_object_count': 50,
                   'overwrite_object_count':50,
                   'read_object_count':50}],
-             2: [{'bucket_name': 'abc',
+             "session2": [{'bucket_name': 'abc',
                   'delete_object_count': 25,
                   'object_count': 250,
                   'put_object_count': 25,
                   'overwrite_object_count':25,
                   'read_object_count':25}],
-             3: [{'bucket_name': 'bcd',
+             "session3": [{'bucket_name': 'bcd',
                   'delete_object_count': 25,
                   'object_count': 250,
                   'put_object_count': 25,
                   'overwrite_object_count':25,
                   'read_object_count':25}],
-             4: [{'bucket_name': 'abc',
+             "session4": [{'bucket_name': 'abc',
                   'delete_object_count': 25,
                   'object_count': 250,
                   'put_object_count': 25,
                   'overwrite_object_count':25,
                   'read_object_count':25}],
-             5: [{'bucket_name': 'bcd',
+             "session5": [{'bucket_name': 'bcd',
                   'delete_object_count': 25,
                   'object_count': 250,
                   'put_object_count': 25,
@@ -161,11 +162,15 @@ class S3ApiIOUtils(S3Api):
         for _, value in distribution.items():
             for ele in value:
                 if delete_obj_percent:
-                    ele["delete_object_count"] = int(ele["object_count"] * delete_obj_percent / 100)
+                    ele["delete_object_count"] = round(
+                        ele["object_count"] * delete_obj_percent / 100
+                    )
                 if put_object_percent:
-                    ele["put_object_count"] = int(ele["object_count"] * put_object_percent / 100)
+                    ele["put_object_count"] = round(
+                        ele["object_count"] * put_object_percent / 100
+                    )
                 if overwrite_object_percent:
-                    ele["overwrite_object_count"] = int(
+                    ele["overwrite_object_count"] = round(
                         ele["object_count"] * overwrite_object_percent / 100
                     )
                 if read_percentage_per_bucket:
@@ -177,13 +182,13 @@ class S3ApiIOUtils(S3Api):
             distribution,
         )
 
-    def starts_sessions(self, func, *args, **kwargs):
+    def starts_sessions(self, func, *args, **kwargs) -> None:
         """Start workload execution on s3 bucket as per distribution data."""
         self.log.info("Execution started for %s", func.__name__)
         run_event_loop_until_complete(self.log, func, *args, **kwargs)
         self.log.info("Execution completed for %s", func.__name__)
 
-    def get_object_size(self, object_size) -> int:
+    def get_object_size(self, object_size: Union[list, dict, int]) -> int:
         """Get the object size in bytes."""
         if isinstance(object_size, list):
             file_size = object_size[random.randrange(0, len(object_size))]  # nosec
@@ -194,7 +199,7 @@ class S3ApiIOUtils(S3Api):
         self.log.debug(file_size)
         return file_size
 
-    async def write_data(self, distribution, object_size):
+    async def write_data(self, distribution: dict, object_size: Union[list, dict, int]) -> None:
         """Write given percentage of object distribution data to s3 bucket."""
         tasks = []
 
@@ -225,25 +230,27 @@ class S3ApiIOUtils(S3Api):
                 )
         await schedule_tasks(self.log, tasks)
 
-    async def read_data(self, distribution, validate=True):
+    async def read_all_data(self, distribution: dict, validate=True) -> None:
         """Read & validate given percentage of object distribution data from s3 bucket."""
         tasks = []
 
-        async def read_data(data):
+        async def read_data(data: dict) -> None:
             """Read n number of objects from s3 bucket."""
             for file_name in data["files"]:
                 response = await self.get_object(data["bucket_name"], file_name)
                 if validate:
-                    assert (
-                        data["files"][file_name]["etag"] == response["ETag"]
-                    ), f"Failed to match ETag for {file_name}"
+                    if data["files"][file_name]["etag"] != response["ETag"]:
+                        raise AssertionError(
+                            f"Failed to match ETag for {file_name}: response: " f"{response}"
+                        )
+                    self.log.info(f"Matched ETag for {file_name}")
 
-    for _, values in distribution.items():
+        for _, values in distribution.items():
             for value in values:
                 tasks.append(read_data(value))
         await schedule_tasks(self.log, tasks)
 
-    async def read_distribution_data(self, distribution):
+    async def read_distribution_data(self, distribution, validate=True):
         """Read object distribution per s3 bucket in parallel."""
         tasks = []
 
@@ -254,20 +261,26 @@ class S3ApiIOUtils(S3Api):
             file_iter = iter(cycle(file_list))
             for _ in range(data["read_object_count"]):
                 file_name = next(file_iter)
-                await self.get_object(data["bucket_name"], file_name)
+                response = await self.get_object(data["bucket_name"], file_name)
+                if validate:
+                    if data["files"][file_name]["etag"] != response["ETag"]:
+                        raise AssertionError(
+                            f"Failed to match ETag for {file_name}: response: " f"{response}"
+                        )
+                    self.log.info(f"Matched ETag for {file_name}")
 
         for _, values in distribution.items():
             for value in values:
                 tasks.append(read_data(value))
         await schedule_tasks(self.log, tasks)
 
-    async def delete_distribution_data(self, distribution):
+    async def delete_distribution_data(self, distribution: dict) -> None:
         """Delete given percentage of object distribution data randomly from s3 bucket."""
         tasks = []
 
-        async def delete_data(data):
+        async def delete_data(data: dict) -> None:
             """Delete n number of objects randomly from s3 bucket."""
-            file_list = data["files"].keys()
+            file_list = list(data["files"].keys())
             shuffle(file_list)
             file_iter = iter(cycle(file_list))
             for _ in range(data["delete_object_count"]):
@@ -283,11 +296,15 @@ class S3ApiIOUtils(S3Api):
                 tasks.append(delete_data(value))
         await schedule_tasks(self.log, tasks)
 
-    async def write_distribution_data(self, distribution, object_size):
+    async def write_distribution_data(
+        self, distribution: dict, object_size: Union[list, dict, int]
+    ) -> None:
         """Write given percentage of object distribution to a s3 bucket."""
         tasks = []
 
-        async def put_data(data, bucket_name, object_count, objsize):
+        async def put_data(
+            data: dict, bucket_name: str, object_count: int, objsize: Union[list, dict, int]
+        ) -> None:
             """Upload n number of objects to s3 bucket."""
             for _ in range(object_count):
                 file_size = self.get_object_size(objsize)
@@ -313,24 +330,20 @@ class S3ApiIOUtils(S3Api):
                 )
         await schedule_tasks(self.log, tasks)
 
-    async def cleanup_data(self, distribution: dict) -> None:
-        """Delete given percentage of objects from s3 buckets in parallel forcefully by default."""
+    async def cleanup_data(self, buckets: list) -> None:
+        """Delete all buckets from s3 in parallel forcefully by default."""
         tasks = []
 
-        async def delete_buckets(buckets):
+        async def delete_buckets(bucket_name: str) -> None:
             """Delete s3 buckets along with objects."""
-            for bucket in buckets:
-                await self.delete_bucket(bucket, force=True)
+            await self.delete_bucket(bucket_name, force=True)
 
-        for _, values in distribution.items():
-            bucket_list = []
-            for value in values:
-                bucket_list.append(value["bucket_name"])
-            tasks.append(delete_buckets(bucket_list))
+        for bucket in buckets:
+            tasks.append(delete_buckets(bucket))
         await schedule_tasks(self.log, tasks)
 
     @staticmethod
-    def get_random_sleep_time(delay) -> int:
+    def get_random_sleep_time(delay: Union[list, dict, int]) -> int:
         """Get the random delay time from dict/list/tuple/int in seconds."""
         if isinstance(delay, dict):
             sleep_time = random.randrange(delay["start"], delay["end"])  # nosec
@@ -338,13 +351,17 @@ class S3ApiIOUtils(S3Api):
             sleep_time = random.choice(delay)  # nosec
         else:
             sleep_time = delay
-        return sleep_time
+        return round(sleep_time)
 
-    async def overwrite_distribution_data(self, distribution, object_size, validate=True) -> None:
+    async def overwrite_distribution_data(
+        self, distribution: dict, object_size: Union[list, dict, int], validate=True
+    ) -> None:
         """Overwrite given percentage of total objects in a given s3 bucket."""
         tasks = []
 
-        async def overwrite_read_data(data, bucket_name, object_count, objsize):
+        async def overwrite_read_data(
+            data: dict, bucket_name: str, object_count: int, objsize: Union[list, dict, int]
+        ) -> None:
             """Overwrite and read same number of objects from s3 bucket."""
             for _ in range(object_count):
                 file_name = random.choice(data["files"])  # nosec
@@ -365,10 +382,11 @@ class S3ApiIOUtils(S3Api):
                 response = await self.get_object(bucket_name, file_name)
                 if validate:
                     if validate:
-                        assert data["files"][file_name]["etag"] == response["ETag"], (
-                            f"Failed to match ETag for {file_name}: data: "
-                            f"{data['files'][file_name]}, response: {response}"
-                        )
+                        if data["files"][file_name]["etag"] != response["ETag"]:
+                            raise AssertionError(
+                                f"Failed to match ETag for {file_name}: response: " f"{response}"
+                            )
+                        self.log.info(f"Matched ETag for {file_name}")
 
         for _, values in distribution.items():
             for value in values:
