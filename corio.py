@@ -90,25 +90,17 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
             test_ids.append(test_value["TEST_ID"])
             if tests_details:
                 if test_value["TEST_ID"] in tests_details:
-                    tests_to_execute[test_value["TEST_ID"]] = tests_details[
-                        test_value["TEST_ID"]
-                    ]
-                    tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value[
-                        "start_time"
-                    ]
+                    tests_to_execute[test_value["TEST_ID"]] = tests_details[test_value["TEST_ID"]]
+                    tests_to_execute[test_value["TEST_ID"]]["start_time"] = test_value["start_time"]
                     tests_to_execute[test_value["TEST_ID"]]["min_runtime"] = test_value[
                         "min_runtime"
                     ]
                 else:
                     missing_jira_ids.append(test_value["TEST_ID"])
     # Check and report duplicate test ids from workload.
-    duplicate_ids = [
-        test_id for test_id, count in Counter(test_ids).items() if count > 1
-    ]
+    duplicate_ids = [test_id for test_id, count in Counter(test_ids).items() if count > 1]
     if duplicate_ids:
-        raise AssertionError(
-            f"Found duplicate ids in workload files. ids {set(duplicate_ids)}"
-        )
+        raise AssertionError(f"Found duplicate ids in workload files. ids {set(duplicate_ids)}")
     if tests_details:
         # If jira update selected then will report missing workload test ids from jira TP.
         if missing_jira_ids:
@@ -117,15 +109,11 @@ def check_report_duplicate_missing_ids(parsed_input, tests_details):
                 f" from jira tp: {tests_details.key()}"
             )
     if tests_to_execute:
-        LOGGER.info(
-            "List of tests to be executed with jira update: %s", tests_to_execute
-        )
+        LOGGER.info("List of tests to be executed with jira update: %s", tests_to_execute)
     return tests_to_execute
 
 
-def get_test_ids_from_terminated_workload(
-    workload_dict: dict, workload_key: str
-) -> list:
+def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str) -> list:
     """Get all test-id from terminated workload due to failure."""
     test_ids = []
     for test in workload_dict[workload_key].values():
@@ -143,9 +131,7 @@ def main(options):
     terminated_tp, test_ids, tests_details = None, [], {}
     jira_obj = JiraApp() if options.test_plan else None
     if jira_obj:
-        tests_details = jira_obj.get_all_tests_details_from_tp(
-            options.test_plan, reset_status=True
-        )
+        tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
     workload_list = corio_utils.get_workload_list(options.test_input)
     LOGGER.info("Test YAML Files to be executed : %s", workload_list)
     parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
@@ -181,9 +167,7 @@ def main(options):
                 )
             terminated_tp = scheduler.monitor_processes(processes, return_dict)
             if terminated_tp:
-                test_ids = get_test_ids_from_terminated_workload(
-                    parsed_input, terminated_tp
-                )
+                test_ids = get_test_ids_from_terminated_workload(parsed_input, terminated_tp)
                 break
             if tuple(processes.keys()) in const.terminate_process_list:
                 break
@@ -224,7 +208,7 @@ def main(options):
 if __name__ == "__main__":
     # backup old execution logs.
     corio_utils.log_cleanup()
-    initialize_loghandler(LOGGER, opts.verbose)
+    initialize_loghandler(LOGGER, os.path.splitext(os.path.basename(__file__))[0], opts.verbose)
     LOGGER.info("Arguments: %s", opts)
     pre_requisites(opts)
     main(opts)

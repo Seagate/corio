@@ -148,13 +148,12 @@ def get_logger(level, name, **kwargs) -> object:
     return logger
 
 
-def initialize_loghandler(logger, verbose=False):
+def initialize_loghandler(logger, name, verbose=False):
     """Initialize io driver runner logging with stream and file handlers."""
     # If log level provided then it will use DEBUG else will use default INFO.
     dir_path = os.path.join(os.path.join(const.LOG_DIR, "latest"))
     if not os.path.exists(dir_path):
         os.makedirs(dir_path, exist_ok=True)
-    name = os.path.splitext(os.path.basename(__file__))[0]
     if verbose:
         level = logging.getLevelName(logging.DEBUG)
         log_path = os.path.join(dir_path, f"{name}_console_{const.DT_STRING}.DEBUG")
