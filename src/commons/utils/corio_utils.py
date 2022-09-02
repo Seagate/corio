@@ -340,7 +340,7 @@ def get_master_details() -> tuple:
 
 def get_report_file_path(corio_start_time) -> str:
     """
-    Returns Corio Report file path
+    Module to return Corio Report file path.
 
     :param corio_start_time: Start time for main process.
     """
@@ -351,7 +351,7 @@ def get_report_file_path(corio_start_time) -> str:
 
 
 def convert_datetime_delta(time_delta: datetime.now()) -> str:
-    """Convert datetime delta object into tuple of days, hours, minutes"""
+    """Convert datetime delta object into tuple of days, hours, minutes."""
     return (
         f"{time_delta.days}Days {time_delta.seconds//3600}Hours"
         f" {(time_delta.seconds//60)%60}Minutes"
@@ -360,7 +360,7 @@ def convert_datetime_delta(time_delta: datetime.now()) -> str:
 
 def get_test_file_path(test_id: str) -> str:
     """
-    Returns test log file path
+    Module to return test log file path.
 
     :param test_id: Name of the test id.
     """
@@ -381,7 +381,6 @@ def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry
     :param max_retry: Max number of times retires on failure.
     :param retry_delay: Delay between two retries.
     """
-
     def outer_wrapper(func):
         """Outer wrapper method."""
         if asyncio:

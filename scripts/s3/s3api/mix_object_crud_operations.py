@@ -83,7 +83,6 @@ class TestTypeXObjectOps(S3ApiParallelIO):
         # :param cleanup_percentage: Once write reached to percentage then delete all data.
         # :param total_storage_size: Total storage on cloud.
         """
-
         cls.object_prefix = "s3mix_object_ops_iter"
         cls.bucket_name = f"s3mix-bucket-{perf_counter_ns()}"
         cls.write_percentage = kwargs.get("write_percentage")
@@ -297,8 +296,7 @@ class TestTypeXObjectOps(S3ApiParallelIO):
             self.iteration += 1
 
     async def execute_object_crud_workload(self):
-        """Execute Plain object operations workload for given distribution for
-        specific duration."""
+        """Execute plain object operation workload for given distribution for specific time."""
         while True:
             try:
                 self.log.info("iteration %s is started...", self.iteration)

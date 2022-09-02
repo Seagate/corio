@@ -1,7 +1,8 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
 #
 # Copyright (c) 2022 Seagate Technology LLC and/or its Affiliates
-#
-# This program is free software: you can redistribute it and/or modify
+## This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -11,15 +12,11 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-#
-# For any questions about this software or licensing,
+## For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
-# -*- coding: utf-8 -*-
-# !/usr/bin/python
-"""
-Module for generating email
-"""
+"""Module for generating email."""
+
 import json
 import logging
 import os
@@ -43,11 +40,12 @@ LOGGER = logging.getLogger(ROOT)
 
 # pylint: disable=too-few-public-methods
 class Mail:
-    """Module to send mail"""
+    """Module to send mail."""
 
     def __init__(self, sender, receiver):
         """
-        Init method
+        Init method.
+
         :param sender: email address of sender
         :param receiver: email address of receiver
         """
@@ -58,7 +56,8 @@ class Mail:
 
     def send_mail(self, message):
         """
-        Function to send mail using smtp server
+        Function to send mail using smtp server.
+
         :param message: Email message
         """
         if self.mail_host and self.port:
@@ -81,7 +80,8 @@ class MailNotification(threading.Thread):
 
     def __init__(self, start_time, tp_id, **kwargs):
         """
-        Init method:
+        Init method.
+
         :param corio_start_time : Start time of the execution.
         :param tp_id : Test Plan ID to be sent in subject.
         :keyword sender: sender of mail.
@@ -109,7 +109,8 @@ class MailNotification(threading.Thread):
 
     def prepare_email(self, execution_status, status_code) -> MIMEMultipart:
         """
-        Prepare email message with format and attachment
+        Prepare email message with format and attachment.
+
         :param execution_status: Execution status. In Progress/Fail
         :param status_code: Color code used as per execution status.
         :return: Formatted MIME message

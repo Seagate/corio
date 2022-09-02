@@ -21,7 +21,7 @@ import asyncio
 
 
 def run_event_loop_until_complete(logger, func, *args, **kwargs):
-    """Run the event"""
+    """Run the event."""
     new_loop = asyncio.new_event_loop()
     asyncio.set_event_loop(new_loop)
     try:

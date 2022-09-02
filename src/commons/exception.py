@@ -44,27 +44,27 @@ class DegradedModeError(CheckError):
 
 
 class PodReplicaError(CheckError):
-    """Exception class for PodReplica Error"""
+    """Exception class for PodReplica Error."""
 
 
 class DeployReplicasetError(CheckError):
-    """Exception class for Replicaset Error"""
+    """Exception class for Replicaset Error."""
 
 
 class NumReplicaError(CheckError):
-    """Exception class for NumReplica Error"""
+    """Exception class for NumReplica Error."""
 
 
 class K8sDeploymentRecoverError(CheckError):
-    """Exception class for K8sDeployment Recover Error"""
+    """Exception class for K8sDeployment Recover Error."""
 
 
 class DeploymentBackupException(CheckError):
-    """Exception class for Deployment Backup"""
+    """Exception class for Deployment Backup."""
 
 
 class NoBucketExistsException(CheckError):
-    """Exception class for if buckets created/exists"""
+    """Exception class for if buckets created/exists."""
 
 
 class CorIOException(Exception):

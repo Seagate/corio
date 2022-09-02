@@ -534,7 +534,7 @@ class ClusterServices(BaseClusterServices):
         return resp
 
     def get_user_quota_in_bytes(self):
-        """Get available user quota in bytes"""
+        """Get available user quota in bytes."""
         status, cluster_stat = self.check_cluster_storage()
         if not status:
             raise AssertionError(
