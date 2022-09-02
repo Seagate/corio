@@ -32,7 +32,8 @@ import requests
 from jira import JIRAError
 from requests.adapters import HTTPAdapter
 from requests.exceptions import RequestException
-from requests.packages.urllib3.util.retry import Retry # pylint: disable=import-error
+
+from requests.packages.urllib3.util.retry import Retry  # pylint: disable=import-error
 
 from src.commons.constants import ROOT
 
@@ -44,11 +45,17 @@ class JiraApp:
 
     def __init__(self):
         """Initialization for JiraApp."""
-        self.auth = (self.get_jira_credential())
-        self.headers = {'content-type': "application/json", 'accept': "application/json"}
+        self.auth = self.get_jira_credential()
+        self.headers = {
+            "content-type": "application/json",
+            "accept": "application/json",
+        }
         self.retry_strategy = Retry(
-            total=10, backoff_factor=2, status_forcelist=[429, 500, 502, 503, 504, 400, 404, 408],
-            method_whitelist=["HEAD", "GET", "OPTIONS"])
+            total=10,
+            backoff_factor=2,
+            status_forcelist=[429, 500, 502, 503, 504, 400, 404, 408],
+            method_whitelist=["HEAD", "GET", "OPTIONS"],
+        )
         self.adapter = HTTPAdapter(max_retries=self.retry_strategy)
         self.http = requests.Session()
         self.http.mount("https://", self.adapter)
@@ -67,10 +74,14 @@ class JiraApp:
              "self": "https://jts.seagate.com/rest/api/2/issue/311993",
              "testEnvironments": ["515_full"]},]
         """
-        tp_response = requests.get(f'{self.jira_base_url}api/testplan/{test_plan_id}/testexecution',
-                                   auth=self.auth)
+        tp_response = requests.get(
+            f"{self.jira_base_url}api/testplan/{test_plan_id}/testexecution",
+            auth=self.auth,
+        )
         if tp_response.status_code != HTTPStatus.OK:
-            raise AssertionError(f"Failed to get TE: {test_plan_id}, reason {tp_response.json()}")
+            raise AssertionError(
+                f"Failed to get TE: {test_plan_id},reason {tp_response.json()}"
+            )
 
         return tp_response.json()
 
@@ -86,27 +97,32 @@ class JiraApp:
         """
         tests_info = []
         try:
-            te_response = requests.get(f"{self.jira_base_url}api/testexec/{test_exe_id}/test",
-                                       auth=self.auth)
+            te_response = requests.get(
+                f"{self.jira_base_url}api/testexec/{test_exe_id}/test", auth=self.auth
+            )
             if te_response is not None:
                 if te_response.status_code != HTTPStatus.OK:
                     page_cnt = 1
                     timeout_start, timeout_sec = time.time(), 180
                     while page_cnt and (time.time() < timeout_start + timeout_sec):
                         try:
-                            te_response = requests.get(f"{self.jira_base_url}api/testexec/"
-                                                       f"{test_exe_id}/test?page={page_cnt}",
-                                                       auth=self.auth)
+                            te_response = requests.get(
+                                f"{self.jira_base_url}api/testexec/"
+                                f"{test_exe_id}/test?page={page_cnt}",
+                                auth=self.auth,
+                            )
                             data = te_response.json()
                             tests_info.extend(data)
                         except JIRAError as err:
-                            LOGGER.error('Exception in GET tests details from te, error: %s', err)
+                            LOGGER.error(
+                                "Exception in GET tests details from te, error: %s", err
+                            )
                         else:
                             page_cnt = page_cnt + 1 if data else 0
                 else:
                     tests_info.extend(te_response.json())
         except (RequestException, ValueError, JIRAError) as err:
-            LOGGER.error('Request exception in get_test_details %s', err)
+            LOGGER.error("Request exception in get_test_details %s", err)
 
         return tests_info
 
@@ -127,19 +143,26 @@ class JiraApp:
         state, status = {}, {}
         state["testExecutionKey"] = test_exe_id
         status["testKey"] = test_id
-        if test_status.upper() == 'EXECUTING':
-            status["start"] = datetime.now().astimezone().isoformat(timespec='seconds')
-        if test_status.upper() == 'PASS':
-            status["finish"] = datetime.now().astimezone().isoformat(timespec='seconds')
+        if test_status.upper() == "EXECUTING":
+            status["start"] = datetime.now().astimezone().isoformat(timespec="seconds")
+        if test_status.upper() == "PASS":
+            status["finish"] = datetime.now().astimezone().isoformat(timespec="seconds")
         status["status"] = test_status
         state["tests"] = []
-        state['tests'].append(status)
+        state["tests"].append(status)
         data = json.dumps(state)
-        status_response = requests.request("POST", f"{self.jira_base_url}import/execution",
-                                           data=data, auth=self.auth, headers=self.headers,
-                                           params=None)
+        status_response = requests.request(
+            "POST",
+            f"{self.jira_base_url}import/execution",
+            data=data,
+            auth=self.auth,
+            headers=self.headers,
+            params=None,
+        )
         if status_response.status_code == HTTPStatus.OK:
-            LOGGER.info("Test '%s' status updated successfully to %s", test_id, test_status)
+            LOGGER.info(
+                "Test '%s' status updated successfully to %s", test_id, test_status
+            )
             return status_response.json()
         test_issue = status_response.json().get("testIssues", None)
         if test_issue:
@@ -148,7 +171,9 @@ class JiraApp:
 
         return status_response.text
 
-    def update_execution_details(self, test_run_id: str, test_id: str, comment: str) -> [dict]:
+    def update_execution_details(
+        self, test_run_id: str, test_id: str, comment: str
+    ) -> [dict]:
         """
         Add comment to the mentioned jira id.
 
@@ -159,19 +184,30 @@ class JiraApp:
         """
         try:
             comment_response = requests.request(
-                "PUT", f"{self.jira_base_url}api/testrun/{test_run_id}/comment", data=comment,
-                auth=self.auth, headers=self.headers, params=None)
+                "PUT",
+                f"{self.jira_base_url}api/testrun/{test_run_id}/comment",
+                data=comment,
+                auth=self.auth,
+                headers=self.headers,
+                params=None,
+            )
             LOGGER.info("Response code: %s", comment_response.status_code)
             if comment_response.status_code == HTTPStatus.OK:
-                LOGGER.info("Updated execution details successfully for test id %s", test_id)
+                LOGGER.info(
+                    "Updated execution details successfully for test id %s", test_id
+                )
                 return comment_response.json()
 
             return comment_response.text
         except JIRAError as err:
-            LOGGER.exception("Error code: %s, error test: %s", err.status_code, err.text)
+            LOGGER.exception(
+                "Error code: %s, error test: %s", err.status_code, err.text
+            )
             return err
 
-    def get_all_tests_details_from_tp(self, tp_id: str, reset_status: bool = False) -> dict:
+    def get_all_tests_details_from_tp(
+        self, tp_id: str, reset_status: bool = False
+    ) -> dict:
         """
         Get all tests execution details from test plan.
 
@@ -182,26 +218,35 @@ class JiraApp:
         tests_dict = {}
         te_details = self.get_te_details_from_test_plan(tp_id)
         for texe in te_details:
-            tests_details = self.get_tests_details_from_te(texe['key'])
+            tests_details = self.get_tests_details_from_te(texe["key"])
             for test in tests_details:
-                if test['key'] in tests_dict:
-                    raise Exception(f"Duplicate test id '{test['key']}' found in TP '{tp_id}',"
-                                    f" TE '{texe['key']}'")
-                tests_dict[test['key']] = test
-                tests_dict[test['key']]["te"] = texe
+                if test["key"] in tests_dict:
+                    raise Exception(
+                        f"Duplicate test id '{test['key']}' found in TP '{tp_id}',"
+                        f" TE '{texe['key']}'"
+                    )
+                tests_dict[test["key"]] = test
+                tests_dict[test["key"]]["te"] = texe
                 if reset_status:
                     # Reset jira test status to start new execution.
                     if test["status"].upper() != "TODO":
-                        self.update_test_jira_status(test['te']['key'], test['key'], "TODO")
-                        LOGGER.debug("%s: status '%s' reset to '%s'", test['key'],
-                                     test['status'], 'TODO')
+                        self.update_test_jira_status(
+                            test["te"]["key"], test["key"], "TODO"
+                        )
+                        LOGGER.debug(
+                            "%s: status '%s' reset to '%s'",
+                            test["key"],
+                            test["status"],
+                            "TODO",
+                        )
                         test["status"] = "TODO"
         LOGGER.info(tests_dict)
 
         return tests_dict
 
-    def update_jira_status(self, corio_start_time, tests_details, aborted=False,
-                           terminated_tests=None):
+    def update_jira_status(
+        self, corio_start_time, tests_details, aborted=False, terminated_tests=None
+    ):
         """
         Update execution status in jira.
 
@@ -211,39 +256,47 @@ class JiraApp:
         :param terminated_tests: Terminated tests from yaml file path.
         """
         for test_id, test_data in tests_details.items():
-            test_start_time = corio_start_time + test_data['start_time']
+            test_start_time = corio_start_time + test_data["start_time"]
             if datetime.now() >= test_start_time:
-                if datetime.now() >= (test_start_time + test_data['min_runtime']):
-                    if test_data['status'] == "EXECUTING":
+                if datetime.now() >= (test_start_time + test_data["min_runtime"]):
+                    if test_data["status"] == "EXECUTING":
                         if aborted:
                             aborted_tests = terminated_tests if terminated_tests else []
-                            test_status = "FAILED" if test_id in aborted_tests else "ABORTED"
+                            test_status = (
+                                "FAILED" if test_id in aborted_tests else "ABORTED"
+                            )
                             resp = self.update_test_jira_status(
-                                test_data['te']['key'], test_id, test_status)
-                            tests_details[test_id]['status'] = test_status
+                                test_data["te"]["key"], test_id, test_status
+                            )
+                            tests_details[test_id]["status"] = test_status
                             LOGGER.info(resp)
                         else:
                             resp = self.update_test_jira_status(
-                                test_data['te']['key'], test_id, "PASS")
+                                test_data["te"]["key"], test_id, "PASS"
+                            )
                             LOGGER.info(resp)
                             resp = self.update_execution_details(
-                                test_data['id'], test_id,
-                                f"Execution completed after {test_data['min_runtime']}")
-                            tests_details[test_id]['status'] = "PASS"
+                                test_data["id"],
+                                test_id,
+                                f"Execution completed after {test_data['min_runtime']}",
+                            )
+                            tests_details[test_id]["status"] = "PASS"
                             LOGGER.info(resp)
-                elif test_data['status'] == "TODO":
+                elif test_data["status"] == "TODO":
                     resp = self.update_test_jira_status(
-                        test_data['te']['key'], test_id, "EXECUTING")
-                    tests_details[test_id]['status'] = "EXECUTING"
+                        test_data["te"]["key"], test_id, "EXECUTING"
+                    )
+                    tests_details[test_id]["status"] = "EXECUTING"
                     LOGGER.info(resp)
                 else:
                     if aborted:
                         aborted_tests = terminated_tests if terminated_tests else []
                         test_status = "FAIL" if test_id in aborted_tests else "ABORTED"
-                        if test_data['status'] == "EXECUTING":
+                        if test_data["status"] == "EXECUTING":
                             resp = self.update_test_jira_status(
-                                test_data['te']['key'], test_id, test_status)
-                            tests_details[test_id]['status'] = test_status
+                                test_data["te"]["key"], test_id, test_status
+                            )
+                            tests_details[test_id]["status"] = test_status
                             LOGGER.info(resp)
 
     @staticmethod
@@ -254,13 +307,15 @@ class JiraApp:
         :return: Credentials Tuple.
         """
         try:
-            jira_user = os.environ['JIRA_USER']
-            jira_pd = os.environ['JIRA_PASSWORD']
+            jira_user = os.environ["JIRA_USER"]
+            jira_pd = os.environ["JIRA_PASSWORD"]
         except KeyError as error:
             LOGGER.error(error)
-            jira_user = input("JIRA credentials not found in environment.\nJIRA username: ")
+            jira_user = input(
+                "JIRA credentials not found in environment.\nJIRA username: "
+            )
             jira_pd = getpass.getpass("JIRA password: ")
-            os.environ['JIRA_USER'] = jira_user
-            os.environ['JIRA_PASSWORD'] = jira_pd
+            os.environ["JIRA_USER"] = jira_user
+            os.environ["JIRA_PASSWORD"] = jira_pd
 
         return jira_user, jira_pd

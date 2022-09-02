@@ -44,8 +44,11 @@ def monitor_resource_utilisation(action: str):
     for node in CLUSTER_CFG["nodes"]:
         if node["node_type"] == "master":
             if not node.get("hostname", None):
-                LOGGER.critical("failed to get master details so will not able to collect system"
-                                " stats for cluster. Nodes: '%s'", CLUSTER_CFG["nodes"])
+                LOGGER.critical(
+                    "failed to get master details so will not able to collect system"
+                    " stats for cluster. Nodes: '%s'",
+                    CLUSTER_CFG["nodes"],
+                )
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
             server_nodes.extend(host)
@@ -70,8 +73,10 @@ def monitor_resource_utilisation(action: str):
         resp = run_local_cmd(cm_cmd.CMD_RUN_NIMON)
         LOGGER.debug("Local response: %s", str(resp))
         if not cluster_obj:
-            LOGGER.critical("Will not able to collect system stats for cluster as details not "
-                            "provided in cluster config.")
+            LOGGER.critical(
+                "Will not able to collect system stats for cluster as details not "
+                "provided in cluster config."
+            )
             return
         for server in server_nodes:
             worker_obj = RemoteHost(server, user, passwd)

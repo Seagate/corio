@@ -13,7 +13,9 @@ class TestMasterConfig(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.master_config = {}
-        with open("workload/master_config.yaml", 'r', encoding='utf-8') as master_config:
+        with open(
+            "workload/master_config.yaml", "r", encoding="utf-8"
+        ) as master_config:
             cls.master_config = yaml.safe_load(master_config)
 
     def test_wrong_parameter(self):
@@ -71,14 +73,18 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
-        master_config = self.master_config['s3api'][test_set_copy['test_2']['operation']]
-        test_set_copy['test_2']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_2']['object_size'] = {'start': '0Kib', 'end': '100Kib'}
-        test_set_copy['test_2']['sessions_per_node'] = master_config['sessions_per_node']
-        self.assertEqual(out['test_2'], test_set_copy['test_2'])
-        self.assertNotEqual(id(out['test_2']), id(test_set_copy['test_2']))
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_2"]["operation"]
+        ]
+        test_set_copy["test_2"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_2"]["object_size"] = {"start": "0Kib", "end": "100Kib"}
+        test_set_copy["test_2"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        self.assertEqual(out["test_2"], test_set_copy["test_2"])
+        self.assertNotEqual(id(out["test_2"]), id(test_set_copy["test_2"]))
 
     def test_copy_object(self):
         """Copy object workload scenario"""
@@ -87,7 +93,7 @@ class TestMasterConfig(unittest.TestCase):
           TEST_ID: TEST-37246
           tool: s3api
           operation: copy_object
-        
+
         test_2:
           TEST_ID: TEST-37247
           object_size:
@@ -101,14 +107,18 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        self.assertEqual(out['test_2'], test_set_copy['test_2'])
-        self.assertNotEqual(id(out['test_2']), id(test_set_copy['test_2']))
-        master_config = self.master_config['s3api'][test_set_copy['test_2']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['object_size'] = {'start': '0Kib', 'end': '100Kib'}
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        self.assertEqual(out["test_2"], test_set_copy["test_2"])
+        self.assertNotEqual(id(out["test_2"]), id(test_set_copy["test_2"]))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_2"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["object_size"] = {"start": "0Kib", "end": "100Kib"}
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_copy_object_fix_size(self):
         """Copy object with fixed size workload scenario"""
@@ -122,11 +132,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_copy_object_range_read(self):
         """Copy object with range read workload scenario"""
@@ -142,13 +156,17 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['object_size'] = {'start': '0Kb', 'end': '100Kb'}
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        test_set_copy['test_1']['range_read'] = master_config['range_read']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["object_size"] = {"start": "0Kb", "end": "100Kb"}
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        test_set_copy["test_1"]["range_read"] = master_config["range_read"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_object_fix_size(self):
         """Object with fixed size workload scenario"""
@@ -164,11 +182,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_fixed_object_size(self):
         """Multipart object with fixed size workload scenario"""
@@ -181,13 +203,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions'] = master_config['sessions']
-        test_set_copy['test_1']['part_range'] = master_config['part_range']
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions"] = master_config["sessions"]
+        test_set_copy["test_1"]["part_range"] = master_config["part_range"]
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_object_range_read(self):
         """Multipart object with range read workload scenario"""
@@ -201,14 +225,16 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions'] = master_config['sessions']
-        test_set_copy['test_1']['range_read'] = master_config['range_read']
-        test_set_copy['test_1']['part_range'] = master_config['part_range']
-        test_set_copy['test_1']['object_size'] = '5Gib'
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions"] = master_config["sessions"]
+        test_set_copy["test_1"]["range_read"] = master_config["range_read"]
+        test_set_copy["test_1"]["part_range"] = master_config["part_range"]
+        test_set_copy["test_1"]["object_size"] = "5Gib"
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_partcopy(self):
         """Multipart object with part copy workload scenario"""
@@ -222,13 +248,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions'] = master_config['sessions']
-        test_set_copy['test_1']['part_range'] = master_config['part_range']
-        test_set_copy['test_1']['object_size'] = '12Mb'
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions"] = master_config["sessions"]
+        test_set_copy["test_1"]["part_range"] = master_config["part_range"]
+        test_set_copy["test_1"]["object_size"] = "12Mb"
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_partcopy_range_read(self):
         """Multipart object with part copy and range read workload scenario"""
@@ -243,14 +271,16 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = '4h'
-        test_set_copy['test_1']['sessions'] = 5
-        test_set_copy['test_1']['part_range'] = master_config['part_range']
-        test_set_copy['test_1']['range_read'] = master_config['range_read']
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = "4h"
+        test_set_copy["test_1"]["sessions"] = 5
+        test_set_copy["test_1"]["part_range"] = master_config["part_range"]
+        test_set_copy["test_1"]["range_read"] = master_config["range_read"]
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_partcopy_random(self):
         """Multipart object with part copy and random object size workload scenario"""
@@ -266,13 +296,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions'] = master_config['sessions']
-        test_set_copy['test_1']['part_range'] = {'start': 50, 'end': 1000}
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions"] = master_config["sessions"]
+        test_set_copy["test_1"]["part_range"] = {"start": 50, "end": 1000}
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_multipart_random(self):
         """Multipart object with random object size workload scenario"""
@@ -288,13 +320,15 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions'] = master_config['sessions']
-        test_set_copy['test_1']['part_range'] = {'start': 50, 'end': 1000}
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions"] = master_config["sessions"]
+        test_set_copy["test_1"]["part_range"] = {"start": 50, "end": 1000}
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_object_range_read(self):
         """Object with range read workload scenario"""
@@ -308,13 +342,17 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        test_set_copy['test_1']['range_read'] = '200bytes'
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        test_set_copy["test_1"]["range_read"] = "200bytes"
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
     def test_object_random_size(self):
         """Object with random size workload scenario"""
@@ -327,13 +365,17 @@ class TestMasterConfig(unittest.TestCase):
         test_set_orig = yaml.safe_load(te_yaml)
         test_set_copy = copy.deepcopy(test_set_orig)
         out = apply_master_config(test_set_orig, self.master_config)
-        master_config = self.master_config['s3api'][test_set_copy['test_1']['operation']]
-        test_set_copy['test_1']['min_runtime'] = master_config['min_runtime']
-        test_set_copy['test_1']['sessions_per_node'] = master_config['sessions_per_node']
-        test_set_copy['test_1']['object_size'] = master_config['object_size']
-        self.assertEqual(out['test_1'], test_set_copy['test_1'])
-        self.assertNotEqual(id(out['test_1']), id(test_set_copy['test_1']))
+        master_config = self.master_config["s3api"][
+            test_set_copy["test_1"]["operation"]
+        ]
+        test_set_copy["test_1"]["min_runtime"] = master_config["min_runtime"]
+        test_set_copy["test_1"]["sessions_per_node"] = master_config[
+            "sessions_per_node"
+        ]
+        test_set_copy["test_1"]["object_size"] = master_config["object_size"]
+        self.assertEqual(out["test_1"], test_set_copy["test_1"])
+        self.assertNotEqual(id(out["test_1"]), id(test_set_copy["test_1"]))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

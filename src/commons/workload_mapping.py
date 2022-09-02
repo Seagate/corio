@@ -30,30 +30,62 @@ from scripts.s3.s3api import object_operations
 
 # mapping_dict = {operation_name_from_workload: [script.class, function_name],}
 SCRIPT_MAPPING = {
-    'copy_object': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'copy_object_range_read': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'bucket': [bucket_operations.TestBucketOps, 'execute_bucket_workload'],
-    'multipart': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_partcopy': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_range_read': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_partcopy_range_read': [
-        multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_partcopy_random': [
-        multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'multipart_random': [multipart_operations.TestMultiParts, 'execute_multipart_workload'],
-    'object_random_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_fix_size': [object_operations.TestS3Object, 'execute_object_workload'],
-    'object_range_read': [object_operations.TestS3Object, 'execute_object_workload'],
-    'copy_object_fix_size': [copy_object.TestS3CopyObjects, 'execute_copy_object_workload'],
-    'mix_object_ops': [mix_object_operations.TestMixObjectOps, 'execute_mix_object_workload'],
-    'type1_object_ops': [
-        mix_object_crud_operations.TestTypeXObjectOps, 'execute_object_crud_workload'],
-    'type4_object_ops': [
-        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
-    'type3_write_once_read_iterations': [
-        mix_object_crud_operations.TestTypeXObjectOps, 'execute_mix_object_workload'],
-    'type_5_bucket_object_ops': [
-        bucket_objects_operations.TestType5BucketObjectOps, 'execute_bucket_object_workload'],
-    'type_5_object_ops': [
-        bucket_objects_operations.TestType5BucketObjectOps, 'execute_bucket_object_workload']
-    }
+    "copy_object": [copy_object.TestS3CopyObjects, "execute_copy_object_workload"],
+    "copy_object_range_read": [
+        copy_object.TestS3CopyObjects,
+        "execute_copy_object_workload",
+    ],
+    "bucket": [bucket_operations.TestBucketOps, "execute_bucket_workload"],
+    "multipart": [multipart_operations.TestMultiParts, "execute_multipart_workload"],
+    "multipart_partcopy": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload",
+    ],
+    "multipart_range_read": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload",
+    ],
+    "multipart_partcopy_range_read": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload",
+    ],
+    "multipart_partcopy_random": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload",
+    ],
+    "multipart_random": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload",
+    ],
+    "object_random_size": [object_operations.TestS3Object, "execute_object_workload"],
+    "object_fix_size": [object_operations.TestS3Object, "execute_object_workload"],
+    "object_range_read": [object_operations.TestS3Object, "execute_object_workload"],
+    "copy_object_fix_size": [
+        copy_object.TestS3CopyObjects,
+        "execute_copy_object_workload",
+    ],
+    "mix_object_ops": [
+        mix_object_operations.TestMixObjectOps,
+        "execute_mix_object_workload",
+    ],
+    "type1_object_ops": [
+        mix_object_crud_operations.TestTypeXObjectOps,
+        "execute_object_crud_workload",
+    ],
+    "type4_object_ops": [
+        mix_object_crud_operations.TestTypeXObjectOps,
+        "execute_mix_object_workload",
+    ],
+    "type3_write_once_read_iterations": [
+        mix_object_crud_operations.TestTypeXObjectOps,
+        "execute_mix_object_workload",
+    ],
+    "type_5_bucket_object_ops": [
+        bucket_objects_operations.TestType5BucketObjectOps,
+        "execute_bucket_object_workload",
+    ],
+    "type_5_object_ops": [
+        bucket_objects_operations.TestType5BucketObjectOps,
+        "execute_bucket_object_workload",
+    ],
+}

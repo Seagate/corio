@@ -60,53 +60,73 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        self.log = get_logger(os.getenv("log_level") or logging.INFO, kwargs.get("test_id"))
-        self.log_path = next(iter([handler.baseFilename for handler in self.log.handlers if
-                                   isinstance(handler, logging.FileHandler)]))
+        self.log = get_logger(
+            os.getenv("log_level") or logging.INFO, kwargs.get("test_id")
+        )
+        self.log_path = next(
+            iter(
+                [
+                    handler.baseFilename
+                    for handler in self.log.handlers
+                    if isinstance(handler, logging.FileHandler)
+                ]
+            )
+        )
 
     def get_client(self):
         """Create s3 client session for asyncio operations."""
         session = get_session()
-        return session.create_client(service_name="s3",
-                                     use_ssl=self.use_ssl,
-                                     verify=False,
-                                     aws_access_key_id=self.access_key,
-                                     aws_secret_access_key=self.secret_key,
-                                     endpoint_url=self.endpoint_url,
-                                     region_name=self.region,
-                                     aws_session_token=self.aws_session_token,
-                                     config=AioConfig(connect_timeout=S3_CFG.connect_timeout,
-                                                      read_timeout=S3_CFG.read_timeout,
-                                                      retries={"max_attempts":
-                                                               S3_CFG.s3api_retry}))
+        return session.create_client(
+            service_name="s3",
+            use_ssl=self.use_ssl,
+            verify=False,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            endpoint_url=self.endpoint_url,
+            region_name=self.region,
+            aws_session_token=self.aws_session_token,
+            config=AioConfig(
+                connect_timeout=S3_CFG.connect_timeout,
+                read_timeout=S3_CFG.read_timeout,
+                retries={"max_attempts": S3_CFG.s3api_retry},
+            ),
+        )
 
     def get_boto3_client(self):
         """Create s3 client for without asyncio operations."""
-        return boto3.client("s3",
-                            use_ssl=self.use_ssl,
-                            verify=False,
-                            aws_access_key_id=self.access_key,
-                            aws_secret_access_key=self.secret_key,
-                            endpoint_url=self.endpoint_url,
-                            region_name=self.region,
-                            aws_session_token=self.aws_session_token,
-                            config=Config(connect_timeout=S3_CFG.connect_timeout,
-                                          read_timeout=S3_CFG.read_timeout,
-                                          retries={'max_attempts': S3_CFG.s3api_retry}))
+        return boto3.client(
+            "s3",
+            use_ssl=self.use_ssl,
+            verify=False,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            endpoint_url=self.endpoint_url,
+            region_name=self.region,
+            aws_session_token=self.aws_session_token,
+            config=Config(
+                connect_timeout=S3_CFG.connect_timeout,
+                read_timeout=S3_CFG.read_timeout,
+                retries={"max_attempts": S3_CFG.s3api_retry},
+            ),
+        )
 
     def get_boto3_resource(self):
         """Create s3 resource for without asyncio operations."""
-        return boto3.resource("s3",
-                              use_ssl=self.use_ssl,
-                              verify=False,
-                              aws_access_key_id=self.access_key,
-                              aws_secret_access_key=self.secret_key,
-                              endpoint_url=self.endpoint_url,
-                              region_name=self.region,
-                              aws_session_token=self.aws_session_token,
-                              config=Config(connect_timeout=S3_CFG.connect_timeout,
-                                            read_timeout=S3_CFG.read_timeout,
-                                            retries={'max_attempts': S3_CFG.s3api_retry}))
+        return boto3.resource(
+            "s3",
+            use_ssl=self.use_ssl,
+            verify=False,
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            endpoint_url=self.endpoint_url,
+            region_name=self.region,
+            aws_session_token=self.aws_session_token,
+            config=Config(
+                connect_timeout=S3_CFG.connect_timeout,
+                read_timeout=S3_CFG.read_timeout,
+                retries={"max_attempts": S3_CFG.s3api_retry},
+            ),
+        )
 
     def __str__(self):
         """Representation of an S3API object."""

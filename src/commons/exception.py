@@ -25,7 +25,7 @@
 class CheckError(Exception):
     """Class for health check error."""
 
-    def __init__(self, message=''):
+    def __init__(self, message=""):
         """Initialize error."""
         super().__init__(message)
         self.message = message

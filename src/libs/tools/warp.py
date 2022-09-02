@@ -36,8 +36,14 @@ class Warp:
     """Warp class for executing given Warp workload."""
 
     # pylint: disable=too-many-arguments,too-many-locals,too-many-instance-attributes
-    def __init__(self, operation: str, access: str, secret: str,
-                 duration: timedelta = None, **kwargs) -> None:
+    def __init__(
+        self,
+        operation: str,
+        access: str,
+        secret: str,
+        duration: timedelta = None,
+        **kwargs,
+    ) -> None:
         """Log file generated name = log_file.csv.zst file in current directory.
 
         operations can be one of the get, put, stat
@@ -87,7 +93,7 @@ class Warp:
         """Execute Command."""
         LOGGER.info("Starting: %s", cmd)
         if isinstance(cmd, str):
-            if 'rm -rf' not in cmd:
+            if "rm -rf" not in cmd:
                 cmd = cmd.split()
             else:
                 LOGGER.warning("force remove is not permitted")
@@ -96,11 +102,13 @@ class Warp:
 
     def execute_workload(self) -> [bool, Any]:
         """Execute Warp command."""
-        self.cmd = f"warp {self.operation} --host {self.host} --access-key {self.access_key} " \
-                   f"--secret-key {self.secret_key} --duration {self.duration.seconds}s " \
-                   f"--objects {self.objects} --concurrent {self.concurrent} " \
-                   f"--obj.size {self.size_high}b --benchdata {self.log} " \
-                   f"--disable-multipart --analyze.v "
+        self.cmd = (
+            f"warp {self.operation} --host {self.host} --access-key {self.access_key} "
+            f"--secret-key {self.secret_key} --duration {self.duration.seconds}s "
+            f"--objects {self.objects} --concurrent {self.concurrent} "
+            f"--obj.size {self.size_high}b --benchdata {self.log} "
+            f"--disable-multipart --analyze.v "
+        )
         if self.random_size:
             self.cmd += " --obj.randsize"
         self.execute_command(self.cmd)
@@ -119,7 +127,8 @@ class Warp:
         else:
             for operation in ops:
                 process_output = self.execute_command(
-                    f"warp analyze {self.log_file} --analyze.op {operation.upper()} --analyze.v")
+                    f"warp analyze {self.log_file} --analyze.op {operation.upper()} --analyze.v"
+                )
                 pattern = r"Errors: (\d+)"
                 # Grep pattern in cp.stdout
                 matches = re.finditer(pattern, process_output, re.MULTILINE)

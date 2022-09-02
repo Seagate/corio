@@ -33,7 +33,7 @@ class S3benchInterface(S3bench):
 
     def __str__(self):
         """Object Representation."""
-        return 's3bench'
+        return "s3bench"
 
     def run(self):
         """Run warp."""

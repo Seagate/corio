@@ -40,8 +40,15 @@ from src.commons.constants import ROOT
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.report import log_status
-from src.commons.utils.asyncio_utils import run_event_loop_until_complete, schedule_tasks
-from src.commons.utils.corio_utils import run_local_cmd, get_s3_keys, set_s3_access_secret_key
+from src.commons.utils.asyncio_utils import (
+    run_event_loop_until_complete,
+    schedule_tasks,
+)
+from src.commons.utils.corio_utils import (
+    run_local_cmd,
+    get_s3_keys,
+    set_s3_access_secret_key,
+)
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -65,7 +72,9 @@ async def create_session(funct: list, start_time: float, **kwargs: dict) -> tupl
     return resp
 
 
-async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
+async def schedule_sessions(
+    test_plan: str, test_plan_value: dict, common_params: dict
+) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
     :param test_plan: YAML file name for specific S3 operation
@@ -74,7 +83,7 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     """
     process_name = f"Test [Process {os.getpid()}, test_num {test_plan}]"
     tasks = []
-    if common_params.get('sequential_run', False):
+    if common_params.get("sequential_run", False):
         LOGGER.info("Sequential execution is enabled for workload: %s.", test_plan)
     else:
         LOGGER.info("Incremental execution is enabled for workload: %s.", test_plan)
@@ -83,31 +92,43 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
         iter_keys = iter(access_secret_keys.items())
         params = deepcopy(each)
         params["test_id"] = params.pop("TEST_ID")
-        test_start_time = params.pop('start_time').total_seconds()
-        if common_params.get('sequential_run', False):
+        test_start_time = params.pop("start_time").total_seconds()
+        if common_params.get("sequential_run", False):
             params["duration"] = params.get("min_runtime", 0)
         params.update(common_params)
         if params["tool"] == "s3api":
             operation = str(params.get("operation")[0])
             if "TestTypeX" in operation or "TestType5" in operation:
                 params["session"] = f"{params['test_id']}_session_main"
-                iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
-                tasks.append(create_session(funct=params["operation"],
-                                            start_time=test_start_time,
-                                            **params))
+                iter_keys = set_s3_access_secret_key(
+                    access_secret_keys, iter_keys, params
+                )
+                tasks.append(
+                    create_session(
+                        funct=params["operation"], start_time=test_start_time, **params
+                    )
+                )
             else:
                 for i in range(1, int(params["sessions"]) + 1):
                     params["session"] = f"{params['test_id']}_session{i}"
-                    iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
-                    tasks.append(create_session(funct=params["operation"],
-                                                start_time=test_start_time,
-                                                **params))
+                    iter_keys = set_s3_access_secret_key(
+                        access_secret_keys, iter_keys, params
+                    )
+                    tasks.append(
+                        create_session(
+                            funct=params["operation"],
+                            start_time=test_start_time,
+                            **params,
+                        )
+                    )
         elif params["tool"] == "s3bench":
             params["session"] = f"{params['test_id']}_session_s3bench"
             iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
-            tasks.append(create_session(funct=params["operation"],
-                                        start_time=test_start_time,
-                                        **params))
+            tasks.append(
+                create_session(
+                    funct=params["operation"], start_time=test_start_time, **params
+                )
+            )
         else:
             raise NotImplementedError(f"Tool is not supported: {params['tool']}")
         LOGGER.debug(iter_keys)
@@ -115,7 +136,9 @@ async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params
     LOGGER.info("Execution completed for process: %s", process_name)
 
 
-def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
+def schedule_test_plan(
+    test_plan: str, test_plan_values: dict, common_params: dict
+) -> None:
     """
     Create event loop for each test plan.
 
@@ -126,12 +149,14 @@ def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: di
     process_name = f"TestPlan: Process {os.getpid()}, topic {test_plan}"
     LOGGER.info("%s Started ", process_name)
     run_event_loop_until_complete(
-        LOGGER, schedule_sessions, test_plan, test_plan_values, common_params)
+        LOGGER, schedule_sessions, test_plan, test_plan_values, common_params
+    )
     LOGGER.info("%s completed successfully", process_name)
 
 
-def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
-                                periodic_time: int = 1, **kwargs) -> Job:
+def schedule_test_status_update(
+    parsed_input: dict, corio_start_time: datetime, periodic_time: int = 1, **kwargs
+) -> Job:
     """
     Schedule the test status update.
 
@@ -140,15 +165,24 @@ def schedule_test_status_update(parsed_input: dict, corio_start_time: datetime,
     :param periodic_time: Duration to update test status.
     """
     sched_job = schedule.every(periodic_time).minutes.do(
-        log_status, parsed_input=parsed_input, corio_start_time=corio_start_time, **kwargs)
+        log_status,
+        parsed_input=parsed_input,
+        corio_start_time=corio_start_time,
+        **kwargs,
+    )
     LOGGER.info("Report status update scheduled for every %s minutes", periodic_time)
     sched_job.run()
     return sched_job
 
 
-def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
-                                 terminated_tp: str, test_ids: list, sched_job: Job,
-                                 **kwargs) -> None:
+def terminate_update_test_status(
+    parsed_input: dict,
+    corio_start_time: datetime,
+    terminated_tp: str,
+    test_ids: list,
+    sched_job: Job,
+    **kwargs,
+) -> None:
     """
     Terminate the scheduler and update the test status.
 
@@ -160,8 +194,13 @@ def terminate_update_test_status(parsed_input: dict, corio_start_time: datetime,
     :keyword sequential_run: Execute tests sequentially.
     """
     schedule.cancel_job(sched_job)
-    log_status(parsed_input, corio_start_time, test_failed=terminated_tp, terminated_tests=test_ids,
-               **kwargs)
+    log_status(
+        parsed_input,
+        corio_start_time,
+        test_failed=terminated_tp,
+        terminated_tests=test_ids,
+        **kwargs,
+    )
 
 
 def monitor_processes(processes: dict, return_dict) -> str or None:
@@ -171,29 +210,40 @@ def monitor_processes(processes: dict, return_dict) -> str or None:
         if not process.is_alive():
             if tp_key == "support_bundle":
                 LOGGER.critical(
-                    "Process with PID %s stopped Support bundle collection error.", process.pid)
+                    "Process with PID %s stopped Support bundle collection error.",
+                    process.pid,
+                )
                 skip_process.append(tp_key)
                 continue
             if tp_key == "health_check":
                 raise HealthCheckError(
-                    f"Process with PID {process.pid} stopped. Health Check collection error.")
+                    f"Process with PID {process.pid} stopped. Health Check collection error."
+                )
             if os.path.exists(os.getenv("log_path")):
                 resp = run_local_cmd(
-                    f"grep 'topic {tp_key} completed successfully' {os.getenv('log_path')} ")
+                    f"grep 'topic {tp_key} completed successfully' {os.getenv('log_path')} "
+                )
                 if resp[0] and resp[1]:
                     skip_process.append(tp_key)
                     continue
             if tp_key == "degraded_mode":
-                if not return_dict['degraded_done']:
-                    LOGGER.critical("Process '%s' for Cluster Degraded Mode Transition stopped.",
-                                    process.pid)
+                if not return_dict["degraded_done"]:
+                    LOGGER.critical(
+                        "Process '%s' for Cluster Degraded Mode Transition stopped.",
+                        process.pid,
+                    )
                     raise DegradedModeError(f"Process with PID {process.pid} stopped.")
-                LOGGER.info("Process with PID for Cluster Degraded Mode Transition %s completed.",
-                            process.pid)
+                LOGGER.info(
+                    "Process with PID for Cluster Degraded Mode Transition %s completed.",
+                    process.pid,
+                )
                 skip_process.append(tp_key)
                 continue
-            LOGGER.critical("Process with PID %s Name %s exited. Stopping other Process.",
-                            process.pid, process.name)
+            LOGGER.critical(
+                "Process with PID %s Name %s exited. Stopping other Process.",
+                process.pid,
+                process.name,
+            )
             return tp_key
     for proc in skip_process:
         LOGGER.warning("Process '%s' removed from monitoring...", processes[proc].pid)
@@ -225,34 +275,56 @@ def start_processes(processes: dict) -> None:
         LOGGER.info("Process started: %s", process)
 
 
-def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dict: dict) -> dict:
+def schedule_execution_plan(
+    parsed_input: dict, options: munch.Munch, return_dict: dict
+) -> dict:
     """Schedule the execution plan."""
     processes = {}
-    commons_params = {"access_secret_keys": get_s3_keys(S3_CFG.access_key, S3_CFG.secret_key),
-                      "endpoint_url": S3_CFG.endpoint,
-                      "use_ssl": S3_CFG.use_ssl,
-                      "seed": options.seed,
-                      "sequential_run": options.sequential_run}
+    commons_params = {
+        "access_secret_keys": get_s3_keys(S3_CFG.access_key, S3_CFG.secret_key),
+        "endpoint_url": S3_CFG.endpoint,
+        "use_ssl": S3_CFG.use_ssl,
+        "seed": options.seed,
+        "sequential_run": options.sequential_run,
+    }
     for test_plan, test_plan_value in parsed_input.items():
-        processes[test_plan] = multiprocessing.Process(target=schedule_test_plan,
-                                                       name=test_plan,
-                                                       args=(test_plan, test_plan_value,
-                                                             commons_params,))
+        processes[test_plan] = multiprocessing.Process(
+            target=schedule_test_plan,
+            name=test_plan,
+            args=(
+                test_plan,
+                test_plan_value,
+                commons_params,
+            ),
+        )
     LOGGER.info("scheduled execution plan. Processes: %s", processes)
     if options.support_bundle:
         processes["support_bundle"] = multiprocessing.Process(
-            target=support_bundle.support_bundle_process, name="support_bundle",
-            args=(CORIO_CFG.sb_interval_mins * 60,))
-        LOGGER.info("Support bundle collection scheduled for every %s minutes",
-                    CORIO_CFG.sb_interval_mins)
+            target=support_bundle.support_bundle_process,
+            name="support_bundle",
+            args=(CORIO_CFG.sb_interval_mins * 60,),
+        )
+        LOGGER.info(
+            "Support bundle collection scheduled for every %s minutes",
+            CORIO_CFG.sb_interval_mins,
+        )
     if options.health_check:
         processes["health_check"] = multiprocessing.Process(
-            target=cluster_health.health_check_process, name="health_check",
-            args=(CORIO_CFG.hc_interval_mins * 60, return_dict))
-        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
+            target=cluster_health.health_check_process,
+            name="health_check",
+            args=(CORIO_CFG.hc_interval_mins * 60, return_dict),
+        )
+        LOGGER.info(
+            "Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins
+        )
 
     if options.degraded_mode:
         processes["degraded_mode"] = multiprocessing.Process(
-            target=degrade_cluster.activate_degraded_mode_parallel, name="degraded_mode",
-            args=(return_dict, MASTER_CFG,))
+            target=degrade_cluster.activate_degraded_mode_parallel,
+            name="degraded_mode",
+            args=(
+                return_dict,
+                MASTER_CFG,
+            ),
+        )
     return processes

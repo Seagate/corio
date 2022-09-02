@@ -91,7 +91,9 @@ class S3Bucket(S3RestApi):
         async with self.get_client() as client:
             self.s3_url = f"s3://{bucket_name}"
             response = await client.get_bucket_location(Bucket=bucket_name)
-            self.log.info("get_bucket_location: %s, Response: %s", bucket_name, response)
+            self.log.info(
+                "get_bucket_location: %s, Response: %s", bucket_name, response
+            )
 
         return response
 
@@ -106,19 +108,25 @@ class S3Bucket(S3RestApi):
         """
         async with self.get_client() as client:
             if force:
-                self.log.info("This might cause data loss as you have opted for bucket deletion"
-                              " with objects in it")
+                self.log.info(
+                    "This might cause data loss as you have opted for bucket deletion"
+                    " with objects in it"
+                )
                 # list s3 objects using paginator
-                paginator = client.get_paginator('list_objects')
+                paginator = client.get_paginator("list_objects")
                 async for result in paginator.paginate(Bucket=bucket_name):
-                    for content in result.get('Contents', []):
+                    for content in result.get("Contents", []):
                         self.s3_url = f"s3://{bucket_name}/{content['Key']}"
-                        resp = await client.delete_object(Bucket=bucket_name, Key=content['Key'])
+                        resp = await client.delete_object(
+                            Bucket=bucket_name, Key=content["Key"]
+                        )
                         self.log.debug(resp)
                 self.log.info("All objects deleted successfully.")
             self.s3_url = f"s3://{bucket_name}"
             response = await client.delete_bucket(Bucket=bucket_name)
-            self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
+            self.log.info(
+                "Bucket '%s' deleted successfully. Response: %s", bucket_name, response
+            )
 
         return response
 
@@ -160,7 +168,7 @@ class S3Bucket(S3RestApi):
         """
         response = self.get_boto3_client().list_buckets()
         self.log.debug("Response: %s", response)
-        bucket_list = [bucket['Name'] for bucket in response['Buckets']]
+        bucket_list = [bucket["Name"] for bucket in response["Buckets"]]
         self.log.info("List s3 buckets: %s", bucket_list)
         return bucket_list
 
@@ -176,13 +184,20 @@ class S3Bucket(S3RestApi):
         self.s3_url = f"s3://{bucket_name}"
         bucket = self.get_boto3_resource().Bucket(bucket_name)
         if force:
-            self.log.info("This might cause data loss as you have opted for bucket deletion with "
-                          "objects in it")
+            self.log.info(
+                "This might cause data loss as you have opted for bucket deletion with "
+                "objects in it"
+            )
             response = bucket.objects.all().delete()
-            self.log.debug("Objects deleted successfully from bucket %s, response: %s",
-                           bucket_name, response)
+            self.log.debug(
+                "Objects deleted successfully from bucket %s, response: %s",
+                bucket_name,
+                response,
+            )
         response = bucket.delete()
-        self.log.debug("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
+        self.log.debug(
+            "Bucket '%s' deleted successfully. Response: %s", bucket_name, response
+        )
 
         return response
 
@@ -194,7 +209,12 @@ class S3Bucket(S3RestApi):
         first letter should be a number or lowercase letter, rest letters can include number,
          lowercase, hyphens and dots. bucket length can vary from 3 to 63.
         """
-        return (''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) +
-                ''.join(random.SystemRandom().choice(
-                    string.ascii_lowercase + string.digits + "." + '-') for _ in range(
-                    random.randint(2, 63)))))
+        return "".join(
+            random.SystemRandom().choice(string.ascii_lowercase + string.digits)
+            + "".join(
+                random.SystemRandom().choice(
+                    string.ascii_lowercase + string.digits + "." + "-"
+                )
+                for _ in range(random.randint(2, 63))
+            )
+        )

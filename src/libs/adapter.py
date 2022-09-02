@@ -49,6 +49,7 @@ class Target(metaclass=abc.ABCMeta):
 
 # Adapter the interface of Adaptee to the Target(i.e. client) interface.
 
+
 class Adapter:
     """
     Adapts an object by replacing methods.
@@ -65,7 +66,7 @@ class Adapter:
 
     def __str__(self):
         """Adapter Object Representation."""
-        return f'obj name is {self.obj}'
+        return f"obj name is {self.obj}"
 
     def __getattr__(self, attr):
         """All non-adapted calls are passed to the object."""

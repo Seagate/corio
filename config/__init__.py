@@ -33,8 +33,8 @@ def split_args(sys_cmd: List):
     """Split args and make it compliant."""
     _args = []
     for item in sys_cmd:
-        if item.find('=') != -1:
-            _args.extend(item.split('='))
+        if item.find("=") != -1:
+            _args.extend(item.split("="))
         else:
             _args.extend([item])
     return _args
@@ -48,15 +48,36 @@ MASTER_CFG = yaml_parser.read_yaml(fpath=const.CORIO_MASTER_CONFIG)
 
 
 IO_DRIVER_ARGS = split_args(sys.argv)
-_USE_SSL = ('-us' if '-us' in IO_DRIVER_ARGS else '--use_ssl' if '--use_ssl' in IO_DRIVER_ARGS
-            else None)
+_USE_SSL = (
+    "-us"
+    if "-us" in IO_DRIVER_ARGS
+    else "--use_ssl"
+    if "--use_ssl" in IO_DRIVER_ARGS
+    else None
+)
 SSL_FLG = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_USE_SSL) + 1] if _USE_SSL else True
-_ENDPOINT = ('-ep' if '-ep' in IO_DRIVER_ARGS else '--endpoint' if '--endpoint' in IO_DRIVER_ARGS
-             else None)
-S3_URL = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ENDPOINT) + 1] if _ENDPOINT else "s3.seagate.com"
-_S3MAX_RETRY = ("-mr" if '-mr' in IO_DRIVER_ARGS else '--s3max_retry' if '--s3max_retry' in
-                IO_DRIVER_ARGS else None)
-S3MAX_RETRY = IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_S3MAX_RETRY) + 1] if _S3MAX_RETRY else 1
+_ENDPOINT = (
+    "-ep"
+    if "-ep" in IO_DRIVER_ARGS
+    else "--endpoint"
+    if "--endpoint" in IO_DRIVER_ARGS
+    else None
+)
+S3_URL = (
+    IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_ENDPOINT) + 1]
+    if _ENDPOINT
+    else "s3.seagate.com"
+)
+_S3MAX_RETRY = (
+    "-mr"
+    if "-mr" in IO_DRIVER_ARGS
+    else "--s3max_retry"
+    if "--s3max_retry" in IO_DRIVER_ARGS
+    else None
+)
+S3MAX_RETRY = (
+    IO_DRIVER_ARGS[IO_DRIVER_ARGS.index(_S3MAX_RETRY) + 1] if _S3MAX_RETRY else 1
+)
 USE_SSL = ast.literal_eval(str(SSL_FLG).title())
 S3_ENDPOINT = f"{'https' if USE_SSL else 'http'}://{S3_URL}"
 

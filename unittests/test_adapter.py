@@ -19,8 +19,8 @@
 """Unit Test Class to check adapter interface."""
 import unittest
 from src.libs.adapter import Adapter
-from src.libs.tools.warpInterface import WarpInterface
-from src.libs.tools.s3benchInterface import S3benchInterface
+from src.libs.tools.warp_interface import WarpInterface
+from src.libs.tools.s3_bench_interface import S3benchInterface
 
 
 class AdapterTest(unittest.TestCase):
@@ -65,5 +65,5 @@ class AdapterTest(unittest.TestCase):
         print(adapter)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
