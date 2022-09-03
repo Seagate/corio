@@ -108,3 +108,22 @@ test_8:
     sessions_per_node: 2
     tool: s3api
     operation: "type4_object_ops"
+
+test_9:
+  TEST_ID: TEST-XXX09
+  object_size:
+    start: 0b
+    end: 100Mb
+  min_runtime: 10m
+  sessions_per_node: 2
+  number_of_buckets: 5
+  number_of_objects: 20
+  delay:
+    start: 1m
+    end: 2m
+  delete_percentage_per_bucket: 10
+  put_percentage_per_bucket: 10
+  overwrite_percentage_per_bucket: 10
+  read_percentage_per_bucket: 10
+  tool: s3api
+  operation: type_5_bucket_object_ops
