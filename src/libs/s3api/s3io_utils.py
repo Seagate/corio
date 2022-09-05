@@ -63,10 +63,7 @@ class S3ApiIOUtils(S3Api):
             ctr_itr = Counter([next(bkt_itr) for _ in range(sessions)])
             for i in range(1, sessions + 1):
                 bucket_name = next(bkt_itr)
-                while (
-                    bucket_name in buckets
-                    and buckets[bucket_name] == ctr_itr[bucket_name]
-                ):
+                while bucket_name in buckets and buckets[bucket_name] == ctr_itr[bucket_name]:
                     bucket_name = next(bkt_itr)
                 distribution[i] = [
                     {
@@ -114,6 +111,7 @@ class S3ApiIOUtils(S3Api):
         delete_obj_percent: int = 0,
         put_object_percent: int = 0,
         overwrite_object_percent: int = 0,
+        **kwargs,
     ) -> None:
         """
         Modify distribution dict with delete object percentage and put object percentage.
@@ -123,32 +121,46 @@ class S3ApiIOUtils(S3Api):
                              3: [{'bucket_name': 'bcd', 'object_count': 250}],
                              4: [{'bucket_name': 'abc', 'object_count': 250}],
                              5: [{'bucket_name': 'bcd', 'object_count': 250}]},
-            delete_obj_percent=10, put_object_percent=10
+            delete_obj_percent=10, put_object_percent=10, overwrite_object_percent=10,
+            read_percentage_per_bucket=10
         O/P:
             {1: [{'bucket_name': 'cde',
                   'delete_object_count': 50,
                   'object_count': 500,
-                  'put_object_count': 50}],
+                  'put_object_count': 50,
+                  'overwrite_object_count':50,
+                  'read_object_count':50}],
              2: [{'bucket_name': 'abc',
                   'delete_object_count': 25,
                   'object_count': 250,
-                  'put_object_count': 25}],
+                  'put_object_count': 25,
+                  'overwrite_object_count':25,
+                  'read_object_count':25}],
              3: [{'bucket_name': 'bcd',
                   'delete_object_count': 25,
                   'object_count': 250,
-                  'put_object_count': 25}],
+                  'put_object_count': 25,
+                  'overwrite_object_count':25,
+                  'read_object_count':25}],
              4: [{'bucket_name': 'abc',
                   'delete_object_count': 25,
                   'object_count': 250,
-                  'put_object_count': 25}],
+                  'put_object_count': 25,
+                  'overwrite_object_count':25,
+                  'read_object_count':25}],
              5: [{'bucket_name': 'bcd',
+                  'delete_object_count': 25,
                   'object_count': 250,
-                  'put_object_count': 25}]}
+                  'put_object_count': 25,
+                  'overwrite_object_count':25,
+                  'read_object_count':25}]}
         :param distribution: Distribution of buckets, objects per sessions.
-        :param delete_obj_percent: Delete percentage of total objects.
-        :param put_object_percent: Put object percentage of total objects.
-        :param overwrite_object_percent : overwrite object percentage of total objects
+        :param delete_obj_percent: Delete object percentage per bucket of total objects.
+        :param put_object_percent: Put object percentage per bucket of total objects.
+        :param overwrite_object_percent : Overwrite object percentage per bucket of total objects.
+        :keyword read_percentage_per_bucket: Read object percentage per bucket of total objects.
         """
+        read_percentage_per_bucket = kwargs.get("read_percentage_per_bucket", 0)
         for _, value in distribution.items():
             for ele in value:
                 if delete_obj_percent:
@@ -162,6 +174,10 @@ class S3ApiIOUtils(S3Api):
                 if overwrite_object_percent:
                     ele["overwrite_object_count"] = int(
                         ele["object_count"] * overwrite_object_percent / 100
+                    )
+                if read_percentage_per_bucket:
+                    ele["read_object_count"] = int(
+                        ele["object_count"] * read_percentage_per_bucket / 100
                     )
         self.log.debug(distribution)
 
@@ -197,18 +213,14 @@ class S3ApiIOUtils(S3Api):
                 file_size = self.get_object_size(objsize)
                 file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(
-                    bucket_name, key=file_name, file_path=file_path
-                )
+                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
                 data["files"].append(file_name)
 
         for _, values in distribution.items():
             for value in values:
                 tasks.append(
-                    put_data(
-                        value, value["bucket_name"], value["object_count"], object_size
-                    )
+                    put_data(value, value["bucket_name"], value["object_count"], object_size)
                 )
         await schedule_tasks(self.log, tasks)
 
@@ -219,6 +231,24 @@ class S3ApiIOUtils(S3Api):
         async def read_data(data):
             """Upload n number of objects to s3 bucket."""
             for file_name in data["files"]:
+                await self.get_object(data["bucket_name"], file_name)
+
+        for _, values in distribution.items():
+            for value in values:
+                tasks.append(read_data(value))
+        await schedule_tasks(self.log, tasks)
+
+    async def read_distribution_data(self, distribution):
+        """Read object distribution per s3 bucket in parallel."""
+        tasks = []
+
+        async def read_data(data):
+            """Read n number of objects randomly from s3 bucket."""
+            file_list = data.get("files", [])
+            shuffle(file_list)
+            file_iter = iter(cycle(file_list))
+            for _ in range(data["read_object_count"]):
+                file_name = next(file_iter)
                 await self.get_object(data["bucket_name"], file_name)
 
         for _, values in distribution.items():
@@ -259,9 +289,7 @@ class S3ApiIOUtils(S3Api):
                 file_size = self.get_object_size(objsize)
                 file_name = f"obj-{bucket_name}-{cnt}-{file_size}-{perf_counter_ns()}"
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(
-                    bucket_name, key=file_name, file_path=file_path
-                )
+                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
                 data["files"].append(file_name)
 
@@ -279,12 +307,13 @@ class S3ApiIOUtils(S3Api):
 
     async def cleanup_data(self, distribution: dict) -> None:
         """Delete s3 buckets in parallel forcefully by default."""
+        tasks = []
+
         async def delete_buckets(buckets):
             """Delete s3 buckets."""
             for bucket in buckets:
                 await self.delete_bucket(bucket, force=True)
 
-        tasks = []
         for _, values in distribution.items():
             bucket_list = []
             for value in values:
@@ -309,13 +338,11 @@ class S3ApiIOUtils(S3Api):
 
         async def overwrite_read_data(data, bucket_name, object_count, objsize):
             """Upload and read n number of objects to s3 bucket."""
-            for cnt in range(1, object_count + 1):
+            for _ in range(1, object_count + 1):
                 file_name = random.choice(data["files"])
                 file_size = self.get_object_size(objsize)
                 file_path = corio_utils.create_file(file_name, file_size)
-                await self.upload_object(
-                    bucket_name, key=file_name, file_path=file_path
-                )
+                await self.upload_object(bucket_name, key=file_name, file_path=file_path)
                 os.remove(file_path)
                 await self.get_object(bucket_name, file_name)
 
