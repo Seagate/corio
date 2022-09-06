@@ -67,9 +67,9 @@ class S3ObjectTestCase(unittest.TestCase):
         _data = os.urandom(_file_size)
         _expected_logs = [
             f"INFO:src.libs.s3api.s3_object_ops:Reading size is {1 * MIB}",
-            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {_offset}",
-            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from starting offset {10 + MIB}",
-            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {10} from starting offset {10 + (MIB * 2)}",
+            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from start offset {_offset}",
+            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {MIB} from start offset {10 + MIB}",
+            f"DEBUG:src.libs.s3api.s3_object_ops:Reading {10} from start offset {10 + (MIB * 2)}",
         ]
         mock_getsize.return_value = _file_size
         with self.assertLogs("src.libs.s3api.s3_object_ops", level="DEBUG") as logs:

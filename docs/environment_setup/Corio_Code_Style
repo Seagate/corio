@@ -1,0 +1,70 @@
+We understand Python’s readability is a critical reason, code formatting is vital for readability,
+which is necessary for maintaining code.
+If  code is difficult to understand, it will be hard to fix bugs or add new features.
+Hence we are using following tools to verify and be up to the standards for PEP8 (https://peps.python.org/pep-0008/)
+
+#How to improve code
+-Style Guides (PEP8, PEP257)
+We are strictly following Style Guide for Python Code at https://peps.python.org/pep-0008/
+Ref: https://pypi.org/project/autopep8/
+-Linters (Static Code Analysis Tools) listed as following
+black
+autopep8
+pep257
+Pylint
+prospector
+bandit
+
+We have following existing convention for doc style.
+-pep257
+-numpy
+-google
+
+#max-line-length should be 100
+#install and/or upgrade tools
+pip install black autopep8 pep257 pylint bandit prospector
+pip install --upgrade black autopep8 pep257 pylint bandit prospector
+
+#configure black
+Check following documentation to install and configure Tools
+https://pypi.org/project/black/
+https://black.readthedocs.io/en/stable/the_black_code_style/index.html
+command: black --line-lenght=100 --check --diff --color --exclude virenv <$FilePath$>
+
+
+#autopep8 references and command
+Check https://pypi.org/project/autopep8/
+and run following command
+autopep8 --max-line-length=100 --aggressive --in-place --verbos --jobs 8
+or
+find . -type f -name "*.py" | xargs autopep8 --max-line-length=100 --aggressive --in-place --verbos --jobs 8
+
+#pep257 references and command
+Ref: https://peps.python.org/pep-0257/
+pep257 --explain --source --verbose --count <file_path>
+
+#Pylint
+Check https://pypi.org/project/pylint/
+pylint "--msg-template='{abspath}:{line:5d},{column:2d}: {msg}  ({symbol})'" --output-format=colorized <$FilePath$>
+
+#bandit references and command
+Check
+https://buildmedia.readthedocs.org/media/pdf/bandit/latest/bandit.pdf
+https://pypi.org/project/bandit/1.0.1/
+bandit -r --severity-level all --confidence-level all  --verbose
+
+#prospector references and command
+Ref: https://pypi.org/project/prospector/
+prospector strictness very high --doc-warnings --test-warnings --full-pep8 --max-line-length 100 --show-profile <$FilePath$>
+
+
+When should Code Quality be checked
+-As soon as code is written
+-As and when code is ready to check in
+-As soon as Code is push and PR is raised for review
+-With CI/CD as possible.
+
+Advantage
+-Linters will help you identify problem areas and inconsistencies
+-This will bring consistency to your code
+-Code should be easy to read, maintain, and extend

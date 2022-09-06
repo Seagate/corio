@@ -33,7 +33,7 @@ class Target(metaclass=abc.ABCMeta):
     """Define the domain-specific interface that Client uses."""
 
     def __init__(self, adaptee):
-        """Constructor."""
+        """Target initializer."""
         self._adaptee = adaptee
 
     @abc.abstractmethod
@@ -43,7 +43,7 @@ class Target(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def time(self):
-        """Execution Time."""
+        """Total Execution Time."""
         return "time"
 
 

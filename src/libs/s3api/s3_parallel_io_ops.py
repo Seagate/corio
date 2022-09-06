@@ -234,7 +234,7 @@ class S3ApiParallelIO(S3Api):
     ) -> None:
         """
         Write data to s3 bucket as per object size.
-        
+
         Object prefix and number of samples in parallel as per sessions.
 
         :param object_prefix: Object name prefix used while creating unique object.
