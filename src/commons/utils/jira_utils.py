@@ -44,7 +44,7 @@ class JiraApp:
     """JiraApp class for jira operations."""
 
     def __init__(self):
-        """Initialization for JiraApp."""
+        """Initialize for JiraApp."""
         self.auth = self.get_jira_credential()
         self.headers = {
             "content-type": "application/json",
@@ -302,7 +302,7 @@ class JiraApp:
     @staticmethod
     def get_jira_credential() -> tuple:
         """
-        Function to get Jira Credentials.
+        Get Jira Credentials.
 
         :return: Credentials Tuple.
         """

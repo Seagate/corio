@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (c) 2022 Seagate Technology LLC and/or its Affiliates
-## This program is free software: you can redistribute it and/or modify
+# This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
 # by the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
@@ -12,7 +12,7 @@
 # GNU Affero General Public License for more details.
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
-## For any questions about this software or licensing,
+# For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 #
 """Module for generating email."""
@@ -56,7 +56,7 @@ class Mail:
 
     def send_mail(self, message):
         """
-        Function to send mail using smtp server.
+        Send mail using smtp server.
 
         :param message: Email message
         """

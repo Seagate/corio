@@ -499,7 +499,7 @@ class ClusterServices(BaseClusterServices):
 
     def get_cluster_config(self, pod_list=None) -> dict:
         """
-        Function to fetch data from file (e.g. conf files).
+        Fetch data from file (e.g. conf files).
 
         :param pod_list: Data pod name list to get the cluster.conf File.
         """

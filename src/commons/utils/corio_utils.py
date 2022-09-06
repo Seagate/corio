@@ -340,7 +340,7 @@ def get_master_details() -> tuple:
 
 def get_report_file_path(corio_start_time) -> str:
     """
-    Module to return Corio Report file path.
+    Return Corio Report file path.
 
     :param corio_start_time: Start time for main process.
     """
@@ -360,7 +360,7 @@ def convert_datetime_delta(time_delta: datetime.now()) -> str:
 
 def get_test_file_path(test_id: str) -> str:
     """
-    Module to return test log file path.
+    Return test log file path.
 
     :param test_id: Name of the test id.
     """
