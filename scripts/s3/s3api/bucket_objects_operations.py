@@ -35,12 +35,19 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
         :param access_key: access key.
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
-        :param test_id: Test ID string.
-        :param use_ssl: To use secure connection.
-        :param object_size: Object size to be used for bucket operation
-        :param seed: Seed to be used for random data generator
-        :param session: session name.
-        :param duration: Duration timedelta object, if not given will run for 100 days.
+        :keyword test_id: Test ID string.
+        :keyword use_ssl: To use secure connection.
+        :keyword object_size: Object size to be used for bucket operation
+        :keyword seed: Seed to be used for random data generator
+        :keyword session: session name.
+        :keyword sessions: Number of sessions used for IO.
+        :keyword delay: Delay between percentage of object CRUD operations per bucket.
+        :keyword number_of_objects: Total number of objects per bucket.
+        :keyword delete_percentage_per_bucket: Delete percentage of objects per bucket.
+        :keyword read_percentage_per_bucket: Read percentage of objects per bucket.
+        :keyword overwrite_percentage_per_bucket: Overwrite percentage of objects per bucket.
+        :keyword put_percentage_per_bucket: Write percentage of objects per bucket.
+        :keyword duration: Duration timedelta object, if not given will run for 100 days.
         """
         super().__init__(
             access_key,
