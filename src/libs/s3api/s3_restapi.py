@@ -60,9 +60,7 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        self.log = get_logger(
-            os.getenv("log_level") or logging.INFO, kwargs.get("test_id")
-        )
+        self.log = get_logger(os.getenv("log_level") or logging.INFO, kwargs.get("test_id"))
         self.log_path = next(
             iter(
                 [
@@ -73,11 +71,11 @@ class S3RestApi:
             )
         )
 
-    def get_client(self):
+    def get_client(self, service_name="s3"):
         """Create s3 client session for asyncio operations."""
         session = get_session()
         return session.create_client(
-            service_name="s3",
+            service_name=service_name,
             use_ssl=self.use_ssl,
             verify=False,
             aws_access_key_id=self.access_key,
@@ -92,10 +90,10 @@ class S3RestApi:
             ),
         )
 
-    def get_boto3_client(self):
+    def get_boto3_client(self, service_name="s3"):
         """Create s3 client for without asyncio operations."""
         return boto3.client(
-            "s3",
+            service_name=service_name,
             use_ssl=self.use_ssl,
             verify=False,
             aws_access_key_id=self.access_key,
@@ -110,10 +108,10 @@ class S3RestApi:
             ),
         )
 
-    def get_boto3_resource(self):
+    def get_boto3_resource(self, service_name="s3"):
         """Create s3 resource for without asyncio operations."""
         return boto3.resource(
-            "s3",
+            service_name=service_name,
             use_ssl=self.use_ssl,
             verify=False,
             aws_access_key_id=self.access_key,
