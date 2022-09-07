@@ -56,9 +56,7 @@ class S3Object(S3RestApi):
                 response = await s3client.put_object(Body=body, Bucket=bucket, Key=key)
             elif file_path:
                 with open(file_path, "rb") as rb_obj:
-                    response = await s3client.put_object(
-                        Body=rb_obj, Bucket=bucket, Key=key
-                    )
+                    response = await s3client.put_object(Body=rb_obj, Bucket=bucket, Key=key)
             else:
                 raise AssertionError(
                     f"Required parameter body/file_path is missing in kwargs: {kwargs}"
@@ -114,9 +112,7 @@ class S3Object(S3RestApi):
         self.log.info("Deleting %s", keys)
         async with self.get_client() as s3client:
             self.s3_url = s3_url = f"s3://{bucket}"
-            response = await s3client.delete_objects(
-                Bucket=bucket, Delete={"Objects": objects}
-            )
+            response = await s3client.delete_objects(Bucket=bucket, Delete={"Objects": objects})
             self.log.info("delete_objects %s Response: %s", s3_url, response)
 
         return response
@@ -150,14 +146,19 @@ class S3Object(S3RestApi):
         async with self.get_client() as s3client:
             self.s3_url = s3_url = f"s3://{bucket}/{key}"
             if ranges:
-                response = await s3client.get_object(
-                    Bucket=bucket, Key=key, Range=ranges
-                )
+                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
+                async with response["Body"] as stream:
+                    chunk = await stream.read()
+                    self.log.debug("Reading length: %s", len(chunk))
             else:
                 response = await s3client.get_object(Bucket=bucket, Key=key)
-            async with response["Body"] as stream:
-                chunk = await stream.read()
-                self.log.debug("Reading length: %s", len(chunk))
+                async with response["Body"] as stream:
+                    chunk = await stream.read(1024)
+                    content_length = len(chunk)
+                    while chunk:
+                        chunk = await stream.read(1024)
+                        content_length += len(chunk)
+                    self.log.debug("Reading length: %s", content_length)
             self.log.info("get_object %s Response: %s", s3_url, response)
 
         return response
@@ -187,9 +188,7 @@ class S3Object(S3RestApi):
                         file_obj.write(chunk)
                     chunk = await stream.read(chunk_size)
         if os.path.exists(file_path):
-            self.log.info(
-                "download_object %s Path: %s Response %s", s3_url, file_path, response
-            )
+            self.log.info("download_object %s Path: %s Response %s", s3_url, file_path, response)
 
         return response
 
@@ -207,9 +206,7 @@ class S3Object(S3RestApi):
         :return: Response of copy object.
         """
         async with self.get_client() as s3client:
-            self.s3_url = (
-                s3_url
-            ) = f"s3://{src_bucket}/{src_key} to s3://{des_bucket}/{des_key}"
+            self.s3_url = s3_url = f"s3://{src_bucket}/{src_key} to s3://{des_bucket}/{des_key}"
             response = await s3client.copy_object(
                 Bucket=des_bucket,
                 CopySource=f"/{src_bucket}/{src_key}",
@@ -237,9 +234,7 @@ class S3Object(S3RestApi):
             self.s3_url = s3_url = f"s3://{bucket}/{key}"
             file_hash = hashlib.sha256()
             if ranges:
-                response = await s3client.get_object(
-                    Bucket=bucket, Key=key, Range=ranges
-                )
+                response = await s3client.get_object(Bucket=bucket, Key=key, Range=ranges)
             else:
                 response = await s3client.get_object(Bucket=bucket, Key=key)
             self.log.info("get_s3object_checksum %s Response %s", s3_url, response)
@@ -293,9 +288,7 @@ class S3Object(S3RestApi):
         with open(file_path, "rb") as f_obj:
             f_obj.seek(offset)
             while read_length:
-                current_read_length = (
-                    chunk_size if read_length >= chunk_size else read_length
-                )
+                current_read_length = chunk_size if read_length >= chunk_size else read_length
                 self.log.debug(
                     "Reading %s from starting offset %s",
                     current_read_length,
@@ -319,9 +312,7 @@ class S3Object(S3RestApi):
         s3_resource = self.get_boto3_resource().Bucket(bucket_name)
         if object_prefix:
             objects = s3_resource.objects.filter(Prefix=object_prefix)
-            objects_to_delete = [
-                {"Key": o.key} for o in objects if o.key.startswith(object_prefix)
-            ]
+            objects_to_delete = [{"Key": o.key} for o in objects if o.key.startswith(object_prefix)]
             response = s3_resource.meta.client.delete_objects(
                 Bucket=bucket_name, Delete={"Objects": objects_to_delete}
             )
@@ -333,7 +324,5 @@ class S3Object(S3RestApi):
             )
         else:
             response = s3_resource.objects.all().delete()
-            self.log.info(
-                "deleted all s3 object from %s, response: %s", s3_url, response
-            )
+            self.log.info("deleted all s3 object from %s, response: %s", s3_url, response)
         return response

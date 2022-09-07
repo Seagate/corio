@@ -123,7 +123,5 @@ test_9:
     end: 2m
   delete_percentage_per_bucket: 10
   put_percentage_per_bucket: 10
-  overwrite_percentage_per_bucket: 10
-  read_percentage_per_bucket: 10
   tool: s3api
-  operation: type_5_bucket_object_ops
+  operation: "type_5_bucket_object_ops"
