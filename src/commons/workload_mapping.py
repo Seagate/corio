@@ -88,4 +88,5 @@ SCRIPT_MAPPING = {
         bucket_objects_operations.TestType5BucketObjectOps,
         "execute_bucket_object_workload",
     ],
+    "type_5_bucket_ops": [bucket_operations.TestBucketOps, "execute_bucket_workload"],
 }
