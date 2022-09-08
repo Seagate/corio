@@ -267,3 +267,7 @@ cython_debug/
 
 # User-specific stuff
 .vscode/
+reports/
+*.nmom
+*.s3bench
+log/
