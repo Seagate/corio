@@ -18,3 +18,32 @@
 #
 
 """Libraries package."""
+
+
+from src.libs.restapi.iam_ops import IAMClient
+from src.libs.s3api.iam import IAMUserAPI
+
+
+# pylint: disable=broad-except
+class IAMInterface(IAMClient, IAMUserAPI):
+    """IAM Interface class for IAM user operations using rest or boto3 api."""
+
+    async def create_s3iam_user(self, user_name):
+        """Create s3 iam user using rest or boto api."""
+        try:
+            response = await self.create_iam_user(user_name)
+        except Exception as err:
+            self.log.warning(err)
+            response = IAMClient().create_user(user_name)
+        self.log.info(response)
+        return response
+
+    async def delete_s3iam_user(self, user_name):
+        """Delete s3 iam user using rest or boto api."""
+        try:
+            response = await self.delete_iam_user(user_name)
+        except Exception as err:
+            self.log.warning(err)
+            response = IAMClient().delete_user(user_name)
+        self.log.info(response)
+        return response
