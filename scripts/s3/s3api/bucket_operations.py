@@ -24,10 +24,12 @@ from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
 from src.commons.utils import corio_utils
+from src.libs import IAMInterface
 from src.libs.s3api import S3Api
 
 
-class TestBucketOps(S3Api):
+# pylint: disable=too-many-ancestors
+class TestBucketOps(S3Api, IAMInterface):
     """S3 Bucket Operations class for executing given io stability workload."""
 
     def __init__(
@@ -69,17 +71,16 @@ class TestBucketOps(S3Api):
         self.kwargs = kwargs
         self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
 
-    # pylint: disable=broad-except
+    # pylint: disable=broad-except, too-many-locals
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
         number_of_buckets = self.kwargs.get("number_of_buckets")
         object_size = self.kwargs.get("object_size")
         iteration, buckets = 1, []
-        bops_obj = None
+        bops_obj, user_name = None, None
         if number_of_buckets:
             user_name = f"iam-user-{self.test_id}-{perf_counter_ns()}"
-            response = await self.create_iam_user(user_name)
-            self.log.info(response)
+            response = await self.create_s3iam_user(user_name)
             bops_obj = S3Api(
                 access_key=response["AccessKey"]["AccessKeyId"],
                 secret_key=response["AccessKey"]["SecretAccessKey"],
@@ -124,6 +125,11 @@ class TestBucketOps(S3Api):
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
+                if bops_obj:
+                    for bucket in await bops_obj.list_buckets():
+                        await bops_obj.delete_bucket(bucket, force=True)
+                if user_name:
+                    await self.delete_s3iam_user(user_name)
                 return True, "Bucket operation execution completed successfully."
             iteration += 1
 
