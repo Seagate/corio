@@ -182,11 +182,10 @@ class S3Object(S3RestApi):
             self.log.info("download_object %s Response %s", s3_url, response)
             async with response["Body"] as stream:
                 chunk = await stream.read(chunk_size)
-                self.log.debug("Reading chunk length: %s", len(chunk))
-                while len(chunk) > 0:
-                    with open(file_path, "wb+") as file_obj:
+                with open(file_path, "wb+") as file_obj:
+                    while len(chunk) > 0:
                         file_obj.write(chunk)
-                    chunk = await stream.read(chunk_size)
+                        chunk = await stream.read(chunk_size)
         if os.path.exists(file_path):
             self.log.info("download_object %s Path: %s Response %s", s3_url, file_path, response)
 

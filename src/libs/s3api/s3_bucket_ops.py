@@ -202,19 +202,37 @@ class S3Bucket(S3RestApi):
         return response
 
     @staticmethod
-    def get_bucket_name():
+    def get_bucket_name(bucket_list: list):
         """
         Generate a valid bucket name string.
 
         first letter should be a number or lowercase letter, rest letters can include number,
          lowercase, hyphens and dots. bucket length can vary from 3 to 63.
+        ref: https://docs.aws.amazon.com/AmazonS3/latest/userguide/bucketnamingrules.html
+
+        :param bucket_list: List of bucket exists.
         """
-        return "".join(
-            random.SystemRandom().choice(string.ascii_lowercase + string.digits)
-            + "".join(
-                random.SystemRandom().choice(
-                    string.ascii_lowercase + string.digits + "." + "-"
-                    )
-                for _ in range(random.randint(2, 63))
-                )
+        start_string = "".join(random.SystemRandom().choice(string.ascii_lowercase + string.digits))
+        last_string = [
+            random.SystemRandom().choice(string.ascii_lowercase + "." + string.digits + "-")
+            for _ in range(random.randint(2, 63))
+        ]
+        # shuffle string to have more unique bucket name.
+        random.shuffle(last_string)
+        s3_bucket_name = start_string + "".join(last_string)
+        for _ in range(5):
+            # Removed unsupported combinations of ., _ from bucket name.
+            s3_bucket_name = (
+                s3_bucket_name.replace(".-", "").replace("-.", "").replace(
+                    "..", "").replace("--", "")
             )
+            # Removed unsupported characters suffix, prefix from bucket name.
+            s3_bucket_name = s3_bucket_name.strip(".").strip("-").strip("-s3alias")
+        if s3_bucket_name in bucket_list:
+            s3_bucket_name = "-".join((s3_bucket_name, str(time.perf_counter_ns())))
+        # After cleanup if bucket length less than 3 then add some string.
+        if len(s3_bucket_name) < 3:
+            s3_bucket_name = s3_bucket_name + str(time.perf_counter_ns())
+        if len(s3_bucket_name) > 63:
+            s3_bucket_name = s3_bucket_name[:63]
+        return s3_bucket_name

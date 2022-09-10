@@ -44,12 +44,13 @@ class _Base(DisableWarning):
 
     def __init__(self, **kwargs):
         """Initialize resp api base class."""
-        self.host = kwargs.get("mgmt_vip")
-        self.port = kwargs.get("port")
-        self.user_name = kwargs.get("name")
-        self.user_password = kwargs.get("password")
-        self.headers = None
         self.log = self.log if self.log else logging.getLogger(__name__)
+        self.log.info(CLUSTER_CFG["restapi"])
+        self.host = kwargs.get("ip", CLUSTER_CFG["restapi"]["ip"])
+        self.port = kwargs.get("port", int(CLUSTER_CFG["restapi"]["port"]))
+        self.user_name = kwargs.get("username", CLUSTER_CFG["restapi"]["username"])
+        self.user_password = kwargs.get("password", CLUSTER_CFG["restapi"]["password"])
+        self.headers = None
         self._request = {
             "get": requests.get,
             "post": requests.post,
@@ -150,13 +151,9 @@ class Authentication:
 class IAMClient(_Base):
     """This is the class for IAM user rest calls."""
 
-    def __int__(self, mgmt_vip=None, port=None, access_key=None, secret_key=None):
+    def __int__(self, **kwargs):
         """Initialize IAM Client."""
-        mgmt_vip = mgmt_vip if mgmt_vip else CLUSTER_CFG["nodes"][0]["hostname"]
-        port = port if port else CLUSTER_CFG["nodes"][0]["restapi"]["port"]
-        name = access_key if access_key else CLUSTER_CFG["nodes"][0]["restapi"]["admin"]
-        password = secret_key if secret_key else CLUSTER_CFG["nodes"][0]["restapi"]["passwd"]
-        super().__init__(mgmt_vip=mgmt_vip, port=port, name=name, password=password)
+        super().__init__(**kwargs)
 
     @Authentication.login
     @Authentication.logout
