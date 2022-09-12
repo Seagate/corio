@@ -11,16 +11,3 @@ psutil~=5.9.0
 boto3~=1.21.6
 botocore~=1.24.21
 nest-asyncio~=1.5.5
-black
-autopep8
-pep257
-bandit
-prospector
-flake8
-yapf
-pydocstyle
-pycodestyle
-coverage
-flake8
-Mypy
-pyflakes
