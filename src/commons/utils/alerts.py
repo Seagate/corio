@@ -63,9 +63,7 @@ class Mail:
         if self.mail_host and self.port:
             LOGGER.info("Sending mail alert...")
             with smtplib.SMTP(self.mail_host, self.port) as server:
-                server.sendmail(
-                    self.sender, self.receiver.split(","), message.as_string()
-                )
+                server.sendmail(self.sender, self.receiver.split(","), message.as_string())
         else:
             LOGGER.warning(
                 "Can't send mail as email host: %s, port: %s not found.",
@@ -101,9 +99,7 @@ class MailNotification(threading.Thread):
         self._alert = bool(self.sender and self.receiver)
         self.mail_obj = Mail(sender=self.sender, receiver=self.receiver)
         self.health_obj = get_logical_node() if self.health_check else None
-        self.host = (
-            self.health_obj.host if self.health_check else kwargs.get("endpoint")
-        )
+        self.host = self.health_obj.host if self.health_check else kwargs.get("endpoint")
         self.message_id = None
         self.tp_id = str(tp_id or "")
 
@@ -129,18 +125,14 @@ class MailNotification(threading.Thread):
             message["In-Reply-To"] = self.message_id
             message["References"] = self.message_id
         # Mail subject.
-        message[
-            "Subject"
-        ] = f"Corio: TestPlan {str(self.tp_id or '')}, Server {self.host}"
+        message["Subject"] = f"Corio: TestPlan {str(self.tp_id or '')}, Server {self.host}"
         # Execution status
         body = "<h2 style='text-align:center;'>Corio Execution Status</h2>"
         body += f"""<table style='width: 100%; border: thin black dotted; text-align: left;'
          width = 'nowrap;'> <tr style='background-color:{status_code}'>"""
         body += f"""<td style='color: white; font-size: 124%; padding-left: 5px;'
          font-weight: bold; colspan=2><b>Execution status:</b> {execution_status}</td></tr>"""
-        body += (
-            f"<tr><td><b>Execution started:</b></td> <td>{self.start_time}</td></tr>"
-        )
+        body += f"<tr><td><b>Execution started:</b></td> <td>{self.start_time}</td></tr>"
         body += f"<tr><td><b>Execution duration:</b></td> <td>{execution_duration}</td></tr>"
         # Cluster health and pod status.
         if self.health_check:
@@ -152,34 +144,22 @@ class MailNotification(threading.Thread):
             )
             body += f"<tr><td><b>Cluster Health:</b></td> <td>{health_status}</td></tr>"
             storage_stat = self.health_obj.check_cluster_storage()[1]
-            body += (
-                f"<tr><td><b>Storage stat(bytes):</b></td> <td>{storage_stat}</td></tr>"
-            )
-            attachment = MIMEApplication(
-                json.dumps(hctl_status, indent=4), Name="hctl_status.txt"
-            )
+            body += f"<tr><td><b>Storage stat(bytes):</b></td> <td>{storage_stat}</td></tr>"
+            attachment = MIMEApplication(json.dumps(hctl_status, indent=4), Name="hctl_status.txt")
             attachment["Content-Disposition"] = "attachment; filename=hctl_status.txt"
             message.attach(attachment)
-            result, pod_status = self.health_obj.execute_command(
-                commands.CMD_POD_STATUS
-            )
+            result, pod_status = self.health_obj.execute_command(commands.CMD_POD_STATUS)
             if result:
                 attachment = MIMEApplication(pod_status, Name="pod_status.txt")
-                attachment[
-                    "Content-Disposition"
-                ] = "attachment; filename=pod_status.txt"
+                attachment["Content-Disposition"] = "attachment; filename=pod_status.txt"
                 message.attach(attachment)
             else:
                 LOGGER.warning("Could not collect pod status.")
         # Corio execution report.
         if os.path.exists(self.report_path):
             with open(self.report_path, "rb") as fil:
-                attachment = MIMEApplication(
-                    fil.read(), Name=os.path.basename(self.report_path)
-                )
-            attachment[
-                "Content-Disposition"
-            ] = "attachment; filename=execution_summery_report.txt"
+                attachment = MIMEApplication(fil.read(), Name=os.path.basename(self.report_path))
+            attachment["Content-Disposition"] = "attachment; filename=execution_summery_report.txt"
             message.attach(attachment)
         else:
             LOGGER.warning("Could not find %s", self.report_path)
@@ -202,9 +182,7 @@ class MailNotification(threading.Thread):
         """Send Mail notification periodically."""
         message = None
         while not self.active_event():
-            message = self.prepare_email(
-                execution_status="In Progress", status_code="#2B65EC"
-            )
+            message = self.prepare_email(execution_status="In Progress", status_code="#2B65EC")
             self.mail_obj.send_mail(message)
             current_time = time.time()
             while time.time() < current_time + CORIO_CFG.email_interval_mins * 60:
@@ -212,26 +190,16 @@ class MailNotification(threading.Thread):
                     break
                 time.sleep(60)
         if self.event_pass.is_set():
-            message = self.prepare_email(
-                execution_status="Passed", status_code="#27AE60"
-            )
+            message = self.prepare_email(execution_status="Passed", status_code="#27AE60")
         if self.event_fail.is_set():
-            message = self.prepare_email(
-                execution_status="Failed", status_code="#E74C3C"
-            )
+            message = self.prepare_email(execution_status="Failed", status_code="#E74C3C")
         if self.event_abort.is_set():
-            message = self.prepare_email(
-                execution_status="Aborted", status_code="#f4e242"
-            )
+            message = self.prepare_email(execution_status="Aborted", status_code="#f4e242")
         self.mail_obj.send_mail(message)
 
     def active_event(self) -> bool:
         """Check the active event status."""
-        return (
-            self.event_pass.is_set()
-            or self.event_abort.is_set()
-            or self.event_fail.is_set()
-        )
+        return self.event_pass.is_set() or self.event_abort.is_set() or self.event_fail.is_set()
 
 
 class SendMailNotification(MailNotification):

@@ -58,13 +58,9 @@ def stop_store_client_resource_utilization():
     """Stop resource utilization from client and copy to NFS/LOCAL server."""
     resp = corio_utils.run_local_cmd(cmd.CMD_KILL_NMON)
     LOGGER.debug(resp)
-    stat_fpath = sorted(
-        glob.glob(os.getcwd() + "/*.nmon"), key=os.path.getctime, reverse=True
-    )[-1]
+    stat_fpath = sorted(glob.glob(os.getcwd() + "/*.nmon"), key=os.path.getctime, reverse=True)[-1]
     LOGGER.info(stat_fpath)
-    dpath = os.path.join(
-        const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client"
-    )
+    dpath = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client")
     if not os.path.exists(dpath):
         os.makedirs(dpath)
     shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
@@ -83,9 +79,7 @@ def stop_store_client_resource_utilization():
     dmesg_filepath = os.path.join("/root", "client_dmesg.log")
     resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
     if resp[0]:
-        shutil.move(
-            dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath))
-        )
+        shutil.move(dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath)))
 
 
 def start_server_resource_utilization() -> None:
@@ -104,9 +98,7 @@ def get_server_details() -> tuple:
     cluster_nodes = []
     host, user, passwd = corio_utils.get_master_details()
     if not host:
-        LOGGER.critical(
-            "Will not able to collect system stats for cluster as detail is missing."
-        )
+        LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
         return None, None, cluster_nodes
     cluster_nodes.append(host)
     cluster_obj = ClusterServices(host, user, passwd)
@@ -126,9 +118,7 @@ def stop_store_server_resource_utilization():
         resp = cluster_obj.execute_command(cmd.CMD_SEARCH_FILE.format("'*.nmon'"))
         filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
-        stat_path = os.path.join(
-            const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server"
-        )
+        stat_path = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server")
         cl_path = os.path.join(stat_path, filename)
         remote_path = os.path.join("/root", filename)
         if not os.path.exists(stat_path):

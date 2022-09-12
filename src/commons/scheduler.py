@@ -72,9 +72,7 @@ async def create_session(funct: list, start_time: float, **kwargs: dict) -> tupl
     return resp
 
 
-async def schedule_sessions(
-    test_plan: str, test_plan_value: dict, common_params: dict
-) -> None:
+async def schedule_sessions(test_plan: str, test_plan_value: dict, common_params: dict) -> None:
     """
     Create and Schedule specified number of sessions for each test in test_plan.
 
@@ -101,20 +99,14 @@ async def schedule_sessions(
             operation = str(params.get("operation")[0])
             if "TestTypeX" in operation or "TestType5" in operation:
                 params["session"] = f"{params['test_id']}_session_main"
-                iter_keys = set_s3_access_secret_key(
-                    access_secret_keys, iter_keys, params
-                )
+                iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                 tasks.append(
-                    create_session(
-                        funct=params["operation"], start_time=test_start_time, **params
-                    )
+                    create_session(funct=params["operation"], start_time=test_start_time, **params)
                 )
             else:
                 for i in range(1, int(params["sessions"]) + 1):
                     params["session"] = f"{params['test_id']}_session{i}"
-                    iter_keys = set_s3_access_secret_key(
-                        access_secret_keys, iter_keys, params
-                    )
+                    iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
                     tasks.append(
                         create_session(
                             funct=params["operation"],
@@ -126,9 +118,7 @@ async def schedule_sessions(
             params["session"] = f"{params['test_id']}_session_s3bench"
             iter_keys = set_s3_access_secret_key(access_secret_keys, iter_keys, params)
             tasks.append(
-                create_session(
-                    funct=params["operation"], start_time=test_start_time, **params
-                )
+                create_session(funct=params["operation"], start_time=test_start_time, **params)
             )
         else:
             raise NotImplementedError(f"Tool is not supported: {params['tool']}")
@@ -137,9 +127,7 @@ async def schedule_sessions(
     LOGGER.info("Execution completed for process: %s", process_name)
 
 
-def schedule_test_plan(
-    test_plan: str, test_plan_values: dict, common_params: dict
-) -> None:
+def schedule_test_plan(test_plan: str, test_plan_values: dict, common_params: dict) -> None:
     """
     Create event loop for each test plan.
 
@@ -276,9 +264,7 @@ def start_processes(processes: dict) -> None:
         LOGGER.info("Process started: %s", process)
 
 
-def schedule_execution_plan(
-    parsed_input: dict, options: munch.Munch, return_dict: dict
-) -> dict:
+def schedule_execution_plan(parsed_input: dict, options: munch.Munch, return_dict: dict) -> dict:
     """Schedule the execution plan."""
     processes = {}
     commons_params = {
@@ -315,9 +301,7 @@ def schedule_execution_plan(
             name="health_check",
             args=(CORIO_CFG.hc_interval_mins * 60, return_dict),
         )
-        LOGGER.info(
-            "Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins
-        )
+        LOGGER.info("Health check scheduled for every %s minutes", CORIO_CFG.hc_interval_mins)
 
     if options.degraded_mode:
         processes["degraded_mode"] = multiprocessing.Process(

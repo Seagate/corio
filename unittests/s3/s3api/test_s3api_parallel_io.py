@@ -21,29 +21,29 @@
 
 """Unittest to test s3 parallel io ops lib."""
 
+import sys
 import unittest
 
-import sys
-
-from src.libs.s3api.s3_parallel_io_ops import S3ApiParallelIO
+from src.libs.s3api.s3io_utils import S3ApiParallelIO
 
 
 class TestS3ApiParallelIO(unittest.TestCase):
     """Tests suite for S3ApiParallelIO."""
 
+    if len(sys.argv) >= 4:
+        access_key = sys.argv[1]
+        secret_key = sys.argv[2]
+        endpoint = sys.argv[3]
+        use_ssl = sys.argv[4]
+    else:
+        raise AssertionError(
+            "Please provide access_key, secret_key, endpoint and "
+            "use_ssl parameters in order to run execution."
+        )
+
     @classmethod
     def setUpClass(cls) -> None:
         """Setup class method."""
-        if len(sys.argv) >= 4:
-            cls.access_key = sys.argv[1]
-            cls.secret_key = sys.argv[2]
-            cls.endpoint = sys.argv[3]
-            cls.use_ssl = sys.argv[4]
-        else:
-            raise AssertionError(
-                "Please provide access_key, secret_key, endpoint and "
-                "use_ssl parameters in order to run execution."
-            )
         cls.s3obj = S3ApiParallelIO(
             access_key=cls.access_key,
             secret_key=cls.secret_key,
@@ -51,7 +51,6 @@ class TestS3ApiParallelIO(unittest.TestCase):
             use_ssl=cls.use_ssl,
             test_id="UnitTest",
         )
-        cls.log = cls.s3obj.log
         cls.object_sizes = [1024, 2048, 4096]
         cls.write_distribution = {1024: 115, 2048: 100, 4096: 225}
         cls.read_distribution = {1024: 200, 2048: 150, 4096: 250}
@@ -63,7 +62,7 @@ class TestS3ApiParallelIO(unittest.TestCase):
         self.s3obj.execute_workload(
             operations="write", sessions=5, distribution=self.write_distribution
         )
-        for bucket in self.s3obj.io_ops_dict:
+        for bucket in list(self.s3obj.io_ops_dict):
             for object_size, samples in self.write_distribution.items():
                 if str(object_size) in bucket:
                     assert (
@@ -78,10 +77,10 @@ class TestS3ApiParallelIO(unittest.TestCase):
             distribution=self.read_distribution,
             validate=True,
         )
-        for bucket in self.s3obj.read_files:
+        for bucket in list(self.s3obj.read_files):
             for object_size, samples in self.read_distribution.items():
                 if str(object_size) in bucket:
-                    self.log.info(self.s3obj.read_files[bucket])
+                    self.s3obj.log.info(self.s3obj.read_files[bucket])
                     assert (
                         self.s3obj.read_files[bucket]["total_count"] == samples
                     ), f"failed read distribution: {object_size}:{samples}"
@@ -91,7 +90,7 @@ class TestS3ApiParallelIO(unittest.TestCase):
         self.s3obj.execute_workload(
             operations="validate", sessions=5, distribution=self.validate_distribution
         )
-        for bucket in self.s3obj.validated_files:
+        for bucket in list(self.s3obj.validated_files):
             for object_size, samples in self.validate_distribution.items():
                 if str(object_size) in bucket:
                     assert (
@@ -103,7 +102,7 @@ class TestS3ApiParallelIO(unittest.TestCase):
         self.s3obj.execute_workload(
             operations="delete", sessions=5, distribution=self.partial_del_distribution
         )
-        for bucket in self.s3obj.deleted_files:
+        for bucket in list(self.s3obj.deleted_files):
             for object_size, samples in self.partial_del_distribution.items():
                 if str(object_size) in bucket:
                     assert (
@@ -113,15 +112,13 @@ class TestS3ApiParallelIO(unittest.TestCase):
     def test_5_complete_delete(self):
         """Test complete delete."""
         distribution = {}
-        for bucket in self.s3obj.io_ops_dict:
+        for bucket in list(self.s3obj.io_ops_dict):
             for object_size in self.object_sizes:
                 if str(object_size) in bucket:
                     distribution[object_size] = len(self.s3obj.io_ops_dict[bucket])
-        self.log.info(distribution)
-        self.s3obj.execute_workload(
-            operations="delete", sessions=5, distribution=distribution
-        )
-        for bucket in self.s3obj.io_ops_dict:
+        self.s3obj.log.info(distribution)
+        self.s3obj.execute_workload(operations="delete", sessions=5, distribution=distribution)
+        for bucket in list(self.s3obj.io_ops_dict):
             assert (
                 len(self.s3obj.io_ops_dict[bucket]) == 0
             ), f"Failed to complete data from {bucket}"
@@ -130,7 +127,7 @@ class TestS3ApiParallelIO(unittest.TestCase):
         """Test cleanup."""
         self.s3obj.execute_workload(operations="cleanup", sessions=3)
         list_buckets = self.s3obj.list_s3_buckets()
-        self.log.info(list_buckets)
+        self.s3obj.log.info(list_buckets)
         assert len(list_buckets) == 0, f"Failed to cleanup data: {list_buckets}"
 
 

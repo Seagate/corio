@@ -40,15 +40,14 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
 
     :param parsed_input: Dict for all the input yaml files.
     :param corio_start_time: Start time for main process.
-    # :param test_failed: Reason for failure is any.
-    # :param terminated_tests: terminated tests from workload.
+    :keyword test_failed: Reason for failure is any.
+    :keyword terminated_tests: terminated tests from workload.
+    :keyword action: Overall execution status.
     """
     test_failed = kwargs.get("test_failed")
     action = kwargs.get("action", "")
     status_fpath = get_report_file_path(corio_start_time)
-    execution_status = monitor_sessions_iterations(
-        parsed_input, corio_start_time, **kwargs
-    )
+    execution_status = monitor_sessions_iterations(parsed_input, corio_start_time, **kwargs)
     kwargs["execution_status"] = execution_status
     LOGGER.info("Logging current status to %s", status_fpath)
     with open(status_fpath, "w", encoding="utf-8") as status_file:
@@ -61,12 +60,8 @@ def log_status(parsed_input: dict, corio_start_time: datetime, **kwargs):
             else:
                 status_file.write("\nTest execution still in progress...")
         else:
-            status_file.write(
-                f"\nTest execution terminated due to error in {test_failed}"
-            )
-        status_file.write(
-            f"\nTotal execution Duration : {datetime.now() - corio_start_time}"
-        )
+            status_file.write(f"\nTest execution terminated due to error in {test_failed}")
+        status_file.write(f"\nTotal execution Duration : {datetime.now() - corio_start_time}")
         status_file.write("\n\nTestWise Execution Details:")
         for key, value in parsed_input.items():
             dataframe = pd.DataFrame()
@@ -111,15 +106,16 @@ def convert_object_size(input_dict: dict, value: Union[dict, list]) -> None:
         input_dict["OBJECT_SIZE"] = convert_size(value["object_size"])
 
 
-def update_tests_status(
-    input_dict: dict, corio_start_time: datetime, value: dict, **kwargs
-):
+def update_tests_status(input_dict: dict, corio_start_time: datetime, value: dict, **kwargs):
     """
     Update tests status in report.
 
     :param input_dict: Dict for all the input yaml files.
     :param corio_start_time: start time of workload execution.
     :param value: test details from workload execution.
+    :keyword terminated_tests: List of terminated tests due to some failures.
+    :keyword execution_status: Execution status of test case.
+    :keyword test_failed: Aborted tests due to failure in other test.
     """
     # List of the test cases from terminated tp.
     terminated_tests = kwargs.get("terminated_tests", [])
@@ -128,9 +124,7 @@ def update_tests_status(
     test_failed = kwargs.get("test_failed", "")
     test_start_time = corio_start_time + value["start_time"]
     if datetime.now() > test_start_time:
-        input_dict[
-            "START_TIME"
-        ] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict["START_TIME"] = f"Started at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "In Progress"
         if datetime.now() > (test_start_time + value["min_runtime"]):
             execution_time = execution_status[input_dict["TEST_ID"]]["execution_time"]
@@ -156,8 +150,6 @@ def update_tests_status(
             total_execution_time = datetime.now() - test_start_time
             input_dict["TOTAL_TEST_EXECUTION"] = total_execution_time
     else:
-        input_dict[
-            "START_TIME"
-        ] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
+        input_dict["START_TIME"] = f"Scheduled at {test_start_time.strftime('%Y-%m-%d %H:%M:%S')}"
         input_dict["RESULT_UPDATE"] = "Not Triggered"
         input_dict["TOTAL_TEST_EXECUTION"] = "NA"

@@ -79,9 +79,7 @@ class JiraApp:
             auth=self.auth,
         )
         if tp_response.status_code != HTTPStatus.OK:
-            raise AssertionError(
-                f"Failed to get TE: {test_plan_id},reason {tp_response.json()}"
-            )
+            raise AssertionError(f"Failed to get TE: {test_plan_id},reason {tp_response.json()}")
 
         return tp_response.json()
 
@@ -114,9 +112,7 @@ class JiraApp:
                             data = te_response.json()
                             tests_info.extend(data)
                         except JIRAError as err:
-                            LOGGER.error(
-                                "Exception in GET tests details from te, error: %s", err
-                            )
+                            LOGGER.error("Exception in GET tests details from te, error: %s", err)
                         else:
                             page_cnt = page_cnt + 1 if data else 0
                 else:
@@ -160,9 +156,7 @@ class JiraApp:
             params=None,
         )
         if status_response.status_code == HTTPStatus.OK:
-            LOGGER.info(
-                "Test '%s' status updated successfully to %s", test_id, test_status
-            )
+            LOGGER.info("Test '%s' status updated successfully to %s", test_id, test_status)
             return status_response.json()
         test_issue = status_response.json().get("testIssues", None)
         if test_issue:
@@ -171,9 +165,7 @@ class JiraApp:
 
         return status_response.text
 
-    def update_execution_details(
-        self, test_run_id: str, test_id: str, comment: str
-    ) -> [dict]:
+    def update_execution_details(self, test_run_id: str, test_id: str, comment: str) -> [dict]:
         """
         Add comment to the mentioned jira id.
 
@@ -193,21 +185,15 @@ class JiraApp:
             )
             LOGGER.info("Response code: %s", comment_response.status_code)
             if comment_response.status_code == HTTPStatus.OK:
-                LOGGER.info(
-                    "Updated execution details successfully for test id %s", test_id
-                )
+                LOGGER.info("Updated execution details successfully for test id %s", test_id)
                 return comment_response.json()
 
             return comment_response.text
         except JIRAError as err:
-            LOGGER.exception(
-                "Error code: %s, error test: %s", err.status_code, err.text
-            )
+            LOGGER.exception("Error code: %s, error test: %s", err.status_code, err.text)
             return err
 
-    def get_all_tests_details_from_tp(
-        self, tp_id: str, reset_status: bool = False
-    ) -> dict:
+    def get_all_tests_details_from_tp(self, tp_id: str, reset_status: bool = False) -> dict:
         """
         Get all tests execution details from test plan.
 
@@ -230,9 +216,7 @@ class JiraApp:
                 if reset_status:
                     # Reset jira test status to start new execution.
                     if test["status"].upper() != "TODO":
-                        self.update_test_jira_status(
-                            test["te"]["key"], test["key"], "TODO"
-                        )
+                        self.update_test_jira_status(test["te"]["key"], test["key"], "TODO")
                         LOGGER.debug(
                             "%s: status '%s' reset to '%s'",
                             test["key"],
@@ -262,9 +246,7 @@ class JiraApp:
                     if test_data["status"] == "EXECUTING":
                         if aborted:
                             aborted_tests = terminated_tests if terminated_tests else []
-                            test_status = (
-                                "FAILED" if test_id in aborted_tests else "ABORTED"
-                            )
+                            test_status = "FAILED" if test_id in aborted_tests else "ABORTED"
                             resp = self.update_test_jira_status(
                                 test_data["te"]["key"], test_id, test_status
                             )
@@ -311,9 +293,7 @@ class JiraApp:
             jira_pd = os.environ["JIRA_PASSWORD"]
         except KeyError as error:
             LOGGER.error(error)
-            jira_user = input(
-                "JIRA credentials not found in environment.\nJIRA username: "
-            )
+            jira_user = input("JIRA credentials not found in environment.\nJIRA username: ")
             jira_pd = getpass.getpass("JIRA password: ")
             os.environ["JIRA_USER"] = jira_user
             os.environ["JIRA_PASSWORD"] = jira_pd

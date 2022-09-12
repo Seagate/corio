@@ -91,9 +91,7 @@ class S3Bucket(S3RestApi):
         async with self.get_client() as client:
             self.s3_url = f"s3://{bucket_name}"
             response = await client.get_bucket_location(Bucket=bucket_name)
-            self.log.info(
-                "get_bucket_location: %s, Response: %s", bucket_name, response
-                )
+            self.log.info("get_bucket_location: %s, Response: %s", bucket_name, response)
 
         return response
 
@@ -111,22 +109,18 @@ class S3Bucket(S3RestApi):
                 self.log.info(
                     "This might cause data loss as you have opted for bucket deletion"
                     " with objects in it"
-                    )
+                )
                 # list s3 objects using paginator
                 paginator = client.get_paginator("list_objects")
                 async for result in paginator.paginate(Bucket=bucket_name):
                     for content in result.get("Contents", []):
                         self.s3_url = f"s3://{bucket_name}/{content['Key']}"
-                        resp = await client.delete_object(
-                            Bucket=bucket_name, Key=content["Key"]
-                            )
+                        resp = await client.delete_object(Bucket=bucket_name, Key=content["Key"])
                         self.log.debug(resp)
                 self.log.info("All objects deleted successfully.")
             self.s3_url = f"s3://{bucket_name}"
             response = await client.delete_bucket(Bucket=bucket_name)
-            self.log.info(
-                "Bucket '%s' deleted successfully. Response: %s", bucket_name, response
-                )
+            self.log.info("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
 
@@ -187,17 +181,15 @@ class S3Bucket(S3RestApi):
             self.log.info(
                 "This might cause data loss as you have opted for bucket deletion with "
                 "objects in it"
-                )
+            )
             response = bucket.objects.all().delete()
             self.log.debug(
                 "Objects deleted successfully from bucket %s, response: %s",
                 bucket_name,
                 response,
-                )
-        response = bucket.delete()
-        self.log.debug(
-            "Bucket '%s' deleted successfully. Response: %s", bucket_name, response
             )
+        response = bucket.delete()
+        self.log.debug("Bucket '%s' deleted successfully. Response: %s", bucket_name, response)
 
         return response
 

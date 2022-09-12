@@ -33,12 +33,12 @@ from botocore.config import Config
 from config import S3_CFG
 from src.commons.logger import get_logger
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 # pylint: disable=too-many-instance-attributes
 class S3RestApi:
     """Basic Class for Creating Boto3 REST API Objects."""
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """

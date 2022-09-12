@@ -143,9 +143,7 @@ class S3bench:
         :return: Subprocess completed returns False or killed due to timeout returns True
         """
         LOGGER.info("Starting: %s wait: %s", self.cmd, duration)
-        with subprocess.Popen(
-            self.cmd, shell=False, preexec_fn=os.setsid
-        ) as proc:  # nosec
+        with subprocess.Popen(self.cmd, shell=False, preexec_fn=os.setsid) as proc:  # nosec
             pgid = os.getpgid(proc.pid)
             counter = 0
             # Poll for either process completion or for timeout
@@ -237,9 +235,7 @@ class S3bench:
             LOGGER.info("Remaining test time %s", timedelta_v)
             timeout = self.execute_command(timedelta_sec)
             if timeout:
-                LOGGER.info(
-                    "Terminated s3bench workload due to timeout. Checking results."
-                )
+                LOGGER.info("Terminated s3bench workload due to timeout. Checking results.")
                 return self.check_terminated_results(cli_log)
             status, ops = self.check_log_file_error(report, cli_log)
             if not status:
@@ -270,9 +266,7 @@ class S3bench:
             errors = test["Errors Count"]
             ops[operation] = errors
             if test["Errors Count"] != 0:
-                LOGGER.error(
-                    "ERROR: %s operation failed with %s errors", operation, errors
-                )
+                LOGGER.error("ERROR: %s operation failed with %s errors", operation, errors)
                 error = False
             else:
                 LOGGER.info("%s operation passed", operation)

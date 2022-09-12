@@ -47,9 +47,7 @@ def apply_master_config(workload: dict, master_cfg: dict) -> dict:
         # Check for minimum required parameters (TestID, Tool, Operation)
         required = master_cfg["common"]
         if not existing_params or (set(required) - set(existing_params) != set()):
-            raise AssertionError(
-                f"Minimum required parameters are missing {required} for {test}"
-            )
+            raise AssertionError(f"Minimum required parameters are missing {required} for {test}")
         tool = config["tool"]
         operation = config["operation"]
         required_params = list(master_cfg[tool][operation].keys()) + required
@@ -152,9 +150,7 @@ def test_parser(yaml_file: str, number_of_nodes: int) -> dict:
     :return python dictionary containing file contents.
     """
     delta_list = []
-    workload_data = apply_master_config(
-        read_yaml(yaml_file), read_yaml(const.CORIO_MASTER_CONFIG)
-    )
+    workload_data = apply_master_config(read_yaml(yaml_file), read_yaml(const.CORIO_MASTER_CONFIG))
     for test, data in workload_data.items():
         # Check compulsory workload parameter 'Object size' from workload.
         if "object_size" not in data:
@@ -184,9 +180,7 @@ def convert_min_runtime_to_time_delta(test: str, delta_list: list, data: dict) -
         delta_list.append(convert_to_time_delta(data["min_runtime"]))
     else:
         data["start_time"] = delta_list.pop()
-        delta_list.append(
-            data["start_time"] + convert_to_time_delta(data["min_runtime"])
-        )
+        delta_list.append(data["start_time"] + convert_to_time_delta(data["min_runtime"]))
     data["min_runtime"] = convert_to_time_delta(data["min_runtime"])
 
 
@@ -217,15 +211,11 @@ def convert_delay_to_seconds(data: dict) -> None:
     if "delay" in data:
         if isinstance(data["delay"], dict):
             if "start" not in data["delay"] or "end" not in data["delay"]:
-                raise AssertionError(
-                    f"Range using start and end keys missing for delay in {data}"
-                )
+                raise AssertionError(f"Range using start and end keys missing for delay in {data}")
             data["delay"]["start"] = int(
                 convert_to_time_delta(data["delay"]["start"]).total_seconds()
             )
-            data["delay"]["end"] = int(
-                convert_to_time_delta(data["delay"]["end"]).total_seconds()
-            )
+            data["delay"]["end"] = int(convert_to_time_delta(data["delay"]["end"]).total_seconds())
         elif isinstance(data["delay"], str):
             data["delay"] = int(convert_to_time_delta(data["delay"]).total_seconds())
         else:
@@ -282,7 +272,5 @@ def convert_object_size_to_bytes(object_size: tuple) -> tuple:
 def convert_distribution_to_sample(distribution: list, samples: int) -> tuple:
     """Convert object size distribution to samples."""
     for sample, _ in enumerate(distribution):
-        distribution[sample] = int(
-            round(((float(distribution[sample][:-1]) / 100.0) * samples), 2)
-        )
+        distribution[sample] = int(round(((float(distribution[sample][:-1]) / 100.0) * samples), 2))
     return tuple(distribution)

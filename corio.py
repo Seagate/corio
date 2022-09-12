@@ -124,7 +124,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 # pylint: disable=broad-except
 def main(options):
     """
-    Main function for CORIO.
+    CORIO main function to trigger workload.
 
     :param options: Parsed Arguments.
     """

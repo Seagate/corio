@@ -33,8 +33,7 @@ def parse_args():
         "--test_input",
         type=str,
         required=True,
-        help="Directory path containing test data input yaml files or "
-        "input yaml file path.",
+        help="Directory path containing test data input yaml files or input yaml file path.",
     )
     parser.add_argument(
         "-v",
@@ -105,7 +104,11 @@ def parse_args():
         help="Health Check.",
     )
     parser.add_argument(
-        "-tp", "--test_plan", type=str, default=None, help="jira xray test plan id"
+        "-tp",
+        "--test_plan",
+        type=str,
+        default=None,
+        help="jira xray test plan id"
     )
     parser.add_argument(
         "-dm",

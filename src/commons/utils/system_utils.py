@@ -35,9 +35,7 @@ LOGGER = logging.getLogger(ROOT)
 class RemoteHost:
     """Class for execution of commands on remote machine."""
 
-    def __init__(
-        self, host: str, user: str, password: str, timeout: int = 20 * 60
-    ) -> None:
+    def __init__(self, host: str, user: str, password: str, timeout: int = 20 * 60) -> None:
         """Initialize parameters."""
         self.host = host
         self.user = user
@@ -79,16 +77,10 @@ class RemoteHost:
         self.connect()
         LOGGER.info("Executing command: %s", command)
         # nosec
-        _, stdout, stderr = self.host_obj.exec_command(
-            command=command, timeout=self.timeout
-        )
+        _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
         exit_status = stdout.channel.recv_exit_status() == 0
-        error = decode_bytes_to_string(
-            stderr.readlines() if read_lines else stderr.read()
-        )
-        output = decode_bytes_to_string(
-            stdout.readlines() if read_lines else stdout.read()
-        )
+        error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())
+        output = decode_bytes_to_string(stdout.readlines() if read_lines else stdout.read())
         LOGGER.debug("Execution status %s", exit_status)
         LOGGER.debug(output)
         LOGGER.debug(error)
@@ -107,9 +99,7 @@ class RemoteHost:
         self.sftp_obj.get(remote_path, local_path)
         if not os.path.exists(local_path):
             raise IOError(f"Failed to download '{remote_path}' file")
-        LOGGER.info(
-            "Remote file %s downloaded to %s successfully.", remote_path, local_path
-        )
+        LOGGER.info("Remote file %s downloaded to %s successfully.", remote_path, local_path)
         self.disconnect()
 
     def delete_file(self, remote_path: str) -> None:
