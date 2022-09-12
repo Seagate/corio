@@ -171,6 +171,7 @@ s3api: # basic_io
     min_runtime: 2h
     sessions_per_node: 5
     number_of_buckets: 100
+  type_5_bucket_ops_negative
 
 mix_io:
   # TEST_ID: TEST-40042

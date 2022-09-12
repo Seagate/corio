@@ -27,6 +27,7 @@ from scripts.s3.s3api import copy_object
 from scripts.s3.s3api import mix_object_crud_operations
 from scripts.s3.s3api import multipart_operations
 from scripts.s3.s3api import object_operations
+from scripts.s3.s3api import bucket_operations_negative
 
 # mapping_dict = {operation_name_from_workload: [script.class, function_name],}
 SCRIPT_MAPPING = {
@@ -89,4 +90,5 @@ SCRIPT_MAPPING = {
         "execute_bucket_object_workload",
     ],
     "type_5_bucket_ops": [bucket_operations.TestBucketOps, "execute_bucket_workload"],
+    "type_5_bucket_ops_negative": [bucket_operations_negative.TestBucketOpsNegative, "execute_bucket_workload"],
 }
