@@ -45,11 +45,15 @@ class TestBucketOps(S3Api):
         :param secret_key: secret key.
         :param endpoint_url: endpoint with http or https.
         :param test_id: Test ID string.
-        :param use_ssl: To use secure connection.
-        :param object_size: Object size to be used for bucket operation
-        :param seed: Seed to be used for random data generator
-        :param session: session name.
-        :param duration: Duration timedelta object, if not given will run for 100 days.
+        :keyword use_ssl: To use secure connection.
+        :keyword object_size: Object size to be used for bucket operation
+        :keyword seed: Seed to be used for random data generator
+        :keyword session: session name.
+        :keyword duration: Duration timedelta object, if not given will run for 100 days.
+        # Type 5:
+        :keyword number_of_buckets: Number of buckets to be created.
+        # Type 2:
+        :keyword number_of_objects: Number of objects per iterations.
         """
         super().__init__(
             access_key,
@@ -59,74 +63,90 @@ class TestBucketOps(S3Api):
             test_id=f"{test_id}_bucket_operations",
         )
         random.seed(kwargs.get("seed"))
-        self.object_per_iter = kwargs.get("number_of_objects", 500)
-        self.object_size = kwargs.get("object_size")
         self.test_id = test_id.lower()
         self.session_id = kwargs.get("session")
-        self.iteration = 1
-        self.finish_time = datetime.now() + kwargs.get(
-            "duration", timedelta(hours=int(100 * 24))
-        )
+        kwargs["endpoint_url"] = endpoint_url
+        self.kwargs = kwargs
+        self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
 
     # pylint: disable=broad-except
     async def execute_bucket_workload(self):
         """Execute bucket operations workload for specific duration."""
+        number_of_buckets = self.kwargs.get("number_of_buckets")
+        object_size = self.kwargs.get("object_size")
+        iteration, buckets = 1, []
+        bops_obj = None
+        if number_of_buckets:
+            user_name = f"iam-user-{self.test_id}-{perf_counter_ns()}"
+            response = await self.create_iam_user(user_name)
+            self.log.info(response)
+            bops_obj = S3Api(
+                access_key=response["AccessKey"]["AccessKeyId"],
+                secret_key=response["AccessKey"]["SecretAccessKey"],
+                endpoint_url=self.kwargs.get("endpoint_url"),
+                use_ssl=self.kwargs.get("use_ssl"),
+                test_id=f"{self.test_id}_bucket_operations",
+            )
+            buckets = await self.create_number_of_buckets(bops_obj, number_of_buckets)
         while True:
             try:
-                self.log.info(
-                    "Iteration %s is started for %s...", self.iteration, self.session_id
-                )
-                if isinstance(self.object_size, dict):
-                    file_size = random.randrange(
-                        self.object_size["start"], self.object_size["end"]
-                    )
+                self.log.info("Iteration %s is started for %s", iteration, self.session_id)
+                if isinstance(object_size, dict):
+                    file_size = random.randrange(object_size["start"], object_size["end"])  # nosec
                 else:
-                    file_size = self.object_size
-                bucket_name = (
-                    f"bucket-op-{self.test_id}-iter{self.iteration}-{perf_counter_ns()}"
-                )
-                self.log.info("Create bucket %s", bucket_name)
-                await self.create_bucket(bucket_name)
-                await self.upload_n_number_objects(bucket_name, file_size)
-                self.log.info("List all buckets")
-                await self.list_buckets()
-                self.log.info("List objects of created %s bucket", bucket_name)
-                await self.list_objects(bucket_name)
-                self.log.info("Perform Head bucket")
-                await self.head_bucket(bucket_name)
-                self.log.info("Delete bucket %s with all objects in it.", bucket_name)
-                await self.delete_bucket(bucket_name, True)
-                self.log.info(
-                    "Iteration %s is completed of %s...",
-                    self.iteration,
-                    self.session_id,
-                )
+                    file_size = object_size
+                if number_of_buckets:
+                    bucket_name = random.choice(buckets)  # nosec
+                    file_name = f"object-{self.test_id}-{perf_counter_ns()}"
+                    file_path = corio_utils.create_file(file_name, file_size)
+                    md5sum_in = bops_obj.checksum_file(file_path, 1024)
+                    await bops_obj.upload_object(bucket_name, file_name, file_path=file_path)
+                    os.remove(file_path)
+                    await bops_obj.download_object(bucket_name, file_name, file_path)
+                    md5sum_out = bops_obj.checksum_file(file_path, 1024)
+                    if md5sum_in != md5sum_out:
+                        raise AssertionError(f"Failed to match checksum for {bops_obj.s3_url}")
+                else:
+                    bucket_name = f"bucket-op-{self.test_id}-iter{iteration}-{perf_counter_ns()}"
+                    self.log.info("Create bucket %s", bucket_name)
+                    await self.create_bucket(bucket_name)
+                    await self.upload_n_number_objects(bucket_name, file_size)
+                    self.log.info("List all buckets")
+                    await self.list_buckets()
+                    self.log.info("List objects of created %s bucket", bucket_name)
+                    await self.list_objects(bucket_name)
+                    self.log.info("Perform Head bucket")
+                    await self.head_bucket(bucket_name)
+                    self.log.info("Delete bucket %s with all objects in it.", bucket_name)
+                    await self.delete_bucket(bucket_name, True)
+                self.log.info("Iteration %s is completed of %s", iteration, self.session_id)
             except Exception as err:
-                self.log.exception(
-                    "bucket url: {%s}\nException: {%s}", self.s3_url, err
-                )
+                self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url}\nException: {err}"
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:
                 return True, "Bucket operation execution completed successfully."
-            self.iteration += 1
+            iteration += 1
 
     async def upload_n_number_objects(self, bucket_name, file_size):
         """Upload n number of objects."""
-        self.log.info(
-            "Upload %s number of objects to bucket %s",
-            self.object_per_iter,
-            bucket_name,
-        )
-        for i in range(0, self.object_per_iter):
+        number_of_objects = self.kwargs.get("number_of_objects", 500)
+        self.log.info("Upload %s number of objects to bucket %s", number_of_objects, bucket_name)
+        for i in range(1, number_of_objects + 1):
             file_name = f"object-{i}-{perf_counter_ns()}"
-            self.log.info(
-                "Object '%s', object size %s",
-                file_name,
-                corio_utils.convert_size(file_size),
-            )
+            self.log.info("Object '%s', object size %s bytes", file_name, file_size)
             file_path = corio_utils.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
             self.log.info("'%s' uploaded successfully.", self.s3_url)
             self.log.info("Delete generated file")
             if os.path.exists(file_path):
                 os.remove(file_path)
+
+    @staticmethod
+    async def create_number_of_buckets(bkt_ops_obj, number_of_buckets):
+        """Create s3 buckets as per number_of_buckets."""
+        bucket_list = []
+        for _ in range(number_of_buckets):
+            bucket_name = bkt_ops_obj.get_bucket_name()
+            await bkt_ops_obj.create_bucket(bucket_name)
+            bucket_list.append(bucket_name)
+        return bucket_list
