@@ -164,6 +164,13 @@ s3api: # basic_io
      sessions_per_node: 10
      number_of_buckets: 50
      number_of_objects: 2000
+  type_5_bucket_ops:
+    object_size:
+      start: 0b
+      end: 512Mb
+    min_runtime: 2h
+    sessions_per_node: 5
+    number_of_buckets: 100
 
 mix_io:
   # TEST_ID: TEST-40042
