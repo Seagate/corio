@@ -156,6 +156,8 @@ s3api: # basic_io
       end: 12h
     delete_percentage_per_bucket: 10
     put_percentage_per_bucket: 10
+  type_5_bucket_ops_negative:
+    number_of_buckets: 1
   type_5_object_ops:
      object_size:
        start: 0Kb
