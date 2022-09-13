@@ -3,14 +3,15 @@ test_1:
   tool: s3api
   operation: type_5_bucket_ops_negative
 
-test_2: #negative scenario
-  TEST_ID: TEST-NXXXX2
+test_2:
+  TEST_ID: TEST-47369
   sessions_per_node: 10
-  number_of_buckets: ??
+  number_of_buckets: 1
   operation: type_5_object_negative
 
 test_3: #negative scenario
-  TEST_ID: TEST-NXXXX3
+  TEST_ID: TEST-47370
+  sessions_per_node: 5
   object_size:
     start: 0Kb
     end: 5Gb
@@ -19,6 +20,8 @@ test_3: #negative scenario
   operation: type_5_object_range_read_negative
 
 test_4: #negative scenario
-  TEST_ID: TEST-NXXXX4
+  TEST_ID: TEST-47371
+  sessions_per_node: 2
+  object_size: 512Mib
   number_of_buckets: 1
   operation: type_5_object_multipart_negative
