@@ -82,8 +82,12 @@ terminate_process_list = [
     ("support_bundle",),
     ("health_check",),
     (),
-]
+    ]
 
 # Log rotation
 COMPLETED_SESSION = "Ended Session {}_"
 COMPLETED_ITERATIONS = "Iteration {} is completed"
+
+# Bucket
+INVALID_BUCKET = "Invalid bucket url: {%s}\nException: {%s}"
+ERROR_CODE_RESPONSE = 'Error Code: %s Error Message: %s'

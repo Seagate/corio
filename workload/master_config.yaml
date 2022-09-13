@@ -156,6 +156,8 @@ s3api: # basic_io
       end: 12h
     delete_percentage_per_bucket: 10
     put_percentage_per_bucket: 10
+  type_5_bucket_ops_negative:
+    number_of_buckets: 1
   type_5_object_ops:
      object_size:
        start: 0Kb
@@ -171,7 +173,6 @@ s3api: # basic_io
     min_runtime: 2h
     sessions_per_node: 5
     number_of_buckets: 100
-  type_5_bucket_ops_negative
 
 mix_io:
   # TEST_ID: TEST-40042
