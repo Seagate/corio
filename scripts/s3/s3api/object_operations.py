@@ -94,6 +94,9 @@ class TestS3Object(S3Api):
                 self.log.debug("Checksum IN = %s", checksum_in)
                 await self.upload_object(bucket, file_name, file_path=file_path)
                 self.log.info("s3://%s/%s uploaded successfully.", bucket, file_name)
+                self.log.info("Perform Head bucket.")
+                await self.head_object(bucket, file_name)
+                self.log.info("Get Object and check data integrity.")
                 if range_read:
                     part = int(file_size / self.parts)
                     # Perform range raed on all section.
@@ -130,15 +133,12 @@ class TestS3Object(S3Api):
                             file_path,
                         )
                 else:
-                    self.log.info("Perform Head bucket.")
-                    await self.head_object(bucket, file_name)
-                    self.log.info("Get Object and check data integrity.")
                     assert checksum_in == await self.get_s3object_checksum(
                         bucket, file_name
-                    ), "Checksum are not equal."
-                    self.log.info("Delete object.")
-                    await self.delete_object(bucket, file_name)
-                    os.remove(file_path)
+                    ), f"Data integrity failed for object: {file_name}."
+                self.log.info("Delete object.")
+                await self.delete_object(bucket, file_name)
+                os.remove(file_path)
                 self.log.info("Iteration %s is completed of %s...", self.iteration, self.session_id)
             except Exception as err:
                 self.log.exception("bucket url: {%s}\nException: {%s}", self.s3_url, err)
