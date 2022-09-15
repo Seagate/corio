@@ -16,3 +16,5 @@ retry_delay: 2 # in seconds.
 connect_timeout: 300
 # The time in seconds till a timeout exception is thrown when attempting to read from a connection.
 read_timeout: 300
+# This is used for get, download object api and calculate file checksum. default is 4Mib
+chunk_size: 4194304

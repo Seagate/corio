@@ -25,6 +25,7 @@ import hashlib
 import os
 from typing import List
 
+from config import S3_CFG
 from src.commons.utils.corio_utils import retries
 from src.libs.s3api.s3_restapi import S3RestApi
 
@@ -134,15 +135,19 @@ class S3Object(S3RestApi):
         return response
 
     @retries()
-    async def get_object(self, bucket: str, key: str, ranges: str = None) -> dict:
+    async def get_object(
+        self, bucket: str, key: str, ranges: str = None, chunk_size: int = 0
+    ) -> dict:
         """
         Get object or byte range of the object.
 
         :param bucket: Name of the bucket.
         :param key: Name of object.
         :param ranges: Byte range to be retrieved
+        :param chunk_size: get object in chunk sizes.
         :return: response.
         """
+        chunk_size = chunk_size if chunk_size else S3_CFG.chunk_size
         async with self.get_client() as s3client:
             self.s3_url = s3_url = f"s3://{bucket}/{key}"
             if ranges:
@@ -151,12 +156,13 @@ class S3Object(S3RestApi):
                     chunk = await stream.read()
                     self.log.debug("Reading length: %s", len(chunk))
             else:
+                self.log.info("Chunk size used %s", chunk_size)
                 response = await s3client.get_object(Bucket=bucket, Key=key)
                 async with response["Body"] as stream:
-                    chunk = await stream.read(1024)
+                    chunk = await stream.read(chunk_size)
                     content_length = len(chunk)
                     while chunk:
-                        chunk = await stream.read(1024)
+                        chunk = await stream.read(chunk_size)
                         content_length += len(chunk)
                     self.log.debug("Reading length: %s", content_length)
             self.log.info("get_object %s Response: %s", s3_url, response)
@@ -165,7 +171,7 @@ class S3Object(S3RestApi):
 
     @retries()
     async def download_object(
-        self, bucket: str, key: str, file_path: str, chunk_size: int = 1024
+        self, bucket: str, key: str, file_path: str, chunk_size: int = 0
     ) -> dict:
         """
         Download Object of the required Bucket.
@@ -176,6 +182,8 @@ class S3Object(S3RestApi):
         :param chunk_size: Download object in chunk sizes.
         :return: Response of download object.
         """
+        chunk_size = chunk_size if chunk_size else S3_CFG.chunk_size
+        self.log.info("Chunk size used %s", chunk_size)
         async with self.get_client() as s3client:
             self.s3_url = s3_url = f"s3://{bucket}/{key}"
             response = await s3client.get_object(Bucket=bucket, Key=key)
@@ -218,10 +226,10 @@ class S3Object(S3RestApi):
 
     @retries()
     async def get_s3object_checksum(
-        self, bucket: str, key: str, chunk_size: int = 1024, ranges: str = None
+        self, bucket: str, key: str, chunk_size: int = 0, ranges: str = None
     ) -> str:
         """
-        Read object in chunk and calculate md5sum.
+        Read object in chunk and calculate sha256.
 
         Do not store the object in local storage.
         :param bucket: The name of the s3 bucket.
@@ -229,6 +237,8 @@ class S3Object(S3RestApi):
         :param chunk_size: size to read the content of s3 object.
         :param ranges: number of bytes to be read
         """
+        chunk_size = chunk_size if chunk_size else S3_CFG.chunk_size
+        self.log.info("Chunk size used %s", chunk_size)
         async with self.get_client() as s3client:
             self.s3_url = s3_url = f"s3://{bucket}/{key}"
             file_hash = hashlib.sha256()
@@ -248,13 +258,15 @@ class S3Object(S3RestApi):
 
         return sha256_digest
 
-    def checksum_file(self, file_path: str, chunk_size: int = 1024 * 1024):
+    def checksum_file(self, file_path: str, chunk_size: int = 0):
         """
         Calculate checksum of given file_path by reading file chunk_size at a time.
 
         :param file_path: Local file path
         :param chunk_size: single chunk size to read the content of given file
         """
+        chunk_size = chunk_size if chunk_size else S3_CFG.chunk_size
+        self.log.info("Chunk size used %s", chunk_size)
         with open(file_path, "rb") as f_obj:
             file_hash = hashlib.sha256()
             chunk = f_obj.read(chunk_size)
@@ -265,9 +277,7 @@ class S3Object(S3RestApi):
                 self.log.debug("Reading chunk length: %s", len(chunk))
         return file_hash.hexdigest()
 
-    def checksum_part_file(
-        self, file_path: str, offset: int, read_size: int, chunk_size: int = 1024 * 1024
-    ):
+    def checksum_part_file(self, file_path: str, offset: int, read_size: int, chunk_size: int = 0):
         """
         Calculate checksum of read_size bytes starting from offset in given file_path.
 
@@ -277,11 +287,12 @@ class S3Object(S3RestApi):
         :param: read_size: Size in bytes to read from offset
         :param: chunk_size: Single chunk size in bytes to read
         """
+        chunk_size = chunk_size if chunk_size else S3_CFG.chunk_size
         file_size = os.path.getsize(file_path)
         if file_size < offset + read_size:
             raise IOError(f"{offset + read_size} is less than file size {file_size} ")
         chunk_size = read_size if read_size < chunk_size else chunk_size
-        self.log.info("Reading size is %s", chunk_size)
+        self.log.info("Chunk size used %s", chunk_size)
         file_hash = hashlib.sha256()
         read_length = read_size
         with open(file_path, "rb") as f_obj:
