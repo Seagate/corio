@@ -20,8 +20,8 @@
 #
 
 """Exception module for corio tool."""
-from botocore.exceptions import (ClientError, ParamValidationError, DataNotFoundError)
-from boto3.exceptions import (Boto3Error, S3UploadFailedError, ResourceNotExistsError)
+from boto3.exceptions import Boto3Error, S3UploadFailedError, ResourceNotExistsError
+from botocore.exceptions import ClientError, ParamValidationError, DataNotFoundError
 
 
 class CheckError(Exception):
@@ -73,29 +73,21 @@ class CorIOException(Exception):
     """General exception class for corio tool."""
 
 
-class CreateBucketException(ClientError,
-                            ParamValidationError,
-                            Boto3Error):
+class CreateBucketException(ClientError, ParamValidationError, Boto3Error):
     """Exception Class for Bucket Create"""
 
 
-class HeadBucketException(ClientError,
-                          DataNotFoundError):
+class HeadBucketException(ClientError, DataNotFoundError):
     """Exception Class for Head Bucket"""
 
 
-class UploadObjectException(ClientError,
-                            S3UploadFailedError,
-                            ParamValidationError):
-    """Exception Class for Upload Objects """
+class UploadObjectException(ClientError, S3UploadFailedError, ParamValidationError):
+    """Exception Class for Upload Objects"""
 
 
-class ListObjectException(ClientError,
-                          ParamValidationError):
+class ListObjectException(ClientError, ParamValidationError):
     """Exception Class for List Objects in Bucket"""
 
 
-class DeleteBucketException(ClientError,
-                            ResourceNotExistsError,
-                            ParamValidationError):
+class DeleteBucketException(ClientError, ResourceNotExistsError):
     """Exception Class for Delete Buckets"""

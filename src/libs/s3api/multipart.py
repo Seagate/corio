@@ -22,10 +22,10 @@
 """Python Library to perform multipart operations using aiobotocore module."""
 
 from src.commons.utils.utility import retries
-from src.libs.s3api.s3_restapi import S3RestApi
+from src.libs.s3api.object import S3Object
 
 
-class S3MultiParts(S3RestApi):
+class S3MultiParts(S3Object):
     """Class for Multipart operations."""
 
     def __init__(self, *args, **kwargs):

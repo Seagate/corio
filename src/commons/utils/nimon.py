@@ -17,7 +17,7 @@
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 
-"""Module to collect resource utilisation utils."""
+"""Module to collect resource utilization utils."""
 
 import logging
 
@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(ROOT)
 # pylint: disable-msg=too-many-statements
 def monitor_resource_utilisation(action: str):
     """
-    start/stop monitoring resource utilisation.
+    start/stop monitoring resource utilization.
 
     :param action: start/stop collection resource_utilisation
     """

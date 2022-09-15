@@ -79,10 +79,11 @@ EXTS = [".tbz", ".tgz", ".txz", ".tar", ".gz", ".zip"]
 # Terminate processes if execution completed and only health check and support bundle remaining.
 terminate_process_list = [
     ("support_bundle", "health_check"),
+    ("health_check", "support_bundle"),
     ("support_bundle",),
     ("health_check",),
     (),
-    ]
+]
 
 # Log rotation
 COMPLETED_SESSION = "Ended Session {}_"
@@ -90,4 +91,4 @@ COMPLETED_ITERATIONS = "Iteration {} is completed"
 
 # Bucket
 INVALID_BUCKET = "Invalid bucket url: {%s}\nException: {%s}"
-ERROR_CODE_RESPONSE = 'Error Code: %s Error Message: %s'
+ERROR_CODE_RESPONSE = "Error Code: %s Error Message: %s"

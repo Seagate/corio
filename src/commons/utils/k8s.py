@@ -28,8 +28,9 @@ import time
 from src.commons import commands as cmd
 from src.commons import constants as const
 from src.commons.constants import ROOT
-from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import (
+    K8sDeploymentRecoverError,
+    DeploymentBackupException,
     PodReplicaError,
     DeployReplicasetError,
     NumReplicaError,

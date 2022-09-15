@@ -27,14 +27,14 @@ K8S_CP_TO_LOCAL_CMD = "kubectl cp {}:{} {} -c {}"
 KUBECTL_CMD = "kubectl {} {} -n {} {}"
 KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
 KUBECTL_GET_WORKERS_NAME = (
-    "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{" "print $1}'"
+    "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
 )
 CMD_POD_STATUS = "kubectl get pods"
 KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep {}"
 KUBECTL_GET_REPLICASET = "kubectl get rs | grep '{}'"
 KUBECTL_GET_POD_CONTAINERS = "kubectl get pods {} -o jsonpath='{{.spec.containers[*].name}}'"
 KUBECTL_GET_POD_IPS = (
-    "kubectl get pods --no-headers -o " 'custom-columns=":metadata.name,:.status.podIP"'
+    'kubectl get pods --no-headers -o custom-columns=":metadata.name,:.status.podIP"'
 )
 KUBECTL_CREATE_REPLICA = "kubectl scale --replicas={} deployment/{}"
 KUBECTL_DEPLOY_BACKUP = "kubectl get deployment {} -o yaml > {}"

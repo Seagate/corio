@@ -21,25 +21,37 @@
 """Module to map script with workload."""
 
 from scripts.s3.mixs3io import mix_object_operations
-from scripts.s3.s3api import bucket_objects_operations
-from scripts.s3.s3api import bucket_operations
-from scripts.s3.s3api import bucket_operations_negative
-from scripts.s3.s3api import mix_object_crud_operations
-from scripts.s3.s3api import multipart_abort
-from scripts.s3.s3api import multipart_operations
-from scripts.s3.s3api import object_operations
-from scripts.s3.s3api import object_operations_negative
-from scripts.s3.s3api import object_range_read_negative
+from scripts.s3.s3api import (
+    bucket_objects_operations,
+    bucket_operations,
+    bucket_operations_negative,
+    copy_object_operations,
+    mix_object_crud_operations,
+    multipart_abort,
+    multipart_operations,
+    object_operations,
+    object_operations_negative,
+    object_range_read_negative,
+)
 
 # mapping_dict = {operation_name_from_workload: [script.class, function_name],}
 SCRIPT_MAPPING = {
-    "copy_object": [copy_object.TestS3CopyObjects, "execute_copy_object_workload"],
+    "copy_object": [
+        copy_object_operations.TestS3CopyObjects,
+        "execute_copy_object_workload"
+    ],
     "copy_object_range_read": [
-        copy_object.TestS3CopyObjects,
+        copy_object_operations.TestS3CopyObjects,
         "execute_copy_object_workload",
     ],
-    "bucket": [bucket_operations.TestBucketOps, "execute_bucket_workload"],
-    "multipart": [multipart_operations.TestMultiParts, "execute_multipart_workload"],
+    "bucket": [
+        bucket_operations.TestBucketOps,
+        "execute_bucket_workload"
+    ],
+    "multipart": [
+        multipart_operations.TestMultiParts,
+        "execute_multipart_workload"
+    ],
     "multipart_partcopy": [
         multipart_operations.TestMultiParts,
         "execute_multipart_workload",
@@ -60,11 +72,20 @@ SCRIPT_MAPPING = {
         multipart_operations.TestMultiParts,
         "execute_multipart_workload",
     ],
-    "object_random_size": [object_operations.TestS3Object, "execute_object_workload"],
-    "object_fix_size": [object_operations.TestS3Object, "execute_object_workload"],
-    "object_range_read": [object_operations.TestS3Object, "execute_object_workload"],
+    "object_random_size": [
+        object_operations.TestS3Object,
+        "execute_object_workload"
+    ],
+    "object_fix_size": [
+        object_operations.TestS3Object,
+        "execute_object_workload"
+    ],
+    "object_range_read": [
+        object_operations.TestS3Object,
+        "execute_object_workload"
+    ],
     "copy_object_fix_size": [
-        copy_object.TestS3CopyObjects,
+        copy_object_operations.TestS3CopyObjects,
         "execute_copy_object_workload",
     ],
     "mix_object_ops": [
@@ -91,9 +112,24 @@ SCRIPT_MAPPING = {
         bucket_objects_operations.TestType5BucketObjectOps,
         "execute_bucket_object_workload",
     ],
-    "type_5_bucket_ops": [bucket_operations.TestBucketOps, "execute_bucket_workload"],
-    "type_5_bucket_ops_negative": [bucket_operations_negative.TestBucketOpsNegative, "execute_bucket_workload"],
-    "type_5_object_negative":[object_operations_negative.TestType5ObjectOpsNegative],
-    "type_5_object_range_read_negative":[object_range_read_negative.TestType5ObjectReadNegative],
-    "type_5_object_multipart_negative":[multipart_abort.TestType5ObjectRRNegative]
+    "type_5_bucket_ops": [
+        bucket_operations.TestBucketOps,
+        "execute_bucket_workload",
+    ],
+    "type_5_bucket_ops_negative": [
+        bucket_operations_negative.TestBucketOpsNegative,
+        "execute_bucket_workload",
+    ],
+    "type_5_object_negative": [
+        object_operations_negative.TestType5ObjectOpsNegative,
+        "execute_object_ops_negative_workload",
+    ],
+    "type_5_object_range_read_negative": [
+        object_range_read_negative.TestType5ObjectReadNegative,
+        "execute_object_read_negative_workload",
+    ],
+    "type_5_object_multipart_negative": [
+        multipart_abort.TestType5ObjectRRNegative,
+        "execute_multipart_abort_workload",
+    ],
 }

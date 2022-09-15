@@ -27,9 +27,11 @@ from typing import Union
 import pandas as pd
 
 from src.commons.constants import ROOT
-from src.commons.utils.utility import convert_size
-from src.commons.utils.utility import get_report_file_path
-from src.commons.utils.utility import monitor_sessions_iterations
+from src.commons.utils.utility import (
+    convert_size,
+    get_report_file_path,
+    monitor_sessions_iterations,
+)
 
 LOGGER = logging.getLogger(ROOT)
 

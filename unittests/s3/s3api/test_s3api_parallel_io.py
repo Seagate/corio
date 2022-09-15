@@ -24,7 +24,7 @@
 import sys
 import unittest
 
-from src.libs.s3api.s3io_utils import S3ApiParallelIO
+from src.libs.s3api.parallel_io import S3ApiParallelIO
 
 
 class TestS3ApiParallelIO(unittest.TestCase):

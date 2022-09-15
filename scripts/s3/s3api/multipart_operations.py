@@ -27,6 +27,7 @@ from datetime import datetime, timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
+from src.commons.utils import utility
 from src.libs.s3api import S3Api
 
 
@@ -95,7 +96,7 @@ class TestMultiParts(S3Api):
                 number_of_parts = await self.get_random_number_of_parts()
                 file_size = await self.get_workload_size()
                 single_part_size = round(file_size / number_of_parts)
-                self.log.info("single part size: %s", corio_utils.convert_size(single_part_size))
+                self.log.info("single part size: %s", utility.convert_size(single_part_size))
                 upload_obj_checksum = await self.create_upload_list_completed_mpart(
                     number_of_parts, mpart_bucket, s3mpart_object, s3_object
                 )
@@ -134,7 +135,7 @@ class TestMultiParts(S3Api):
             file_size = random.randrange(self.object_size["start"], self.object_size["end"])
         else:
             file_size = self.object_size
-        self.log.info("File size: %s", corio_utils.convert_size(file_size))
+        self.log.info("File size: %s", utility.convert_size(file_size))
         return file_size
 
     async def get_random_number_of_parts(self):

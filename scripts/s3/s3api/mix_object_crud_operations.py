@@ -27,7 +27,7 @@ from typing import Union
 from src.commons.constants import MIN_DURATION
 from src.commons.utils.k8s import ClusterServices
 from src.commons.utils.utility import get_master_details
-from src.libs.s3api.s3io_utils import S3ApiParallelIO
+from src.libs.s3api.parallel_io import S3ApiParallelIO
 
 
 # pylint: disable=too-many-instance-attributes

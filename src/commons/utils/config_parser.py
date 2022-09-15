@@ -23,9 +23,7 @@
 
 import logging
 import os
-from configparser import ConfigParser
-from configparser import MissingSectionHeaderError
-from configparser import NoSectionError
+from configparser import ConfigParser, MissingSectionHeaderError, NoSectionError
 
 from src.commons.constants import ROOT
 

@@ -25,10 +25,10 @@ import string
 import time
 
 from src.commons.utils.utility import retries
-from src.libs.s3api.s3_restapi import S3RestApi
+from src.libs.s3api.client import S3Client
 
 
-class S3Bucket(S3RestApi):
+class S3Bucket(S3Client):
     """Class for bucket operations."""
 
     def __init__(self, *args, **kwargs):

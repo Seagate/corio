@@ -33,7 +33,7 @@ from config import CLUSTER_CFG, S3_ENDPOINT
 from src.commons import constants as const
 from src.commons.exception import NoBucketExistsException
 from src.commons.utils.k8s import ClusterServices
-from src.libs.s3api.s3_bucket_ops import S3Bucket
+from src.libs.s3api.bucket import S3Bucket
 
 LOGGER = logging.getLogger(const.ROOT)
 

@@ -25,8 +25,9 @@ from random import shuffle
 from time import perf_counter_ns
 from typing import Union
 
-from src.commons.utils.async_io import run_event_loop_until_complete
-from src.commons.utils.async_io import schedule_tasks
+from src.commons.utils import utility
+from src.commons.utils._asyncio import run_event_loop_until_complete
+from src.commons.utils._asyncio import schedule_tasks
 from src.libs.s3api import S3Api
 
 
@@ -206,7 +207,7 @@ class S3ApiIOUtils(S3Api):
             for _ in range(object_count):
                 file_size = self.get_object_size(objsize)
                 file_name = f"s3object-{file_size}bytes-{perf_counter_ns()}"
-                file_path = corio_utils.create_file(file_name, file_size)
+                file_path = utility.create_file(file_name, file_size)
                 checksum_in = self.checksum_file(file_path)
                 self.s3_url = f"s3://{bucket_name}/{file_name}"
                 response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
@@ -306,7 +307,7 @@ class S3ApiIOUtils(S3Api):
             for _ in range(object_count):
                 file_size = self.get_object_size(objsize)
                 file_name = f"s3object-{file_size}bytes-{perf_counter_ns()}"
-                file_path = corio_utils.create_file(file_name, file_size)
+                file_path = utility.create_file(file_name, file_size)
                 checksum_in = self.checksum_file(file_path)
                 self.s3_url = f"s3://{bucket_name}/{file_name}"
                 response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
@@ -363,7 +364,7 @@ class S3ApiIOUtils(S3Api):
             for _ in range(object_count):
                 file_name = random.choice(data["files"])  # nosec
                 file_size = self.get_object_size(objsize)
-                file_path = corio_utils.create_file(file_name, file_size)
+                file_path = utility.create_file(file_name, file_size)
                 checksum_in = self.checksum_file(file_path)
                 self.s3_url = f"s3://{bucket_name}/{file_name}"
                 response = await self.upload_object(bucket_name, key=file_name, file_path=file_path)
@@ -607,11 +608,11 @@ class S3ApiParallelIO(S3Api):
         """
         self.log.info("Writing data...")
         file_name = f"{object_prefix}-{perf_counter_ns()}"
-        file_path = corio_utils.create_file(file_name, object_size)
+        file_path = utility.create_file(file_name, object_size)
         self.log.info(
             "Object: '%s', object size: %s, Number of samples: %s",
             object_prefix,
-            corio_utils.convert_size(object_size),
+            utility.convert_size(object_size),
             sessions,
         )
         checksum_in = self.checksum_file(file_path)

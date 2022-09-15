@@ -25,13 +25,16 @@ from time import perf_counter_ns
 from botocore.exceptions import ClientError
 
 from src.commons.constants import MIN_DURATION
+from src.commons.utils import utility
 from src.libs.s3api import S3Api
 
 
 class TestType5ObjectReadNegative(S3Api):
     """S3 objects type5 operations negative scenario class."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs) -> None:
+    def __init__(
+        self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs
+    ) -> None:
         """
         s3 objects operations negative scenario init class.
 
@@ -58,6 +61,7 @@ class TestType5ObjectReadNegative(S3Api):
         self.session_id = kwargs.get("session")
         self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
 
+    # pylint: disable=broad-except
     async def execute_object_read_negative_workload(self):
         """Execute object range read with invalid size workload for specific duration."""
         iteration = 1
@@ -78,12 +82,19 @@ class TestType5ObjectReadNegative(S3Api):
                 resp = await self.list_objects(bucket_name)
                 key_name = random.choice(resp)
                 resp = await self.head_object(bucket_name, key_name)
-                random_range = random.randrange(1,resp['ContentLength'])
-                byte_range = f"bytes={resp['ContentLength']-random_range}-{resp['ContentLength']+random_range}"
+                random_range = random.randrange(1, resp["ContentLength"])
+                byte_range = (
+                    f"bytes={resp['ContentLength']-random_range}"
+                    f"-{resp['ContentLength']+random_range}"
+                )
                 self.log.info("Range read for range %s", byte_range)
                 try:
-                    resp = await self.get_object(bucket=bucket_name, key=key_name, ranges=byte_range)
-                    assert False, f"Expected failure in range read for invalid range:{key_name}, resp: {resp}"
+                    resp = await self.get_object(
+                        bucket=bucket_name, key=key_name, ranges=byte_range
+                    )
+                    assert (
+                        False
+                    ), f"Expected failure in range read for invalid range:{key_name}, resp: {resp}"
                 except ClientError as err:
                     self.log.info("Get Object range read exception for invalid range %s", err)
                 await self.delete_bucket(bucket_name, True)
@@ -101,7 +112,7 @@ class TestType5ObjectReadNegative(S3Api):
         for i in range(1, number_of_objects + 1):
             file_name = f"object-{i}-{perf_counter_ns()}"
             self.log.info("Object '%s', object size %s bytes", file_name, file_size)
-            file_path = corio_utils.create_file(file_name, file_size)
+            file_path = utility.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
             self.log.info("'%s' uploaded successfully.", self.s3_url)
             self.log.info("Delete generated file")

@@ -25,6 +25,7 @@ from datetime import timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
+from src.commons.utils import utility
 from src.libs.s3api import S3Api
 
 
@@ -86,7 +87,7 @@ class TestS3CopyObjects(S3Api):
                 self.log.info("Iteration %s is started for %s...", self.iteration, self.session_id)
                 # Put object in bucket_name1
                 file_size = await self.get_workload_size()
-                file_path = corio_utils.create_file(object_name1, file_size)
+                file_path = utility.create_file(object_name1, file_size)
                 self.log.info("Object1 '%s', object size %s bytes", object_name1, file_size)
                 await self.upload_object(bucket_name1, object_name1, file_path=file_path)
                 self.log.info("Objects '%s' uploaded successfully.", self.s3_url)

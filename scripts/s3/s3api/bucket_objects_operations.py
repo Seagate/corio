@@ -22,7 +22,7 @@ import time
 from datetime import datetime, timedelta
 
 from src.commons.constants import MIN_DURATION
-from src.libs.s3api.s3io_utils import S3ApiIOUtils
+from src.libs.s3api.parallel_io import S3ApiIOUtils
 
 
 class TestType5BucketObjectOps(S3ApiIOUtils):

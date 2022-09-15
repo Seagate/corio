@@ -76,7 +76,7 @@ class RemoteHost:
         """
         self.connect()
         LOGGER.info("Executing command: %s", command)
-        # nosec
+        # nosec B601
         _, stdout, stderr = self.host_obj.exec_command(command=command, timeout=self.timeout)
         exit_status = stdout.channel.recv_exit_status() == 0
         error = decode_bytes_to_string(stderr.readlines() if read_lines else stderr.read())

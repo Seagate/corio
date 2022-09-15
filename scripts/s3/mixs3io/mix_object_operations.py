@@ -29,13 +29,12 @@ from src.commons.constants import MIN_DURATION
 from src.commons.utils.k8s import ClusterServices
 from src.commons.utils.utility import get_master_details
 from src.commons.utils.utility import run_local_cmd
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_object_ops import S3Object
+from src.libs.s3api import S3Api
 from src.libs.tools.s3bench import S3bench
 
 
 # pylint: disable=too-many-instance-attributes
-class TestMixObjectOps(S3Bucket, S3Object):
+class TestMixObjectOps(S3Api):
     """S3 mix object operations class for executing given io stability workload."""
 
     def __init__(self, access_key: str, secret_key: str, endpoint_url: str, **kwargs) -> None:
@@ -193,18 +192,8 @@ class TestMixObjectOps(S3Bucket, S3Object):
         """Display storage consumed after specified operation."""
         consumed_per = int(self.total_written_data / self.total_storage * 100)
         storage_consumed = 100 if consumed_per > 100 else consumed_per
-        if operation:
-            self.log.info(
-                "Storage consumed %s%% after %s operations.",
-                storage_consumed,
-                operation,
-            )
-        else:
-            self.log.info(
-                "Storage consumed %s%% after iteration %s.",
-                storage_consumed,
-                self.iteration,
-            )
+        operation = f"{operation} operations." if operation else f"iteration {self.iteration}."
+        self.log.info("Storage consumed %s%% after %s.", storage_consumed, operation)
 
     def get_sample_details(self, file_size: int) -> tuple:
         """

@@ -20,13 +20,10 @@
 """s3api package."""
 
 
-from src.libs.s3api.iam import IAMUserAPI
-from src.libs.s3api.s3_bucket_ops import S3Bucket
-from src.libs.s3api.s3_multipart_ops import S3MultiParts
-from src.libs.s3api.s3_object_ops import S3Object
+from src.libs.s3api.multipart import S3MultiParts
 
 
-class S3Api(S3Bucket, S3Object, S3MultiParts, IAMUserAPI):
+class S3Api(S3MultiParts):
     """Common class for all aiobotocore, boto3 api."""
 
     def __int__(self, *args, **kwargs):

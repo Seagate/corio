@@ -27,7 +27,7 @@ from datetime import datetime
 from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formatdate, COMMASPACE, make_msgid
+from email.utils import formatdate, COMMASPACE, make_msgid  # pylint: disable=import-error
 
 from config import CORIO_CFG
 from src.commons import commands
