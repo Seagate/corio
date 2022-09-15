@@ -27,7 +27,6 @@ from datetime import datetime, timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils import corio_utils
 from src.libs.s3api import S3Api
 
 

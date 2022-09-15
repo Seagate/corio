@@ -28,8 +28,8 @@ from config import CLUSTER_CFG
 from config import CORIO_CFG
 from src.commons.constants import CMN_LOG_DIR
 from src.commons.constants import ROOT
-from src.commons.utils.cluster_utils import ClusterServices
-from src.commons.utils.corio_utils import rotate_logs
+from src.commons.utils.k8s import ClusterServices
+from src.commons.utils.utility import rotate_logs
 
 LOGGER = logging.getLogger(ROOT)
 

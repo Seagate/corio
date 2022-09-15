@@ -26,9 +26,9 @@ from time import perf_counter_ns
 from config import S3_CFG
 from src.commons.constants import LATEST_LOG_PATH
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.cluster_utils import ClusterServices
-from src.commons.utils.corio_utils import get_master_details
-from src.commons.utils.corio_utils import run_local_cmd
+from src.commons.utils.k8s import ClusterServices
+from src.commons.utils.utility import get_master_details
+from src.commons.utils.utility import run_local_cmd
 from src.libs.s3api.s3_bucket_ops import S3Bucket
 from src.libs.s3api.s3_object_ops import S3Object
 from src.libs.tools.s3bench import S3bench

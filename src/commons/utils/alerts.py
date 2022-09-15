@@ -33,7 +33,7 @@ from config import CORIO_CFG
 from src.commons import commands
 from src.commons.constants import ROOT
 from src.commons.degrade_cluster import get_logical_node
-from src.commons.utils.corio_utils import get_report_file_path, convert_datetime_delta
+from src.commons.utils.utility import get_report_file_path, convert_datetime_delta
 
 LOGGER = logging.getLogger(ROOT)
 

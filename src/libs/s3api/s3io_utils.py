@@ -25,9 +25,8 @@ from random import shuffle
 from time import perf_counter_ns
 from typing import Union
 
-from src.commons.utils import corio_utils
-from src.commons.utils.asyncio_utils import run_event_loop_until_complete
-from src.commons.utils.asyncio_utils import schedule_tasks
+from src.commons.utils.async_io import run_event_loop_until_complete
+from src.commons.utils.async_io import schedule_tasks
 from src.libs.s3api import S3Api
 
 

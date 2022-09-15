@@ -27,7 +27,7 @@ import paramiko
 
 from src.commons import commands as cmd
 from src.commons.constants import ROOT
-from src.commons.utils.corio_utils import decode_bytes_to_string
+from src.commons.utils.utility import decode_bytes_to_string
 
 LOGGER = logging.getLogger(ROOT)
 

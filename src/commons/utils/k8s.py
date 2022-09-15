@@ -34,8 +34,8 @@ from src.commons.exception import (
     DeployReplicasetError,
     NumReplicaError,
 )
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.system_utils import RemoteHost
+from src.commons.utils.system import RemoteHost
+from src.commons.utils.utility import convert_size
 from src.commons.yaml_parser import read_yaml
 
 LOGGER = logging.getLogger(ROOT)

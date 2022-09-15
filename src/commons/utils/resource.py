@@ -26,8 +26,7 @@ import shutil
 
 from src.commons import commands as cmd
 from src.commons import constants as const
-from src.commons.utils import corio_utils
-from src.commons.utils.cluster_utils import ClusterServices
+from src.commons.utils.k8s import ClusterServices
 
 LOGGER = logging.getLogger(const.ROOT)
 

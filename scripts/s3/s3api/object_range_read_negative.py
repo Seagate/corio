@@ -22,10 +22,11 @@ import random
 from datetime import timedelta, datetime
 from time import perf_counter_ns
 
+from botocore.exceptions import ClientError
+
 from src.commons.constants import MIN_DURATION
 from src.libs.s3api import S3Api
-from botocore.exceptions import ClientError
-from src.commons.utils import corio_utils
+
 
 class TestType5ObjectReadNegative(S3Api):
     """S3 objects type5 operations negative scenario class."""

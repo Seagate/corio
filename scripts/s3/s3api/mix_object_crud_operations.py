@@ -25,8 +25,8 @@ from time import perf_counter_ns
 from typing import Union
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils.cluster_utils import ClusterServices
-from src.commons.utils.corio_utils import get_master_details
+from src.commons.utils.k8s import ClusterServices
+from src.commons.utils.utility import get_master_details
 from src.libs.s3api.s3io_utils import S3ApiParallelIO
 
 

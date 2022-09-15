@@ -21,7 +21,7 @@
 
 """Python Library to perform multipart operations using aiobotocore module."""
 
-from src.commons.utils.corio_utils import retries
+from src.commons.utils.utility import retries
 from src.libs.s3api.s3_restapi import S3RestApi
 
 

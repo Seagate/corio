@@ -26,7 +26,7 @@ import os
 from typing import List
 
 from config import S3_CFG
-from src.commons.utils.corio_utils import retries
+from src.commons.utils.utility import retries
 from src.libs.s3api.s3_restapi import S3RestApi
 
 

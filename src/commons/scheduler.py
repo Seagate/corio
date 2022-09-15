@@ -40,11 +40,11 @@ from src.commons.constants import ROOT
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.report import log_status
-from src.commons.utils.asyncio_utils import (
+from src.commons.utils.async_io import (
     run_event_loop_until_complete,
     schedule_tasks,
 )
-from src.commons.utils.corio_utils import (
+from src.commons.utils.utility import (
     run_local_cmd,
     get_s3_keys,
     set_s3_access_secret_key,

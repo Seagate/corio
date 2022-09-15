@@ -41,10 +41,9 @@ from src.commons import support_bundle
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.logger import initialize_loghandler
-from src.commons.utils import corio_utils
 from src.commons.utils.alerts import SendMailNotification
-from src.commons.utils.jira_utils import JiraApp
-from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.utils.jira import JiraApp
+from src.commons.utils.resource import collect_resource_utilisation
 from src.commons.workload_mapping import SCRIPT_MAPPING
 from src.commons.yaml_parser import test_parser
 

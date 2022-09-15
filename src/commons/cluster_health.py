@@ -25,7 +25,7 @@ import time
 from config import CLUSTER_CFG
 from src.commons.constants import ROOT
 from src.commons.exception import HealthCheckError
-from src.commons.utils.cluster_utils import ClusterServices
+from src.commons.utils.k8s import ClusterServices
 
 LOGGER = logging.getLogger(ROOT)
 
