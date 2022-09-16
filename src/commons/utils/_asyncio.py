@@ -19,6 +19,10 @@
 
 import asyncio
 
+import nest_asyncio
+
+nest_asyncio.apply()
+
 
 def run_event_loop_until_complete(logger, func, *args, **kwargs):
     """Run the event."""

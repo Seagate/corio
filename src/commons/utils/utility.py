@@ -100,9 +100,7 @@ def cpu_memory_details() -> None:
     memory_usages = ps.virtual_memory().percent
     if memory_usages > 85.0:
         LOGGER.warning("Client: Memory usages are: %s", memory_usages)
-        available_memory = (
-            ps.virtual_memory().available * 100
-        ) / ps.virtual_memory().total
+        available_memory = (ps.virtual_memory().available * 100) / ps.virtual_memory().total
         LOGGER.warning("Available Memory is: %s", available_memory)
         if memory_usages > 98.0:
             LOGGER.critical(
@@ -124,10 +122,8 @@ def run_local_cmd(command: str) -> tuple:
         raise ValueError(f"Missing required parameter: {cmd}")
     LOGGER.debug("Command: %s", cmd)
     try:
-        # nosec
-        with Popen(
-            command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8"
-        ) as proc:
+        # nosec B601
+        with Popen(command, shell=True, stdout=PIPE, stderr=PIPE, encoding="utf-8") as proc:
             output, error = proc.communicate()
             LOGGER.debug("output = %s", str(output))
             LOGGER.debug("error = %s", str(error))
@@ -237,9 +233,7 @@ def mount_nfs_server(host_dir: str, mnt_dir: str) -> bool:
                 resp = os.system(cmd.CMD_MOUNT.format(host_dir, mnt_dir))
                 if resp:
                     raise IOError(f"Failed to mount server: {host_dir} on {mnt_dir}")
-                LOGGER.debug(
-                    "NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir
-                )
+                LOGGER.debug("NFS Server: %s, mount on %s successfully.", host_dir, mnt_dir)
             else:
                 LOGGER.debug("NFS Server already mounted.")
             return os.path.ismount(mnt_dir)
@@ -299,9 +293,7 @@ def store_logs_to_nfs_local_server() -> None:
         os.makedirs(svr_report_dir)
     for report in reports:
         shutil.copyfile(report, os.path.join(svr_report_dir, os.path.basename(report)))
-    LOGGER.info(
-        "All logs copied to %s", os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"))
-    )
+    LOGGER.info("All logs copied to %s", os.path.join(const.CMN_LOG_DIR, os.getenv("run_id")))
     # Cleaning up TestData.
     if os.path.exists(const.DATA_DIR_PATH):
         shutil.rmtree(const.DATA_DIR_PATH)
@@ -330,9 +322,7 @@ def get_master_details() -> tuple:
     for node in CLUSTER_CFG["nodes"]:
         if node["node_type"] == "master":
             if not node.get("hostname", None):
-                LOGGER.critical(
-                    "failed to get master details: '%s'", CLUSTER_CFG["nodes"]
-                )
+                LOGGER.critical("failed to get master details: '%s'", CLUSTER_CFG["nodes"])
                 continue
             host, user, passwd = node["hostname"], node["username"], node["password"]
     return host, user, passwd
@@ -381,6 +371,7 @@ def retries(asyncio=True, max_retry=S3_CFG.s3max_retry, retry_delay=S3_CFG.retry
     :param max_retry: Max number of times retires on failure.
     :param retry_delay: Delay between two retries.
     """
+
     def outer_wrapper(func):
         """Outer wrapper method."""
         if asyncio:
@@ -440,9 +431,7 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
         fpath = get_test_file_path(tid)
         if fpath:
             iterations = get_completed_iterations(fpath)[0]
-        if datetime.now() > (
-            EXEC_STATUS[tid]["start_time"] + EXEC_STATUS[tid]["min_runtime"]
-        ):
+        if datetime.now() > (EXEC_STATUS[tid]["start_time"] + EXEC_STATUS[tid]["min_runtime"]):
             if EXEC_STATUS[tid]["status"] != "Passed":
                 if kwargs.get("sequential_run"):
                     resp1 = run_local_cmd(
@@ -467,10 +456,8 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
                                 break
                             time.sleep(30)
                             iterations, edate = get_completed_iterations(fpath)
-                            completed_iter_count = (
-                                get_completed_iterations_for_all_sessions(
-                                    iterations, fpath
-                                )
+                            completed_iter_count = get_completed_iterations_for_all_sessions(
+                                iterations, fpath
                             )
                     else:
                         edate = edate if edate else EXEC_STATUS[tid]["min_runtime"]
@@ -486,9 +473,7 @@ def monitor_sessions_iterations(test_data: dict, corio_start_time, **kwargs) -> 
 
 def get_completed_iterations_for_all_sessions(iteration: int, fpath) -> int:
     """Get the completed iteration count for all sessions."""
-    resp = run_local_cmd(
-        cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS.format(iteration), fpath)
-    )
+    resp = run_local_cmd(cmd.GREP_CMD.format(const.COMPLETED_ITERATIONS.format(iteration), fpath))
     iter_count = len(resp[1].rstrip("\n").split("\n")) if resp[0] and resp[1] else 0
     return iter_count
 
@@ -499,9 +484,7 @@ def get_completed_iterations(fpath):
     search_string = const.COMPLETED_ITERATIONS.format(".*")
     resp = run_local_cmd(f"{cmd.GREP_CMD.format(search_string, fpath)} | tail -25")
     if resp[0] and resp[1]:
-        it_str = resp[1].rsplit(search_string.rsplit("*", maxsplit=1)[-1], maxsplit=1)[
-            -2
-        ]
+        it_str = resp[1].rsplit(search_string.rsplit("*", maxsplit=1)[-1], maxsplit=1)[-2]
         iterations = int(re.findall(r"\d+", it_str)[-1])
         execution_time = get_latest_timedelta(resp[1])
     return iterations, execution_time
@@ -510,9 +493,7 @@ def get_completed_iterations(fpath):
 def get_latest_timedelta(log_str: str):
     """Get latest timedelta from text string."""
     sdate = re.findall(r"\d+-\d+-\d+ \d+:\d+:\d+,\d+", log_str) if log_str else ""
-    execution_time = (
-        datetime.strptime(sdate[-1], "%Y-%m-%d %H:%M:%S,%f") if sdate else None
-    )
+    execution_time = datetime.strptime(sdate[-1], "%Y-%m-%d %H:%M:%S,%f") if sdate else None
     return execution_time
 
 
@@ -536,9 +517,7 @@ def get_s3_keys(access_key: list, secret_key: list) -> dict:
     return dict(zip(access_key, secret_key))
 
 
-def set_s3_access_secret_key(
-    access_secret_keys: dict, iter_keys: iter, params: dict
-) -> iter:
+def set_s3_access_secret_key(access_secret_keys: dict, iter_keys: iter, params: dict) -> iter:
     """Update params dict for access secret key randomly from iterator dict."""
     try:
         params["access_key"], params["secret_key"] = next(iter_keys)

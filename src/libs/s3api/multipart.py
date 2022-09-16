@@ -21,11 +21,11 @@
 
 """Python Library to perform multipart operations using aiobotocore module."""
 
-from src.commons.utils.corio_utils import retries
-from src.libs.s3api.s3_restapi import S3RestApi
+from src.commons.utils.utility import retries
+from src.libs.s3api.object import S3Object
 
 
-class S3MultiParts(S3RestApi):
+class S3MultiParts(S3Object):
     """Class for Multipart operations."""
 
     def __init__(self, *args, **kwargs):
@@ -44,17 +44,13 @@ class S3MultiParts(S3RestApi):
         """
         async with self.get_client() as client:
             self.s3_url = s3_url = f"s3://{bucket_name}/{obj_name}"
-            response = await client.create_multipart_upload(
-                Bucket=bucket_name, Key=obj_name
-            )
+            response = await client.create_multipart_upload(Bucket=bucket_name, Key=obj_name)
             self.log.info("create_multipart_upload: %s, Response: %s", s3_url, response)
 
         return response
 
     @retries()
-    async def upload_part(
-        self, body: bytes, bucket_name: str, object_name: str, **kwargs
-    ) -> dict:
+    async def upload_part(self, body: bytes, bucket_name: str, object_name: str, **kwargs) -> dict:
         """
         Upload parts of a specific multipart upload.
 
@@ -131,9 +127,7 @@ class S3MultiParts(S3RestApi):
                 UploadId=mpu_id,
                 MultipartUpload={"Parts": parts},
             )
-            self.log.info(
-                "complete_multipart_upload: %s, response: %s", s3_url, response
-            )
+            self.log.info("complete_multipart_upload: %s, response: %s", s3_url, response)
 
         return response
 

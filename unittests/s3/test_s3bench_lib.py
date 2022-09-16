@@ -35,9 +35,7 @@ class S3benchTestCase(unittest.TestCase):
     def test_check_log_file_error_report(self, mock_install_s3bench):
         """Test with Error Count in report file."""
         mock_install_s3bench.return_value = True
-        s3bench = S3bench(
-            "Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10
-        )
+        s3bench = S3bench("Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10)
         s3bench_run_report = {
             "Parameters": {"copies": 0},
             "Tests": [{"Errors Count": 1, "Operation": "HeadObj"}],
@@ -62,9 +60,7 @@ class S3benchTestCase(unittest.TestCase):
     def test_check_log_file_error_cli(self, mock_install_s3bench):
         """Test with error no report file, with error strings."""
         mock_install_s3bench.return_value = True
-        s3bench = S3bench(
-            "Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10
-        )
+        s3bench = S3bench("Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10)
         s3bench_run_report = {
             "Parameters": {"copies": 0},
             "Tests": [{"Errors Count": 6, "Operation": "Write"}],
@@ -113,9 +109,7 @@ class S3benchTestCase(unittest.TestCase):
     def test_check_log_file_error(self, mock_install_s3bench):
         """Test with error in report file."""
         mock_install_s3bench.return_value = True
-        s3bench = S3bench(
-            "Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10
-        )
+        s3bench = S3bench("Access", "Secret", "https://s3.seagate.com", "test-12", 1, 2, 1, 40, 10)
         s3bench_run_report = {
             "Parameters": {"copies": 0},
             "Tests": [
@@ -129,9 +123,7 @@ class S3benchTestCase(unittest.TestCase):
             captured_output = StringIO()
             sys.stdout = captured_output
             ret = s3bench.check_log_file_error("", "")
-            self.assertIn(
-                captured_output.getvalue(), "Read operation failed with 1 errors"
-            )
+            self.assertIn(captured_output.getvalue(), "Read operation failed with 1 errors")
             self.assertEqual(
                 ret,
                 (

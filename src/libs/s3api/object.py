@@ -26,11 +26,11 @@ import os
 from typing import List
 
 from config import S3_CFG
-from src.commons.utils.corio_utils import retries
-from src.libs.s3api.s3_restapi import S3RestApi
+from src.commons.utils.utility import retries
+from src.libs.s3api.bucket import S3Bucket
 
 
-class S3Object(S3RestApi):
+class S3Object(S3Bucket):
     """Class for object operations."""
 
     def __init__(self, *args, **kwargs):

@@ -27,24 +27,20 @@ K8S_CP_TO_LOCAL_CMD = "kubectl cp {}:{} {} -c {}"
 KUBECTL_CMD = "kubectl {} {} -n {} {}"
 KUBECTL_SET_CONTEXT = "kubectl config set-context --current --namespace={}"
 KUBECTL_GET_WORKERS_NAME = (
-    "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{" "print $1}'"
+    "kubectl get nodes -l node-role.kubernetes.io/worker=worker | awk '{print $1}'"
 )
 CMD_POD_STATUS = "kubectl get pods"
 KUBECTL_GET_POD_DETAILS = "kubectl get pods --show-labels | grep {}"
 KUBECTL_GET_REPLICASET = "kubectl get rs | grep '{}'"
-KUBECTL_GET_POD_CONTAINERS = (
-    "kubectl get pods {} -o jsonpath='{{.spec.containers[*].name}}'"
-)
+KUBECTL_GET_POD_CONTAINERS = "kubectl get pods {} -o jsonpath='{{.spec.containers[*].name}}'"
 KUBECTL_GET_POD_IPS = (
-    "kubectl get pods --no-headers -o " 'custom-columns=":metadata.name,:.status.podIP"'
+    'kubectl get pods --no-headers -o custom-columns=":metadata.name,:.status.podIP"'
 )
 KUBECTL_CREATE_REPLICA = "kubectl scale --replicas={} deployment/{}"
 KUBECTL_DEPLOY_BACKUP = "kubectl get deployment {} -o yaml > {}"
 KUBECTL_GET_POD_HOSTNAME = "kubectl exec -it {} -c cortx-hax -- hostname"
 KUBECTL_RECOVER_DEPLOY = "kubectl create -f {}"
-KUBECTL_GET_POD_NAMES = (
-    'kubectl get pods --no-headers -o custom-columns=":metadata.name"'
-)
+KUBECTL_GET_POD_NAMES = 'kubectl get pods --no-headers -o custom-columns=":metadata.name"'
 CMD_K8S_CLUSTER_HEALTH = "kubectl exec -it {} -c {} -- {}"
 CMD_K8S_PODS_NAME = "kubectl get pods -o=custom-columns=NAME:.metadata.name"
 CMD_HCTL_STATUS = "hctl status --json"
@@ -74,9 +70,7 @@ CMD_WGET_NIMON = (
 UNZIP_NIMON = "unzip njmon_linux_binaries_v78.zip"
 CMD_CHMOD = "chmod 655 ninstall"
 CMD_NINSTALL = "./ninstall"
-CMD_RUN_NIMON = (
-    "nimon -s 30 -k -i ssc-vm-g4-rhev4-0125.colo.seagate.com -p 8086 -x njmon -W"
-)
+CMD_RUN_NIMON = "nimon -s 30 -k -i ssc-vm-g4-rhev4-0125.colo.seagate.com -p 8086 -x njmon -W"
 CMD_KILL_NIMON = "kill -USR2 $(ps ax | grep nimon  | grep -v grep | awk '{print $1}')"
 GREP_CMD = "grep -i -E '{}' {}"
 GREP_CMD_ERROR = 'grep -i -E "Error" {}'

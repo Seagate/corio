@@ -23,18 +23,14 @@
 
 import logging
 import os
-from configparser import ConfigParser
-from configparser import MissingSectionHeaderError
-from configparser import NoSectionError
+from configparser import ConfigParser, MissingSectionHeaderError, NoSectionError
 
 from src.commons.constants import ROOT
 
 LOGGER = logging.getLogger(ROOT)
 
 
-def get_config_section_key(
-    path: str, section: str = None, key: str = None
-) -> list or str:
+def get_config_section_key(path: str, section: str = None, key: str = None) -> list or str:
     """
     Get config file value as per the section and key.
 
@@ -65,9 +61,7 @@ def get_local_aws_keys(fpath, section="default"):
     if os.path.exists(fpath):
         try:
             aws_access_key = get_config_section_key(fpath, section, "aws_access_key_id")
-            aws_secret_key = get_config_section_key(
-                fpath, section, "aws_secret_access_key"
-            )
+            aws_secret_key = get_config_section_key(fpath, section, "aws_secret_access_key")
             return aws_access_key, aws_secret_key
         except KeyError:
             LOGGER.error(KeyError)

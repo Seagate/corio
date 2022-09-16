@@ -20,7 +20,7 @@
 """Libraries package."""
 
 
-from src.libs.restapi.iam_ops import IAMClient
+from src.libs.restapi.iam_user import IAMClient
 from src.libs.s3api.iam import IAMUserAPI
 
 

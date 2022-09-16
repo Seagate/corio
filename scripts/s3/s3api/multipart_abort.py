@@ -22,15 +22,19 @@ import random
 from datetime import timedelta, datetime
 from time import perf_counter_ns
 
-from src.commons.constants import MIN_DURATION
-from src.libs.s3api import S3Api
-from src.commons.utils import corio_utils
 from botocore.exceptions import ClientError
+
+from src.commons.constants import MIN_DURATION
+from src.commons.utils import utility
+from src.libs.s3api import S3Api
+
 
 class TestType5ObjectRRNegative(S3Api):
     """S3 objects type5 operations negative scenario class."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs) -> None:
+    def __init__(
+        self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs
+    ) -> None:
         """
         s3 objects operations negative scenario init class.
 
@@ -57,11 +61,12 @@ class TestType5ObjectRRNegative(S3Api):
         self.session_id = kwargs.get("session")
         self.finish_time = datetime.now() + kwargs.get("duration", timedelta(hours=int(100 * 24)))
 
+    # pylint: disable=broad-except
     async def execute_multipart_abort_workload(self):
         """Execute multipart abort workload for specific duration."""
         iteration = 1
         object_size = self.kwargs.get("object_size")
-        number_of_parts = self.kwargs.get("parts",20)
+        number_of_parts = self.kwargs.get("parts", 20)
         while True:
             try:
                 self.log.info("Iteration %s is started for %s...", iteration, self.session_id)
@@ -74,30 +79,33 @@ class TestType5ObjectRRNegative(S3Api):
                 else:
                     file_size = object_size
                 single_part_size = round(file_size / number_of_parts)
-                self.log.info(
-                    "single part size: %s", corio_utils.convert_size(single_part_size)
-                )
+                self.log.info("single part size: %s", utility.convert_size(single_part_size))
                 response = await self.create_multipart_upload(mpart_bucket, s3mpart_object)
                 mpu_id = response["UploadId"]
                 for i in range(1, number_of_parts + 1):
                     byte_s = os.urandom(round(single_part_size))
-                    await self.upload_part(byte_s, mpart_bucket, s3mpart_object,
-                                           upload_id=mpu_id, part_number=i)
+                    await self.upload_part(
+                        byte_s, mpart_bucket, s3mpart_object, upload_id=mpu_id, part_number=i
+                    )
                 parts = await self.list_parts(mpart_bucket, s3mpart_object, mpu_id)
                 while parts:
                     await self.abort_multipart_upload(mpart_bucket, s3mpart_object, mpu_id)
                     parts = await self.list_parts(mpart_bucket, s3mpart_object, mpu_id)
                 try:
-                    resp = await self.get_object(Bucket=mpart_bucket, Key=s3mpart_object)
-                    assert False, f"Expected failure in GetObject API for {s3mpart_object}, resp: {resp}"
+                    resp = await self.get_object(bucket=mpart_bucket, key=s3mpart_object)
+                    assert (
+                        False
+                    ), f"Expected failure in GetObject API for {s3mpart_object}, resp: {resp}"
                 except ClientError as err:
                     self.log.info("Get Object exception for non existing object %s", err)
-                self.log.info("Iteration %s is completed of %s...", iteration, self.session_id,)
+                self.log.info(
+                    "Iteration %s is completed of %s...",
+                    iteration,
+                    self.session_id,
+                )
                 await self.delete_object(mpart_bucket, s3mpart_object)
             except Exception as err:
-                self.log.exception(
-                    "bucket url: {%s} \nException: {%s}", self.s3_url, err
-                )
+                self.log.exception("bucket url: {%s} \nException: {%s}", self.s3_url, err)
                 assert False, f"bucket url: {self.s3_url} \n Exception: {err}"
             await self.delete_bucket(mpart_bucket, True)
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:

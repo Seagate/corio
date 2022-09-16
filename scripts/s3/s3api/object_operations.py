@@ -24,7 +24,7 @@ from datetime import timedelta, datetime
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils import corio_utils
+from src.commons.utils import utility
 from src.libs.s3api import S3Api
 
 
@@ -88,7 +88,7 @@ class TestS3Object(S3Api):
                 else:
                     range_read = self.range_read
                 file_name = f"object-bucket-op-{perf_counter_ns()}"
-                file_path = corio_utils.create_file(file_name, file_size)
+                file_path = utility.create_file(file_name, file_size)
                 self.log.info("Object '%s', object size %s bytes", file_name, file_size)
                 checksum_in = self.checksum_file(file_path)
                 self.log.debug("Checksum IN = %s", checksum_in)

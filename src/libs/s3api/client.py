@@ -23,6 +23,7 @@
 
 import logging
 import os
+from pathlib import Path
 
 import boto3
 import urllib3
@@ -33,12 +34,12 @@ from botocore.config import Config
 from config import S3_CFG
 from src.commons.logger import get_logger
 
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
 
 # pylint: disable=too-many-instance-attributes
-class S3RestApi:
+class S3Client:
     """Basic Class for Creating Boto3 REST API Objects."""
+
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def __init__(self, access_key: str, secret_key: str, **kwargs):
         """
@@ -60,7 +61,9 @@ class S3RestApi:
         self.aws_session_token = kwargs.get("aws_session_token", None)
         self.use_ssl = kwargs.get("use_ssl", S3_CFG.use_ssl)
         self.endpoint_url = kwargs.get("endpoint_url", S3_CFG.endpoint)
-        self.log = get_logger(os.getenv("log_level") or logging.INFO, kwargs.get("test_id"))
+        self.log = get_logger(
+            os.getenv("log_level") or logging.INFO, kwargs.get("test_id", Path(__file__).stem)
+        )
         self.log_path = next(
             iter(
                 [

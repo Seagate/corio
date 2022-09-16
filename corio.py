@@ -41,10 +41,10 @@ from src.commons import support_bundle
 from src.commons.exception import DegradedModeError
 from src.commons.exception import HealthCheckError
 from src.commons.logger import initialize_loghandler
-from src.commons.utils import corio_utils
+from src.commons.utils import utility
 from src.commons.utils.alerts import SendMailNotification
-from src.commons.utils.jira_utils import JiraApp
-from src.commons.utils.resource_util import collect_resource_utilisation
+from src.commons.utils.jira import JiraApp
+from src.commons.utils.resource import collect_resource_utilization
 from src.commons.workload_mapping import SCRIPT_MAPPING
 from src.commons.yaml_parser import test_parser
 
@@ -53,12 +53,12 @@ LOGGER = logging.getLogger(const.ROOT)
 
 def pre_requisites(options):
     """Perform health check and start resource monitoring."""
-    corio_utils.setup_environment()
+    utility.setup_environment()
     # Check cluster is healthy to start execution.
     if options.health_check:
         cluster_health.check_health()
-    # start resource utilisation.
-    collect_resource_utilisation(action="start")
+    # start resource utilization.
+    collect_resource_utilization(action="start")
     # Unique id for each run.
     os.environ["run_id"] = const.DT_STRING
 
@@ -124,7 +124,7 @@ def get_test_ids_from_terminated_workload(workload_dict: dict, workload_key: str
 # pylint: disable=broad-except
 def main(options):
     """
-    Main function for CORIO.
+    CORIO main function to trigger workload.
 
     :param options: Parsed Arguments.
     """
@@ -132,7 +132,7 @@ def main(options):
     jira_obj = JiraApp() if options.test_plan else None
     if jira_obj:
         tests_details = jira_obj.get_all_tests_details_from_tp(options.test_plan, reset_status=True)
-    workload_list = corio_utils.get_workload_list(options.test_input)
+    workload_list = utility.get_workload_list(options.test_input)
     LOGGER.info("Test YAML Files to be executed : %s", workload_list)
     parsed_input = get_parsed_input_details(workload_list, options.number_of_nodes)
     tests_to_execute = check_report_duplicate_missing_ids(parsed_input, tests_details)
@@ -159,7 +159,7 @@ def main(options):
         scheduler.start_processes(processes)
         while processes:
             time.sleep(1)
-            corio_utils.cpu_memory_details()
+            utility.cpu_memory_details()
             schedule.run_pending()
             if jira_obj:
                 jira_obj.update_jira_status(
@@ -201,13 +201,13 @@ def main(options):
         if options.support_bundle:
             support_bundle.collect_upload_rotate_support_bundles(const.CMN_LOG_DIR)
         mobj.email_alert(action="stop", tp=terminated_tp, ids=test_ids)
-        collect_resource_utilisation(action="stop")
-        corio_utils.store_logs_to_nfs_local_server()
+        collect_resource_utilization(action="stop")
+        utility.store_logs_to_nfs_local_server()
 
 
 if __name__ == "__main__":
     # backup old execution logs.
-    corio_utils.log_cleanup()
+    utility.log_cleanup()
     initialize_loghandler(LOGGER, os.path.splitext(os.path.basename(__file__))[0], opts.verbose)
     LOGGER.info("Arguments: %s", opts)
     pre_requisites(opts)

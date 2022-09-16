@@ -21,14 +21,18 @@ import random
 from datetime import timedelta, datetime
 from time import perf_counter_ns
 
+from botocore.exceptions import ClientError
+
 from src.commons.constants import MIN_DURATION
 from src.libs.s3api import S3Api
-from botocore.exceptions import ClientError
+
 
 class TestType5ObjectOpsNegative(S3Api):
     """S3 objects type5 operations negative scenario class."""
 
-    def __init__(self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs) -> None:
+    def __init__(
+        self, access_key: str, secret_key: str, endpoint_url: str, test_id: str, **kwargs
+    ) -> None:
         """
         s3 objects operations negative scenario init class.
 
@@ -66,21 +70,27 @@ class TestType5ObjectOpsNegative(S3Api):
             self.log.info("Iteration %s is started for %s...", iteration, self.session_id)
             object_key = f"object-op-{perf_counter_ns()}"
             try:
-                resp = await self.get_object(Bucket=bucket, Key=object_key)
-                assert False, f"Expected failure in GetObject API for " \
-                              f"non existing object:{object_key}, resp: {resp}"
+                resp = await self.get_object(bucket=bucket, key=object_key)
+                assert False, (
+                    f"Expected failure in GetObject API for "
+                    f"non existing object:{object_key}, resp: {resp}"
+                )
             except ClientError as err:
                 self.log.info("Get Object exception for non existing object %s", err)
             try:
-                resp = await self.get_object(bucket=bucket, key=object_key, ranges='bytes=0-9')
-                assert False, f"Expected failure in GetObject range read for " \
-                              f"non existing object:{object_key}, resp: {resp}"
+                resp = await self.get_object(bucket=bucket, key=object_key, ranges="bytes=0-9")
+                assert False, (
+                    f"Expected failure in GetObject range read for "
+                    f"non existing object:{object_key}, resp: {resp}"
+                )
             except ClientError as err:
                 self.log.info("Get Object range read exception for non existing object %s", err)
             try:
                 resp = await self.delete_object(bucket, object_key)
-                assert False, f"Expected failure in DeleteObject API for " \
-                              f"non existing object:{object_key}, resp: {resp}"
+                assert False, (
+                    f"Expected failure in DeleteObject API for "
+                    f"non existing object:{object_key}, resp: {resp}"
+                )
             except ClientError as err:
                 self.log.info("Delete Object exception for non existing object %s", err)
             await self.delete_bucket(bucket, True)

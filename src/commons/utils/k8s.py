@@ -28,14 +28,15 @@ import time
 from src.commons import commands as cmd
 from src.commons import constants as const
 from src.commons.constants import ROOT
-from src.commons.exception import K8sDeploymentRecoverError, DeploymentBackupException
 from src.commons.exception import (
+    K8sDeploymentRecoverError,
+    DeploymentBackupException,
     PodReplicaError,
     DeployReplicasetError,
     NumReplicaError,
 )
-from src.commons.utils.corio_utils import convert_size
-from src.commons.utils.system_utils import RemoteHost
+from src.commons.utils.system import RemoteHost
+from src.commons.utils.utility import convert_size
 from src.commons.yaml_parser import read_yaml
 
 LOGGER = logging.getLogger(ROOT)
@@ -66,12 +67,8 @@ class BaseClusterServices(RemoteHost):
     ) -> bytes:
         """Send/execute command on logical node/pods."""
         if operation not in ClusterServices.kube_commands:
-            raise ValueError(
-                f"command parameter must be one of {ClusterServices.kube_commands}."
-            )
-        LOGGER.debug(
-            "Performing %s on service %s in namespace %s...", operation, pod, namespace
-        )
+            raise ValueError(f"command parameter must be one of {ClusterServices.kube_commands}.")
+        LOGGER.debug("Performing %s on service %s in namespace %s...", operation, pod, namespace)
         k8s_cmd = cmd.KUBECTL_CMD.format(operation, pod, namespace, command_suffix)
         status, resp = self.execute_command(k8s_cmd, **kwargs)
         if kwargs.get("decode", False) and status:
@@ -200,9 +197,7 @@ class ClusterServices(BaseClusterServices):
                     "avail_capacity": avail_capacity,
                     "used_capacity": used_capacity,
                 }
-            LOGGER.warning(
-                "Cluster stat is not available: %s", response["filesystem"]["stats"]
-            )
+            LOGGER.warning("Cluster stat is not available: %s", response["filesystem"]["stats"])
         return False, "Failed to get cluster storage stat."
 
     def collect_support_bundles(self, dir_path: str) -> tuple:
@@ -214,13 +209,13 @@ class ClusterServices(BaseClusterServices):
         LOGGER.info("Support bundle collection is started.")
         # Check service script path exists.
         script_path, file_name = None, None
-        if self.path_exists(
+        if self.path_exists(const.K8S_CFT_SCRIPTS_PATH) and const.K8S_SB_SCRIPT in self.list_dirs(
             const.K8S_CFT_SCRIPTS_PATH
-        ) and const.K8S_SB_SCRIPT in self.list_dirs(const.K8S_CFT_SCRIPTS_PATH):
+        ):
             script_path = const.K8S_CFT_SCRIPTS_PATH
-        elif self.path_exists(
+        elif self.path_exists(const.K8S_RE_SCRIPTS_PATH) and const.K8S_SB_SCRIPT in self.list_dirs(
             const.K8S_RE_SCRIPTS_PATH
-        ) and const.K8S_SB_SCRIPT in self.list_dirs(const.K8S_RE_SCRIPTS_PATH):
+        ):
             script_path = const.K8S_RE_SCRIPTS_PATH
         else:
             if not script_path:
@@ -241,16 +236,12 @@ class ClusterServices(BaseClusterServices):
                 file_name = f_name
                 break
         if not file_name:
-            raise AssertionError(
-                f"Failed to generate support bundles. Response: {response}"
-            )
+            raise AssertionError(f"Failed to generate support bundles. Response: {response}")
         remote_path = os.path.join(script_path, file_name)
         local_path = os.path.join(dir_path, file_name)
         self.download_file(local_path, remote_path)
         self.delete_file(remote_path)
-        LOGGER.info(
-            "Support bundle '%s' generated and copied to %s.", file_name, local_path
-        )
+        LOGGER.info("Support bundle '%s' generated and copied to %s.", file_name, local_path)
         return os.path.exists(local_path), local_path
 
     def create_pod_replicas(self, num_replica, deploy=None, pod_name=None):
@@ -394,9 +385,7 @@ class ClusterServices(BaseClusterServices):
         :return: dict
         """
         pod_dict = {}
-        _, output = self.execute_command(
-            command=cmd.KUBECTL_GET_POD_IPS, read_lines=True
-        )
+        _, output = self.execute_command(command=cmd.KUBECTL_GET_POD_IPS, read_lines=True)
         for lines in output:
             if pod_prefix in lines:
                 data = lines.strip()
@@ -431,9 +420,7 @@ class ClusterServices(BaseClusterServices):
         :return: list
         """
         pods_list = []
-        _, output = self.execute_command(
-            command=cmd.KUBECTL_GET_POD_NAMES, read_lines=True
-        )
+        _, output = self.execute_command(command=cmd.KUBECTL_GET_POD_NAMES, read_lines=True)
         pods = [line.strip().replace("\n", "") for line in output]
         if pod_prefix is not None:
             for each in pods:
@@ -537,9 +524,7 @@ class ClusterServices(BaseClusterServices):
         """Get available user quota in bytes."""
         status, cluster_stat = self.check_cluster_storage()
         if not status:
-            raise AssertionError(
-                f"Failed to get cluster storage details: {cluster_stat}"
-            )
+            raise AssertionError(f"Failed to get cluster storage details: {cluster_stat}")
         total_capacity = cluster_stat.get("total_capacity")
         avail_capacity = cluster_stat.get("avail_capacity")
         used_capacity = cluster_stat.get("used_capacity")
@@ -553,9 +538,7 @@ class ClusterServices(BaseClusterServices):
         durability_values = self.retrieve_durability_values("sns")
         sns_values = {key: int(value) for key, value in durability_values.items()}
         LOGGER.debug("Durability Values (SNS) %s", sns_values)
-        user_quota_to_writes = int(
-            sns_values["data"] / sum(sns_values.values()) * avail_capacity
-        )
+        user_quota_to_writes = int(sns_values["data"] / sum(sns_values.values()) * avail_capacity)
         LOGGER.info(
             "User writes to be performed %s bytes to attain the disk full space",
             user_quota_to_writes,

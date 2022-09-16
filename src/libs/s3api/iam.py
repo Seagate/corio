@@ -21,10 +21,10 @@
 
 """Library for s3 IAM operations using asyncio."""
 
-from src.libs.s3api.s3_restapi import S3RestApi
+from src.libs.s3api.client import S3Client
 
 
-class IAMUserAPI(S3RestApi):
+class IAMUserAPI(S3Client):
     """IAM user api using asyncio."""
 
     async def create_user(self, user_name: str) -> dict:

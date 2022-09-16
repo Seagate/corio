@@ -22,7 +22,7 @@ import time
 from datetime import datetime, timedelta
 
 from src.commons.constants import MIN_DURATION
-from src.libs.s3api.s3io_utils import S3ApiIOUtils
+from src.libs.s3api.parallel_io import S3ApiIOUtils
 
 
 class TestType5BucketObjectOps(S3ApiIOUtils):
@@ -92,9 +92,7 @@ class TestType5BucketObjectOps(S3ApiIOUtils):
                     self.log.info("sleep for %s hrs", sleep_time / (60**2))
                     time.sleep(sleep_time)
                 if self.kwargs.get("read_percentage_per_bucket"):
-                    self.starts_sessions(
-                        self.read_distribution_data, distribution, object_size
-                    )
+                    self.starts_sessions(self.read_distribution_data, distribution, object_size)
                 else:
                     self.starts_sessions(self.read_all_data, distribution)
                 if self.kwargs.get("overwrite_percentage_per_bucket"):

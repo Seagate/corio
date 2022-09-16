@@ -17,7 +17,7 @@
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 
-"""Module to collect resource utilisation utils."""
+"""Module to collect resource utilization utils."""
 
 import glob
 import logging
@@ -26,54 +26,50 @@ import shutil
 
 from src.commons import commands as cmd
 from src.commons import constants as const
-from src.commons.utils import corio_utils
-from src.commons.utils.cluster_utils import ClusterServices
+from src.commons.utils import utility
+from src.commons.utils.k8s import ClusterServices
 
 LOGGER = logging.getLogger(const.ROOT)
 
 
-def collect_resource_utilisation(action: str):
+def collect_resource_utilization(action: str):
     """
-    Start/stop collect resource utilisation.
+    Start/stop collect resource utilization.
 
     :param action: start/stop collection resource_utilisation
     """
     if action == "start":
-        start_client_resource_utilisation()
+        start_client_resource_utilization()
         start_server_resource_utilization()
     if action == "stop":
         stop_store_client_resource_utilization()
         stop_store_server_resource_utilization()
 
 
-def start_client_resource_utilisation():
+def start_client_resource_utilization():
     """Start resource utilization on client."""
-    resp = corio_utils.install_package(const.NMON)
+    resp = utility.install_package(const.NMON)
     if resp[0]:
-        resp = corio_utils.run_local_cmd(cmd.CMD_RUN_NMON)
+        resp = utility.run_local_cmd(cmd.CMD_RUN_NMON)
     LOGGER.info(resp)
 
 
 def stop_store_client_resource_utilization():
     """Stop resource utilization from client and copy to NFS/LOCAL server."""
-    resp = corio_utils.run_local_cmd(cmd.CMD_KILL_NMON)
+    resp = utility.run_local_cmd(cmd.CMD_KILL_NMON)
     LOGGER.debug(resp)
-    stat_fpath = sorted(
-        glob.glob(os.getcwd() + "/*.nmon"), key=os.path.getctime, reverse=True
-    )[-1]
+    stat_fpath = sorted(glob.glob(os.getcwd() + "/*.nmon"), key=os.path.getctime, reverse=True)[-1]
     LOGGER.info(stat_fpath)
-    dpath = os.path.join(
-        const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client"
-    )
+    dpath = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "client")
     if not os.path.exists(dpath):
         os.makedirs(dpath)
     shutil.move(stat_fpath, os.path.join(dpath, os.path.basename(stat_fpath)))
     if os.path.exists(stat_fpath):
         os.remove(stat_fpath)
-    # corio_utils.remove_package(const.NMON)
+    # utility.remove_package(const.NMON)
     # collect journalctl logs from client.
     journalctl_filepath = os.path.join("/root", "client_journalctl.log")
-    resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
+    resp = utility.run_local_cmd(cmd.CMD_JOURNALCTL.format(journalctl_filepath))
     if resp[0]:
         shutil.move(
             journalctl_filepath,
@@ -81,11 +77,9 @@ def stop_store_client_resource_utilization():
         )
     # collect dmesg logs from client.
     dmesg_filepath = os.path.join("/root", "client_dmesg.log")
-    resp = corio_utils.run_local_cmd(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
+    resp = utility.run_local_cmd(cmd.CMD_JOURNALCTL.format(dmesg_filepath))
     if resp[0]:
-        shutil.move(
-            dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath))
-        )
+        shutil.move(dmesg_filepath, os.path.join(dpath, os.path.basename(dmesg_filepath)))
 
 
 def start_server_resource_utilization() -> None:
@@ -102,11 +96,9 @@ def start_server_resource_utilization() -> None:
 def get_server_details() -> tuple:
     """Get K8s based Server details."""
     cluster_nodes = []
-    host, user, passwd = corio_utils.get_master_details()
+    host, user, passwd = utility.get_master_details()
     if not host:
-        LOGGER.critical(
-            "Will not able to collect system stats for cluster as detail is missing."
-        )
+        LOGGER.critical("Will not able to collect system stats for cluster as detail is missing.")
         return None, None, cluster_nodes
     cluster_nodes.append(host)
     cluster_obj = ClusterServices(host, user, passwd)
@@ -126,9 +118,7 @@ def stop_store_server_resource_utilization():
         resp = cluster_obj.execute_command(cmd.CMD_SEARCH_FILE.format("'*.nmon'"))
         filename = str([x.strip("./") for x in resp[1].strip().split("\n")][0])
         LOGGER.info("Filename is: %s", filename)
-        stat_path = os.path.join(
-            const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server"
-        )
+        stat_path = os.path.join(const.CMN_LOG_DIR, os.getenv("run_id"), "system_stats", "server")
         cl_path = os.path.join(stat_path, filename)
         remote_path = os.path.join("/root", filename)
         if not os.path.exists(stat_path):

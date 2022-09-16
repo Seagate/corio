@@ -20,15 +20,17 @@ import random
 import string
 from datetime import datetime
 
-from src.commons.exception import CreateBucketException, \
-    UploadObjectException, \
-    ListObjectException, \
-    DeleteBucketException, \
-    HeadBucketException
-
-from src.commons.constants import MIN_DURATION
 from scripts.s3.s3api.bucket_operations import TestBucketOps
 from src.commons.constants import INVALID_BUCKET, ERROR_CODE_RESPONSE
+from src.commons.constants import MIN_DURATION
+from src.commons.exception import (
+    CreateBucketException,
+    UploadObjectException,
+    ListObjectException,
+    DeleteBucketException,
+    HeadBucketException,
+)
+
 
 def create_invalid_bucket_name():
     """Create invalid bucket name which should not fulfill following criteria
@@ -40,7 +42,9 @@ def create_invalid_bucket_name():
     Cannot have consecutive periods, or use dashes adjacent to periods.
     The bucket name cannot be formatted as an IP address (198.51.100.24)."""
     name_length = random.randint(1, 64)
-    return ''.join(random.choices(string.ascii_letters + string.digits + string.punctuation, k=name_length))
+    return "".join(
+        random.choices(string.ascii_letters + string.digits + string.punctuation, k=name_length)
+    )
 
 
 class TestBucketOpsNegative(TestBucketOps):
@@ -51,7 +55,7 @@ class TestBucketOpsNegative(TestBucketOps):
         return "Test Negative Bucket Operations"
 
     async def execute_bucket_workload(self):
-        """ Negative bucket operations"""
+        """Negative bucket operations"""
         iteration = 1
         object_size = self.kwargs.get("object_size")
         while True:
@@ -64,8 +68,11 @@ class TestBucketOpsNegative(TestBucketOps):
                 assert False, f"Able to create bucket with invalid bucket name. {resp}"
             except CreateBucketException as err:
                 self.log.info(INVALID_BUCKET, self.s3_url, err)
-                self.log.info(ERROR_CODE_RESPONSE, err.response['Error']['Code'],
-                              err.response['Error']['Message'])
+                self.log.info(
+                    ERROR_CODE_RESPONSE,
+                    err.response["Error"]["Code"],
+                    err.response["Error"]["Message"],
+                )
 
             try:
                 self.log.info("Perform head bucket to check if bucket exists")
@@ -74,9 +81,9 @@ class TestBucketOpsNegative(TestBucketOps):
             except HeadBucketException as err:
                 # If a client error is thrown, then check that it was a 404 error.
                 # If it was a 404 error, then the bucket does not exist.
-                self.log.info('Error Code: %s', err.response['Error']['Code'])
-                self.log.info('Error Message: %s', err.response['Error']['Message'])
-                error_code = int(err.response['Error']['Code'])
+                self.log.info("Error Code: %s", err.response["Error"]["Code"])
+                self.log.info("Error Message: %s", err.response["Error"]["Message"])
+                error_code = int(err.response["Error"]["Code"])
                 if error_code == 403:
                     self.log.info("Private Bucket. Forbidden Access!")
                 elif error_code == 404:
@@ -87,24 +94,30 @@ class TestBucketOpsNegative(TestBucketOps):
                 assert False, f"Able to upload objects with invalid bucket. {resp}"
             except UploadObjectException as err:
                 self.log.info(INVALID_BUCKET, self.s3_url, err)
-                self.log.info(ERROR_CODE_RESPONSE, err.response['Error']['Code'],
-                              err.response['Error']['Message'])
+                self.log.info(
+                    ERROR_CODE_RESPONSE,
+                    err.response["Error"]["Code"],
+                    err.response["Error"]["Message"],
+                )
             try:
                 self.log.info("List Objects in buckets")
                 resp = await self.list_objects(bucket_name)
                 assert False, f"Able to list objects with invalid bucket. {resp}"
             except ListObjectException as err:
                 self.log.info(INVALID_BUCKET, self.s3_url, err)
-                self.log.info(ERROR_CODE_RESPONSE, err.response['Error']['Code'],
-                              err.response['Error']['Message'])
+                self.log.info(
+                    ERROR_CODE_RESPONSE,
+                    err.response["Error"]["Code"],
+                    err.response["Error"]["Message"],
+                )
             try:
                 self.log.info("Delete bucket %s with all objects in it.", bucket_name)
                 resp = await self.delete_bucket(bucket_name, True)
                 assert False, f"Able to list objects with invalid bucket. {resp}"
             except DeleteBucketException as err:
                 self.log.info(INVALID_BUCKET, self.s3_url, err)
-                self.log.info('Error Code: %s', err.response['Error']['Code'])
-                self.log.info('Error Message: %s', err.response['Error']['Message'])
+                self.log.info("Error Code: %s", err.response["Error"]["Code"])
+                self.log.info("Error Message: %s", err.response["Error"]["Message"])
 
             self.log.info("Iteration %s is completed of %s", iteration, self.session_id)
             if (self.finish_time - datetime.now()).total_seconds() < MIN_DURATION:

@@ -23,7 +23,7 @@ from datetime import datetime, timedelta
 from time import perf_counter_ns
 
 from src.commons.constants import MIN_DURATION
-from src.commons.utils import corio_utils
+from src.commons.utils import utility
 from src.libs import IAMClient
 from src.libs.s3api import S3Api
 
@@ -101,7 +101,7 @@ class TestBucketOps(S3Api):
                 if number_of_buckets:
                     bucket_name = random.choice(buckets)  # nosec
                     file_name = f"object-{self.test_id.lower()}-{perf_counter_ns()}"
-                    file_path = corio_utils.create_file(file_name, file_size)
+                    file_path = utility.create_file(file_name, file_size)
                     sha256_in = bops_obj.checksum_file(file_path)
                     self.s3_url = bops_obj.s3_url
                     await bops_obj.upload_object(bucket_name, file_name, file_path=file_path)
@@ -149,7 +149,7 @@ class TestBucketOps(S3Api):
         for i in range(1, number_of_objects + 1):
             file_name = f"object-{i}-{perf_counter_ns()}"
             self.log.info("Object '%s', object size %s bytes", file_name, file_size)
-            file_path = corio_utils.create_file(file_name, file_size)
+            file_path = utility.create_file(file_name, file_size)
             await self.upload_object(bucket_name, file_name, file_path=file_path)
             self.log.info("'%s' uploaded successfully.", self.s3_url)
             self.log.info("Delete generated file")

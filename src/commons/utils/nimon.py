@@ -17,16 +17,16 @@
 # For any questions about this software or licensing,
 # please email opensource@seagate.com or cortx-questions@seagate.com.
 
-"""Module to collect resource utilisation utils."""
+"""Module to collect resource utilization utils."""
 
 import logging
 
 from config import CLUSTER_CFG
 from src.commons import commands as cm_cmd
 from src.commons.constants import ROOT
-from src.commons.utils.corio_utils import install_package
-from src.commons.utils.corio_utils import run_local_cmd
-from src.commons.utils.system_utils import RemoteHost
+from src.commons.utils.system import RemoteHost
+from src.commons.utils.utility import install_package
+from src.commons.utils.utility import run_local_cmd
 
 LOGGER = logging.getLogger(ROOT)
 
@@ -34,7 +34,7 @@ LOGGER = logging.getLogger(ROOT)
 # pylint: disable-msg=too-many-statements
 def monitor_resource_utilisation(action: str):
     """
-    start/stop monitoring resource utilisation.
+    start/stop monitoring resource utilization.
 
     :param action: start/stop collection resource_utilisation
     """
