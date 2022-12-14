@@ -57,8 +57,8 @@ def pre_requisites(options):
     # Check cluster is healthy to start execution.
     if options.health_check:
         cluster_health.check_health()
-    # start resource utilization.
-    collect_resource_utilization(action="start")
+        # start resource utilization.
+        collect_resource_utilization(action="start")
     # Unique id for each run.
     os.environ["run_id"] = const.DT_STRING
 
@@ -200,9 +200,11 @@ def main(options):
             )
         if options.support_bundle:
             support_bundle.collect_upload_rotate_support_bundles(const.CMN_LOG_DIR)
+            utility.store_logs_to_nfs_local_server()
+        if options.health_check:
+            collect_resource_utilization(action="stop")
         mobj.email_alert(action="stop", tp=terminated_tp, ids=test_ids)
-        collect_resource_utilization(action="stop")
-        utility.store_logs_to_nfs_local_server()
+
 
 
 if __name__ == "__main__":

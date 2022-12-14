@@ -97,21 +97,27 @@ class TestMultiParts(S3Api):
                 file_size = await self.get_workload_size()
                 single_part_size = round(file_size / number_of_parts)
                 self.log.info("single part size: %s", utility.convert_size(single_part_size))
+                self.log.info("Getting Checksum of Ready to upload object: %s ",s3mpart_object)
                 upload_obj_checksum = await self.create_upload_list_completed_mpart(
                     number_of_parts, mpart_bucket, s3mpart_object, s3_object
                 )
                 all_object = await self.list_objects(mpart_bucket)
                 assert s3mpart_object in all_object, f"Failed to upload object {s3mpart_object}"
+                self.log.info("Object %s is uploaded successfully",s3mpart_object)
                 await self.head_object(mpart_bucket, s3mpart_object)
+                self.log.info("Getting Checksum of object  %s after upload", s3mpart_object)
                 download_obj_checksum = await self.get_s3object_checksum(
                     mpart_bucket, s3mpart_object, single_part_size
                 )
                 self.log.info("Checksum of s3 object: %s", download_obj_checksum)
+                self.log.info("Compare upload_object and download_object checksum")
                 assert (
                     upload_obj_checksum == download_obj_checksum
                 ), f"Failed to match checksum: {upload_obj_checksum}, {download_obj_checksum}"
+                self.log.info("upload_obj_checksum and download_obj_checksum match successfully")
                 if self.range_read:
                     await self.range_read_mpart_object(mpart_bucket, s3mpart_object)
+                self.log.info("Deleting object...")
                 if self.part_copy:
                     await self.delete_object(mpart_bucket, s3_object)
                 await self.delete_object(mpart_bucket, s3mpart_object)
