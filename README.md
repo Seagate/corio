@@ -1,3 +1,5 @@
+# Disclaimer: This project is not maintained anymore
+
 # CORIO
 CORIO (Pronounced as KOR-IO) is an open source tool to exercise longevity test and to check IO stability.
 This is a protocol agnostic tool hence any other IO protocol can be plugged in and exercised as and when needed.
